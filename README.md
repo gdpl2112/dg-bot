@@ -18,3 +18,10 @@ manager 管理自己的qq
 
 ~~admin 管理员平台~~
 
+corn 
+
+启动加载 load
+
+主动添加 add
+
+主动删除 delete

@@ -3,4 +3,4 @@ spring:
     url: jdbc:sqlite:data.db
     driver-class-name: org.sqlite.JDBC
 server:
-  port: 347
+  port: 34740
