@@ -7,3 +7,14 @@
 - 简单的关键词回复 #被动续火
 - 撤回监听 #功能1
 - 更多功能请pr
+
+web 结构
+
+index 介绍 及 开通方式
+
+login 指定qq与token 登录 #scurity auth
+
+manager 管理自己的qq
+
+~~admin 管理员平台~~
+
