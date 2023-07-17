@@ -2,8 +2,8 @@ package io.github.gdpl2112.dg_bot;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import io.github.kloping.MySpringTool.h1.impl.LoggerImpl;
 import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
+import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.MySpringTool.interfaces.component.PackageScanner;
 import io.github.kloping.clasz.ClassUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +11,10 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +29,10 @@ import java.util.regex.Pattern;
  * @date 2023-07-17
  */
 @SpringBootApplication
+@EnableAsync
+@CrossOrigin
+@EnableWebSecurity
+@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 public class Main implements CommandLineRunner {
     public static void main(String[] args) {
         SpringApplication.run(Main.class, args);
@@ -33,9 +41,12 @@ public class Main implements CommandLineRunner {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    Logger logger;
+
     @Override
     public void run(String... args) throws Exception {
-        new LoggerImpl().info("start auto create need tables;");
+        logger.info("start auto create need tables;");
         PackageScanner scanner = new PackageScannerImpl(true);
         for (Class<?> dclass :
                 scanner.scan(Main.class, Main.class.getClassLoader(), "io.github.gdpl2112.dg_bot.dao")) {
@@ -45,10 +56,10 @@ public class Main implements CommandLineRunner {
                 if (state > 0) System.out.println(sql);
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println(sql);
+                logger.error(sql);
             }
         }
-        new LoggerImpl().info("tables create finished");
+        logger.info("tables create finished");
     }
 
     /**

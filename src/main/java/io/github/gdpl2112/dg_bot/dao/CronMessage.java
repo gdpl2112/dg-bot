@@ -8,11 +8,11 @@ import lombok.Data;
  * @author github.kloping
  */
 @Data
-public class CornMessage {
+public class CronMessage {
     @TableId(type = IdType.AUTO)
     private Integer id;
     private String qid;
-    private String corn;
+    private String cron;
     private String targetId;
     private String msg;
 }

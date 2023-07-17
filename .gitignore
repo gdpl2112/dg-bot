@@ -161,6 +161,9 @@ data
 logs
 plugin-libraries
 plugin-shared-libraries
-plugin
+plugins
 cache
 data.db
+KFCFactory.json
+android_pad.json
+bots
