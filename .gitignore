@@ -163,3 +163,4 @@ plugin-libraries
 plugin-shared-libraries
 plugin
 cache
+data.db
