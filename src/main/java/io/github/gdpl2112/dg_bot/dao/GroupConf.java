@@ -9,6 +9,16 @@ import lombok.Data;
 @Data
 public class GroupConf {
     private String qid;
-    private String gid;
-    private Boolean k;
+    /**
+     * pre type id
+     */
+    private String tid;
+    /**
+     * 撤回监听
+     */
+    private Boolean k1;
+    /**
+     * 被动回复
+     */
+    private Boolean k2;
 }

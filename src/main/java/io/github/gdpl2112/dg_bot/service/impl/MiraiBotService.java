@@ -27,24 +27,29 @@ public class MiraiBotService implements BotService {
         if (bot == null) {
             logger.waring(String.format("%s 用户实例获取失败! 可能掉线或未登录", qid));
         } else {
-            Contact contact;
-            try {
-                Long id = Long.valueOf(targetId);
-                contact = bot.getFriend(id);
-            } catch (NumberFormatException e) {
-                String type = targetId.substring(0, 1);
-                Long id = Long.valueOf(targetId.substring(1));
-                if (type.equals("g")) {
-                    contact = bot.getGroup(id);
-                } else {
-                    contact = bot.getFriend(id);
-                }
-            }
+            Contact contact = getContact(bot, targetId);
             if (contact == null) {
                 logger.waring(String.format("%s 用户实例 cron 任务发送目标%s获取失败!", qid, targetId));
             } else {
                 contact.sendMessage(MiraiCode.deserializeMiraiCode(msg));
             }
         }
+    }
+
+    public Contact getContact(Bot bot, String targetId) {
+        Contact contact;
+        try {
+            Long id = Long.valueOf(targetId);
+            contact = bot.getFriend(id);
+        } catch (NumberFormatException e) {
+            String type = targetId.substring(0, 1);
+            Long id = Long.valueOf(targetId.substring(1));
+            if (type.equals("g")) {
+                contact = bot.getGroup(id);
+            } else {
+                contact = bot.getFriend(id);
+            }
+        }
+        return contact;
     }
 }
