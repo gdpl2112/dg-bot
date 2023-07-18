@@ -40,3 +40,36 @@ bot.html
     but        but     but
 
 
+
+manager.html
+    
+    ------
+    icon id      del
+    ______
+    icon id      del
+    _____
+    ...
+    add
+
+    group
+    _____
+    icon id     swi0 swi1
+    _____
+    icon id     swi0 swi1
+    _____
+    ....
+
+cron.html
+    
+    list
+    ____
+    cron:msg: target      del
+    ____
+    cron:msg: target      del
+    ____
+    ....
+    add
+
+reply.tml
+    
+    
