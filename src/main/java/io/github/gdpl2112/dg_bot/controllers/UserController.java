@@ -63,7 +63,6 @@ public class UserController {
         return null;
     }
 
-
     //==============================================================
     @Autowired
     AdministratorMapper administratorMapper;

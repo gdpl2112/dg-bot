@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/css/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_css_bootstrap.css"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/main.css">
+    <title>QQ代挂</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light tm-0">
+    <a class="navbar-brand" href="/">
+        <img style="opacity: 0.86;max-width: 50px; border-radius: 999px"
+             class="navbar-brand" src="http://kloping.top/icon.jpg" alt="qq"></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+            aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+                <a class="nav-link" href="/">QQ代挂 <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="http://kloping.top/">kloping's</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link disabled">更多功能;敬请期待.</a>
+            </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+            <a class="dropdown-item" target="_blank" href="https://github.com/gdpl2112/dg-bot">
+                <img style="opacity: 0.86;max-width: 35px" alt="github" loading="lazy"
+                     src="https://s.nmxc.ltd/sakurairo_vision/@2.6/display_icon/sora/github.png">
+                github 开源地址
+            </a>
+        </form>
+    </div>
+</nav>
+<br>
+<br>
+<hr>
+<div class="container">
+    <div class="row justify-content-md-center">
+        <div class="col align-self-center" style="background-color: rgba(169,196,208,0.5);border-radius: 10px">
+            <center style="margin-top: 50px;color: rgba(213,97,118,0.95);"><h1> Cron任务添加 </h1></center>
+            <form action="http://localhost/test" method="get">
+                <div class="form-group">
+                    <br>
+                    <hr>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="type_day" id="week-type" value="星期"
+                               checked>
+                        <label class="form-check-label" for="week-type">
+                            星期
+                        </label>
+                        <div class="alert alert-secondary" role="alert">
+                            <div class="form-check form-check-inline">
+                                <input name="week1" class="form-check-input" type="checkbox" id="week1" value="1">
+                                <label class="form-check-label" for="week1">星期一</label>
+                            </div>&nbsp;
+                            <div class="form-check form-check-inline">
+                                <input name="week2" class="form-check-input" type="checkbox" id="week2" value="2">
+                                <label class="form-check-label" for="week2">星期二</label>
+                            </div>&nbsp;
+                            <div class="form-check form-check-inline">
+                                <input name="week3" class="form-check-input" type="checkbox" id="week3" value="3">
+                                <label class="form-check-label" for="week3">星期三</label>
+                            </div> &nbsp;
+                            <div class="form-check form-check-inline">
+                                <input name="week4" class="form-check-input" type="checkbox" id="week4" value="4">
+                                <label class="form-check-label" for="week4">星期四</label>
+                            </div> &nbsp;
+                            <div class="form-check form-check-inline">
+                                <input name="week5" class="form-check-input" type="checkbox" id="week5" value="5">
+                                <label class="form-check-label" for="week5">星期五</label>
+                            </div>
+                            &nbsp;
+                            <div class="form-check form-check-inline">
+                                <input name="week6" class="form-check-input" type="checkbox" id="week6" value="6">
+                                <label class="form-check-label" for="week6">星期六</label>
+                            </div>
+                            &nbsp;
+                            <div class="form-check form-check-inline">
+                                <input name="week7" class="form-check-input" type="checkbox" id="week7" value="7">
+                                <label class="form-check-label" for="week7">星期日</label>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="type_day" id="md-type" value="月日">
+                        <label class="form-check-label" for="md-type">
+                            月/日
+                        </label>
+                        <div class="form-row">
+                            <div class="col">
+                                <div class="form-check">
+                                    <!--指定 或 每 月/日-->
+                                    <input class="form-check-input" type="radio" name="md-pm-type" id="md-p-eve-m"
+                                           value="每月" checked>
+                                    <label class="form-check-label" for="md-p-eve-m">每月</label>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-check">
+                                    <!--指定 或 每 月/日-->
+                                    <input class="form-check-input" type="radio" name="md-pd-type" id="md-p-eve-d"
+                                           value="每日" checked>
+                                    <label class="form-check-label" for="md-p-eve-d">每日</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="col">
+                                <div class="form-check">
+                                    <!--指定 或 每 月-->
+                                    <input class="form-check-input" type="radio" name="md-pm-type" id="md-p-m"
+                                           value="指定月">
+                                    <label class="form-check-label" for="md-p-m">指定月</label>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-check">
+                                    <!--指定 或 每 日-->
+                                    <input class="form-check-input" type="radio" name="md-pd-type" id="md-p-d"
+                                           value="指定日">
+                                    <label class="form-check-label" for="md-p-d">指定日</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="col">
+                                <select name="month" class="custom-select my-1 mr-sm-2" id="md-p-d-select">
+                                    <option selected>请选择月</option>
+                                    <option value="1">1月</option>
+                                    <option value="2">2月</option>
+                                    <option value="3">3月</option>
+                                    <option value="4">4月</option>
+                                    <option value="5">5月</option>
+                                    <option value="6">6月</option>
+                                    <option value="7">7月</option>
+                                    <option value="8">8月</option>
+                                    <option value="9">9月</option>
+                                    <option value="10">10月</option>
+                                    <option value="11">11月</option>
+                                    <option value="12">12月</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <input name="day" class="form-control my-1 mr-sm-2" type="number" max="31" min="1" value=""
+                                           placeholder="在此输入日 阿拉伯数字">
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <button type="submit" class="btn btn-primary btn-lg  btn-block">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/js/lib/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js" crossorigin="anonymous"></script>
+<script src="/js/lib/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_js_bootstrap.bundle.js"
+        crossorigin="anonymous"></script>
+</body>
+</html>
