@@ -52,9 +52,13 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             auth = new AuthM();
             auth.setQid(bid.toString());
             auth.setAuth(UUID.randomUUID().toString());
+            auth.setExp(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30);
+            auth.setT0(System.currentTimeMillis());
             authMapper.insert(auth);
             logger.info(String.format("%s管理秘钥生成完成:%s", bid, auth.getAuth()));
         } else {
+            auth.setT0(System.currentTimeMillis());
+            authMapper.updateById(auth);
             logger.info(String.format("%s登录成功,管理秘钥:%s", bid, auth.getAuth()));
         }
     }

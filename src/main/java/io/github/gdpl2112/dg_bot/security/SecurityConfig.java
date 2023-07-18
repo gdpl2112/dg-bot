@@ -19,7 +19,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private static final Set<String> NEED_AUTH_PAGES = new CopyOnWriteArraySet<>();
 
     static {
-        NEED_AUTH_PAGES.add("bot.html");
+        NEED_AUTH_PAGES.add("/bot.html");
+        NEED_AUTH_PAGES.add("/user");
     }
 
     @Autowired
@@ -30,10 +31,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.formLogin().loginPage("/login.html").loginProcessingUrl("/login")
-                .failureForwardUrl("/fail").failureUrl("/login.html?tips=error").defaultSuccessUrl("/");
-
-        http.logout().logoutUrl("/logout");
+//        http.formLogin().loginPage("/login.html").loginProcessingUrl("/login")
+//                .failureForwardUrl("/fail").failureUrl("/login.html?tips=error").defaultSuccessUrl("/");
+//
+//        http.logout().logoutUrl("/logout");
 
         http.authorizeRequests()
                 //匹配这些地址

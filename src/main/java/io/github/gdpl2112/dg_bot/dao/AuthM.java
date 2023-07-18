@@ -12,4 +12,12 @@ public class AuthM {
     @TableId
     private String qid;
     private String auth;
+    /**
+     * 剩余时间
+     */
+    private Long exp;
+    /**
+     * 在线时间戳
+     */
+    private Long t0;
 }
