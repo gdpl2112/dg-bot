@@ -25,3 +25,18 @@ corn
 主动添加 add
 
 主动删除 delete
+
+bot.html
+
+        ICON
+    id:
+    name: 
+
+    info1   info2
+        |   |
+    _____   _____
+
+    manager   cron   reply
+    but        but     but
+
+
