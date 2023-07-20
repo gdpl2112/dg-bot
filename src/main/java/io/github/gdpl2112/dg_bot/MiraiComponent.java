@@ -1,10 +1,14 @@
 package io.github.gdpl2112.dg_bot;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
+import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.CronService;
 import io.github.gdpl2112.dg_bot.service.DefaultService;
 import io.github.gdpl2112.dg_bot.service.PassiveService;
+import io.github.gdpl2112.dg_bot.service.SaveService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
 import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
@@ -14,6 +18,7 @@ import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +43,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     AuthMapper authMapper;
     @Autowired
     Logger logger;
-
+    @Autowired
+    SaveService saveService;
 
     @Override
     public void run(String... args) throws Exception {
@@ -48,6 +54,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(service0);
         GlobalEventChannel.INSTANCE.registerListenerHost(service1);
         GlobalEventChannel.INSTANCE.registerListenerHost(defaultService);
+        GlobalEventChannel.INSTANCE.registerListenerHost(saveService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
     }
 
@@ -69,5 +76,16 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             authMapper.updateById(auth);
             logger.info(String.format("%s登录成功,管理秘钥:%s", bid, auth.getAuth()));
         }
+    }
+
+    @Autowired
+    SaveMapper saveMapper;
+
+    @Scheduled(cron = "0 0/30 * * * ?")
+    public void deleteMsg() {
+        long less = System.currentTimeMillis() - 1000L * 60 * 30;
+        QueryWrapper<AllMessage> qw = new QueryWrapper<>();
+        qw.le("time", less);
+        saveMapper.delete(qw);
     }
 }

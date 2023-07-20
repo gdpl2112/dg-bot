@@ -16,9 +16,9 @@ public class GroupConf {
     /**
      * 撤回监听
      */
-    private Boolean k1;
+    private Boolean k1 = true;
     /**
      * 被动回复
      */
-    private Boolean k2;
+    private Boolean k2 = true;
 }

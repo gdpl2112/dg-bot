@@ -85,7 +85,15 @@
                                 <br>
                                 <div class="card card-body">
                                     <ul class="list-group list-group-flush">
-                                        <li class="list-group-item" v-for="o in e.outs">{{o}}</li>
+                                        <li class="list-group-item list-group-item-action" v-for="o in e.outs">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                {{o}}
+                                                <span class="badge badge-pill">
+                                                 <button v-on:click="del(e.touch,o)" type="button"
+                                                         class="btn btn-danger">删除</button>
+                                                </span>
+                                            </div>
+                                        </li>
                                     </ul>
                                 </div>
                             </div>
@@ -124,6 +132,21 @@
                     if (response.data === true) {
                         vm1.all = vm1.all.filter(function (item) {
                             return item.touch !== touch;
+                        });
+                    }
+                }).catch(function (err) {
+                    alert(err);
+                })
+            }, del: function (touch, o) {
+                axios.get("/p-del?touch=" + touch + "&out=" + o).then(function (response) {
+                    if (response.data === true) {
+                        vm1.all = vm1.all.filter(function (item) {
+                            if (item.touch === touch) {
+                                item.outs = item.outs.filter(function (i0) {
+                                    return i0 !== o;
+                                })
+                            }
+                            return true
                         });
                     }
                 }).catch(function (err) {

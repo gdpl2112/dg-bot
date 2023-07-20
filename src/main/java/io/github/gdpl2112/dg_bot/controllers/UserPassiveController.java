@@ -5,6 +5,7 @@ import io.github.gdpl2112.dg_bot.dao.Passive;
 import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
 import io.github.gdpl2112.dg_bot.pack.PassiveMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -63,10 +64,13 @@ public class UserPassiveController {
 
     @RequestMapping("/p-del")
     public Boolean passiveDel(@AuthenticationPrincipal UserDetails userDetails,
-                              @RequestParam String touch) {
+                              @RequestParam String touch, @RequestParam @Nullable String out) {
         QueryWrapper<Passive> qw = new QueryWrapper<>();
         qw.eq("qid", userDetails.getUsername());
         qw.eq("touch", touch);
+        if (out != null) {
+            qw.eq("out", out);
+        }
         return passiveMapper.delete(qw) > 0;
     }
 }
