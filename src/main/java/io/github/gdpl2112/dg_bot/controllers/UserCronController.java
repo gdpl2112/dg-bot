@@ -47,7 +47,7 @@ public class UserCronController {
         String desc = "";
         StringBuilder cronBuilder = new StringBuilder();
         //0秒
-        cronBuilder.append("0 ");
+        cronBuilder.append("8 ");
 
         JSONObject jo = JSON.parseObject(body);
         String content = jo.getString("content");
@@ -132,10 +132,11 @@ public class UserCronController {
         List<CronMessage> cronMessages = cronMapper.selectList(qw);
         List list = new ArrayList();
         for (CronMessage e : cronMessages) {
+            String aid = e.getTargetId().substring(1);
             JSONObject jo = JSON.parseObject(JSON.toJSONString(e));
             jo.put("icon", e.getTargetId().substring(0, 1).equals("g") ?
-                    String.format("http://p.qlogo.cn/gh/%s/%s/spec", e.getTargetId().substring(1)) :
-                    String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", e.getTargetId().substring(1)));
+                    String.format("http://p.qlogo.cn/gh/%s/%s/640", aid,aid) :
+                    String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", aid));
             list.add(jo);
         }
         return list;

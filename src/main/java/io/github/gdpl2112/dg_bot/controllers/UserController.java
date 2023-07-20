@@ -2,12 +2,8 @@ package io.github.gdpl2112.dg_bot.controllers;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import io.github.gdpl2112.dg_bot.dao.Administrator;
-import io.github.gdpl2112.dg_bot.dao.AuthM;
-import io.github.gdpl2112.dg_bot.dao.GroupConf;
-import io.github.gdpl2112.dg_bot.mapper.AdministratorMapper;
-import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
-import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
+import io.github.gdpl2112.dg_bot.dao.*;
+import io.github.gdpl2112.dg_bot.mapper.*;
 import io.github.kloping.judge.Judge;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Friend;
@@ -58,11 +54,30 @@ public class UserController {
         return null;
     }
 
+    @Autowired
+    CronMapper cronMapper;
+
     @RequestMapping("/statistics")
     public Object statistics(@AuthenticationPrincipal UserDetails userDetails) {
-        return null;
+        JSONObject jo = new JSONObject();
+        QueryWrapper<CronMessage> qwc = new QueryWrapper<>();
+        qwc.eq("qid", userDetails.getUsername());
+        Long cc = cronMapper.selectCount(qwc);
+        jo.put("cc", cc);
+
+        QueryWrapper<Administrator> qwa = new QueryWrapper<>();
+        qwa.eq("qid", userDetails.getUsername());
+        Long ac = administratorMapper.selectCount(qwa);
+        jo.put("mc", ac);
+        QueryWrapper<Passive> qwp = new QueryWrapper<>();
+        qwp.eq("qid", userDetails.getUsername());
+        Long pc = passiveMapper.selectCount(qwp);
+        jo.put("pc", pc);
+        return jo;
     }
 
+    @Autowired
+    PassiveMapper passiveMapper;
     //==============================================================
     @Autowired
     AdministratorMapper administratorMapper;
@@ -150,10 +165,11 @@ public class UserController {
                 jo.put("k2", conf.getK2());
                 jo.put("tid", conf.getTid());
                 jo.put("name", conf.getTid());
+                String aid = conf.getTid().substring(1);
                 jo.put("icon",
                         conf.getTid().substring(0, 1).equals("g") ?
-                                String.format("http://p.qlogo.cn/gh/%s/%s/spec", conf.getTid().substring(1)) :
-                                String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", conf.getTid().substring(1)));
+                                String.format("http://p.qlogo.cn/gh/%s/%s/640", aid, aid) :
+                                String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", aid));
             }
         }
         return outList;

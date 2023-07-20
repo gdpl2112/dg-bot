@@ -85,16 +85,16 @@
                 <br>
                 <div class="input-group form-inline">
                     <div class="alert alert-info" role="alert">
-                        管理员数: 0 &nbsp;
+                        管理员数: {{count.mc}} &nbsp;
                         <a href="/manager.html" type="button" class="btn btn-info">管理</a>
                     </div>
                     &nbsp;&nbsp;
                     <div class="alert alert-secondary" role="alert">
-                        cron任务数: 0 &nbsp;
+                        cron任务数: {{count.cc}} &nbsp;
                         <a href="/cron-list.html" type="button" class="btn btn-secondary">管理</a>
                     </div> &nbsp;&nbsp;
                     <div class="alert alert-warning" role="alert">
-                        被动消息数: 0 &nbsp;
+                        被动消息数: {{count.pc}} &nbsp;
                         <button type="button" class="btn btn-warning">管理</button>
                     </div>
                 </div>
@@ -117,10 +117,16 @@
                 }
             }).catch(function (err) {
                 alert(err);
+            });
+            axios.get("/statistics").then(function (response) {
+                vm1.count = response.data;
+            }).catch(function (err) {
+                alert(err);
             })
         }, data: {
             user: {},
-            k1: false
+            k1: false,
+            count: {mc: 0, cc: 0, pc: 0},
         }, methods: {
             je: function (t) {
                 let dateTime = new Date(t)
