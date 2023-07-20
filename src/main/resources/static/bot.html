@@ -83,6 +83,11 @@
                     </div>
                 </div>
                 <br>
+                <hr>
+                <div class="alert alert-info" role="alert">
+                    <a href="/conf.html" type="button" class="btn btn-outline-info">配置中心</a>
+                </div>
+                <hr>
                 <div class="input-group form-inline">
                     <div class="alert alert-info" role="alert">
                         管理员数: {{count.mc}} &nbsp;
@@ -95,7 +100,7 @@
                     </div> &nbsp;&nbsp;
                     <div class="alert alert-warning" role="alert">
                         被动消息数: {{count.pc}} &nbsp;
-                        <button type="button" class="btn btn-warning">管理</button>
+                        <a href="/passive.html" type="button" class="btn btn-warning">管理</a>
                     </div>
                 </div>
             </div>
@@ -124,7 +129,7 @@
                 alert(err);
             })
         }, data: {
-            user: {},
+            user: {t0: -1},
             k1: false,
             count: {mc: 0, cc: 0, pc: 0},
         }, methods: {

@@ -22,7 +22,7 @@ function formatMsgTime(timespan) {
     let milliseconds = 0
     let timeSpanStr
     milliseconds = nowNew - millisecond
-    if (milliseconds <= 1000 * 60 * 1) {
+    if (milliseconds <= 1000 * 60) {
         timeSpanStr = '刚刚'
     } else if (1000 * 60 < milliseconds && milliseconds <= 1000 * 60 * 60) {
         timeSpanStr = Math.round((milliseconds / (1000 * 60))) + '分钟前'
@@ -40,26 +40,31 @@ function formatMsgTime(timespan) {
 
 function formatMsgTime1(timespan, or) {
     if (timespan <= 0) return or;
-    let dateTime = new Date(timespan)
-    let millisecond = dateTime.getTime()
-    let now = new Date()
-    let nowNew = now.getTime()
-    let milliseconds = 0
-    let timeSpanStr
-    milliseconds = nowNew - millisecond
-    if (milliseconds <= 1000 * 60) {
-        timeSpanStr = Math.round(milliseconds/1000) + "秒"
-    } else if (1000 * 60 < milliseconds && milliseconds <= 1000 * 60 * 60) {
-        timeSpanStr = Math.round((milliseconds / (1000 * 60))) + '分钟'
-            + Math.round((milliseconds % (1000 * 60)) / 1000) + "秒"
-    } else if (1000 * 60 * 60 < milliseconds && milliseconds <= 1000 * 60 * 60 * 24) {
-        timeSpanStr = Math.round(milliseconds / (1000 * 60 * 60)) + '小时'
-            + Math.round((milliseconds % (1000 * 60 * 60)) / 1000) + '分钟'
-    } else {
-        timeSpanStr = Math.round(milliseconds / (1000 * 60 * 60 * 24)) + '天'
-            + Math.round(milliseconds % (1000 * 60 * 60 * 24) / 1000) + '小时'
+    let t0 = timespan
+    let now = new Date().getTime();
+    let ms = now - t0;
+    let day = 0;
+    let hour = 0;
+    let min = 0;
+    let sec = 0;
+    while (ms > 1000) {
+        ms -= 1000;
+        sec++;
+        if (sec === 60) {
+            min++;
+            sec = 0;
+            if (min === 60) {
+                hour++;
+                min = 0;
+                if (hour === 24) {
+                    day++;
+                    hour = 0;
+                }
+            }
+        }
     }
-    return timeSpanStr
+    let end = day + "天" + hour + "小时" + min + "分钟" + sec + "秒";
+    return end;
 }
 
 function formatMsgTime0(timespan) {

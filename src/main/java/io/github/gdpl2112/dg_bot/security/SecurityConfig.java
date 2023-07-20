@@ -21,6 +21,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     static {
         NEED_AUTH_PAGES.add("/bot.html");
         NEED_AUTH_PAGES.add("/manager.html");
+        NEED_AUTH_PAGES.add("/conf.html");
         NEED_AUTH_PAGES.add("/cron.html");
         NEED_AUTH_PAGES.add("/cron-list.html");
         NEED_AUTH_PAGES.add("/cronAdd");
@@ -48,6 +49,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest()
                 //全部放行
                 .permitAll();
+
+        http.rememberMe().tokenValiditySeconds(60 * 60 * 24);
 
         http.csrf().disable();
 

@@ -3,6 +3,8 @@ package io.github.gdpl2112.dg_bot;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.service.CronService;
+import io.github.gdpl2112.dg_bot.service.DefaultService;
+import io.github.gdpl2112.dg_bot.service.PassiveService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
 import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
@@ -10,8 +12,7 @@ import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.GlobalEventChannel;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
-import net.mamoe.mirai.internal.deps.okhttp3.Protocol;
-import net.mamoe.mirai.utils.BotConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -24,17 +25,20 @@ import java.util.UUID;
  */
 @Component
 public class MiraiComponent extends SimpleListenerHost implements CommandLineRunner {
-    final CronService service0;
-    final ThreadPoolTaskExecutor executor;
-    final AuthMapper authMapper;
-    final Logger logger;
+    @Autowired
+    CronService service0;
+    @Autowired
+    PassiveService service1;
+    @Autowired
+    DefaultService defaultService;
 
-    public MiraiComponent(CronService service0, ThreadPoolTaskExecutor executor, AuthMapper authMapper, Logger logger) {
-        this.service0 = service0;
-        this.executor = executor;
-        this.authMapper = authMapper;
-        this.logger = logger;
-    }
+    @Autowired
+    ThreadPoolTaskExecutor executor;
+    @Autowired
+    AuthMapper authMapper;
+    @Autowired
+    Logger logger;
+
 
     @Override
     public void run(String... args) throws Exception {
@@ -42,6 +46,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(new MiraiConsoleImplementationTerminal());
         });
         GlobalEventChannel.INSTANCE.registerListenerHost(service0);
+        GlobalEventChannel.INSTANCE.registerListenerHost(service1);
+        GlobalEventChannel.INSTANCE.registerListenerHost(defaultService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
     }
 

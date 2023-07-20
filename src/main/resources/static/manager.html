@@ -64,14 +64,17 @@
                 <br>
                 <div id="m-div">
                     <ul id="m-div-ul" class="list-group">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">请输入QQ:</span>
+                        <li class="list-group-item ist-group-item-action">
+                            <small class="form-text text-muted">此管理 可进行复述,开/关 回复,监听 添加/删除 回复</small>
+                            <div class="d-flex w-100 justify-content-between">
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">请输入QQ:</span>
+                                    </div>
+                                    <input id="m_add_i" type="text" class="form-control" aria-label="Sizing example input"
+                                           aria-describedby="inputGroup-sizing-default">
+                                    <button v-on:click="madd()" type="button" class="btn btn-primary">添加一个</button>
                                 </div>
-                                <input id="m_add_i" type="text" class="form-control" aria-label="Sizing example input"
-                                       aria-describedby="inputGroup-sizing-default">
-                                <button v-on:click="madd()" type="button" class="btn btn-primary">添加一个</button>
                             </div>
                         </li>
                         <li v-for="(e,i) in list"

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="/js/lib/axios.js"></script>
+    <script src="/js/lib/vue.js"></script>
+    <script src="/js/lib/jq3.6.js"></script>
+
+    <link rel="stylesheet" href="/css/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_css_bootstrap.css"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/main.css">
+
+    <title>Bot代挂-被动消息管理</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light tm-0">
+    <a class="navbar-brand" href="/">
+        <img style="opacity: 0.86;max-width: 50px; border-radius: 999px"
+             class="navbar-brand" src="http://kloping.top/icon.jpg" alt="qq"></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+            aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+                <a class="nav-link" href="/">QQ代挂 <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="http://kloping.top/">kloping's</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link disabled">更多功能;敬请期待.</a>
+            </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+            <a class="dropdown-item" target="_blank" href="https://github.com/gdpl2112/dg-bot">
+                <img style="opacity: 0.86;max-width: 35px" alt="github" loading="lazy"
+                     src="https://s.nmxc.ltd/sakurairo_vision/@2.6/display_icon/sora/github.png">
+                github 开源地址
+            </a>
+        </form>
+    </div>
+</nav>
+
+<br>
+<hr>
+<br>
+<div class="container">
+    <div class="row justify-content-md-center">
+        <div class="col">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <button id="b2" class="nav-link">被动消息列表</button>
+                </li>
+            </ul>
+            <div>
+                <br>
+                <div id="m-div">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="input-group mb-3">
+                                <input id="pas-touch" type="text" class="form-control" placeholder="触发词">
+                                <input id="pas-out" type="text" class="form-control" placeholder="回复词"> &nbsp;
+                                <button v-on:click="add()" type="button" class="btn btn-primary">添加一个</button>
+                            </div>
+                        </li>
+                        <li class="list-group-item list-group-item-action" v-for="(e,i) in all">
+                            <div class="d-flex w-100 justify-content-between">
+                                <button class="btn btn-outline-primary btn-link btn-block" type="button"
+                                        data-toggle="collapse"
+                                        :data-target="`#collapse-`+i" aria-expanded="false"
+                                        :aria-controls="`#collapse-`+i">
+                                    {{e.touch}}
+                                </button> &nbsp;&nbsp;
+                                <span class="badge badge-pill">
+                                    <span class="badge badge-primary badge-pill">{{e.outs.length}}</span>&nbsp;&nbsp;
+                                    <button v-on:click="del(e.touch)" type="button" class="btn btn-danger">删除</button>
+                                </span>
+                            </div>
+                            <div class="collapse" :id="`collapse-`+i">
+                                <br>
+                                <div class="card card-body">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item" v-for="o in e.outs">{{o}}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="/js/utils.js"></script>
+<script>
+    let vm1 = new Vue({
+        el: "#m-div",
+        created: function () {
+            axios.get("/p-list").then(function (response) {
+                vm1.all = response.data
+            }).catch(function (err) {
+                alert(err);
+            })
+        }, data: {
+            all: []
+        }, methods: {
+            add: function () {
+                let t0 = $("#pas-touch").val()
+                let t1 = $("#pas-out").val()
+                axios.get("/p-add?t0=" + t0 + "&t1=" + t1).then(function (response) {
+                    vm1.all = response.data;
+                }).catch(function (err) {
+                    alert(err);
+                })
+            }, del: function (touch) {
+                axios.get("/p-del?touch=" + touch).then(function (response) {
+                    if (response.data === true) {
+                        vm1.all = vm1.all.filter(function (item) {
+                            return item.touch !== touch;
+                        });
+                    }
+                }).catch(function (err) {
+                    alert(err);
+                })
+            }
+        }
+    });
+</script>
+<script src="/js/lib/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js" crossorigin="anonymous"></script>
+<script src="/js/lib/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_js_bootstrap.bundle.js"
+        crossorigin="anonymous"></script>
+</body>
+</html>
