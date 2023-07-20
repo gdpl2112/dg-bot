@@ -44,17 +44,31 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
         logger.info("正在加载cron任务");
         List<CronMessage> msgs = mapper.selectList(new QueryWrapper<>());
         for (CronMessage msg : msgs) {
-            Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
-                @Override
-                public void execute(JobExecutionContext context) throws JobExecutionException {
-                    logger.log(String.format("开始执行%s => %s cron任务", msg.getQid(), msg.getTargetId()));
-                    service.send(msg.getQid(), msg.getTargetId(), msg.getMsg());
-                    logger.log(String.format("执行%s => %s cron任务结束", msg.getQid(), msg.getTargetId()));
-                }
-            });
-            bid2cm.put(msg.getQid(), msg);
-            cm2cron.put(msg.getId(), id);
+            appendTask(msg);
         }
         logger.info("cron任务加载完成");
+    }
+
+    public int appendTask(CronMessage msg) {
+        Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
+            @Override
+            public void execute(JobExecutionContext context) throws JobExecutionException {
+                logger.log(String.format("开始执行%s => %s cron任务", msg.getQid(), msg.getTargetId()));
+                service.send(msg.getQid(), msg.getTargetId(), msg.getMsg());
+                logger.log(String.format("执行%s => %s cron任务结束", msg.getQid(), msg.getTargetId()));
+            }
+        });
+        bid2cm.put(msg.getQid(), msg);
+        cm2cron.put(msg.getId(), id);
+        return id;
+    }
+
+    public void del(String id) {
+        try {
+            int cid = cm2cron.get(Integer.parseInt(id));
+            CronUtils.INSTANCE.stop(cid);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

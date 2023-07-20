@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/css/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_css_bootstrap.css"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/main.css">
+    <script src="/js/lib/axios.js"></script>
+    <script src="/js/lib/vue.js"></script>
+    <script src="/js/lib/jq3.6.js"></script>
+
+    <title>QQ代挂定时任务列表</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light tm-0">
+    <a class="navbar-brand" href="/">
+        <img style="opacity: 0.86;max-width: 50px; border-radius: 999px"
+             class="navbar-brand" src="http://kloping.top/icon.jpg" alt="qq"></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+            aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+                <a class="nav-link" href="/">QQ代挂 <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="http://kloping.top/">kloping's</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link disabled">更多功能;敬请期待.</a>
+            </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+            <a class="dropdown-item" target="_blank" href="https://github.com/gdpl2112/dg-bot">
+                <img style="opacity: 0.86;max-width: 35px" alt="github" loading="lazy"
+                     src="https://s.nmxc.ltd/sakurairo_vision/@2.6/display_icon/sora/github.png">
+                github 开源地址
+            </a>
+        </form>
+    </div>
+</nav>
+<br>
+<br>
+<hr>
+<div class="container">
+    <div class="row justify-content-md-center">
+        <div class="col">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <button id="b2" class="nav-link">cron任务列表</button>
+                </li>
+            </ul>
+            <div>
+                <br>
+                <div id="c-div">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="input-group mb-3">
+                                <a href="/cron.html" type="button" class="btn btn-primary btn-lg btn-block">添加</a>
+                            </div>
+                        </li>
+                        <li v-for="(e,i) in arr1"
+                            class="list-group-item d-flex justify-content-between align-items-center">
+                            <img :src="e.icon" style="width: 45px"
+                                 class=" img-thumbnail rounded float-left">
+                            {{e.desc}} 原:"{{e.cron}}" 发送
+                            <span class="badge badge-pill">
+                               {{e.msg}}
+                            </span>
+                            到
+                            <span class="badge badge-pill">
+                               {{e.targetId}}
+                            </span>
+                            <span class="badge badge-pill">
+                                <button v-on:click="del(e.id)" type="button" class="btn btn-danger">删除</button>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+<hr>
+<br>
+<script src="/js/utils.js"></script>
+<script>
+    let vm1 = new Vue({
+        el: "#c-div",
+        created: function () {
+            axios.get("/cron-list").then(function (response) {
+                vm1.arr1 = response.data
+            }).catch(function (err) {
+                alert(err);
+            })
+        }, data: {
+            arr1: []
+        }, methods: {
+            del: function (id) {
+                axios.get("/cron-del?id=" + id).then(function (response) {
+                    vm1.arr1 = response.data;
+                }).catch(function (err) {
+                    alert(err);
+                })
+            }
+        }
+    });
+</script>
+<script src="/js/lib/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js" crossorigin="anonymous"></script>
+<script src="/js/lib/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_js_bootstrap.bundle.js"
+        crossorigin="anonymous"></script>
+</body>
+</html>

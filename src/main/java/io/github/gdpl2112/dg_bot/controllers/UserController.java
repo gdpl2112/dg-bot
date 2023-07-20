@@ -41,12 +41,12 @@ public class UserController {
             AuthM authM = authMapper.selectById(userDetails.getUsername());
             Long qid = Long.valueOf(authM.getQid());
             Bot bot = Bot.getInstanceOrNull(qid);
-            if (bot != null) {
+            if (bot != null && bot.isOnline()) {
                 String nick = bot.getNick();
                 if (Judge.isEmpty(nick)) nick = qid.toString();
                 jo.put("nickname", nick);
                 jo.put("t0", authM.getT0());
-            } else {
+            } else{
                 jo.put("nickname", "未在线");
                 jo.put("t0", -1L);
             }

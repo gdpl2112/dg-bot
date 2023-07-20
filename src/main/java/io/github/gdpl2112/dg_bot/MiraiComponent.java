@@ -10,6 +10,8 @@ import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.GlobalEventChannel;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
+import net.mamoe.mirai.internal.deps.okhttp3.Protocol;
+import net.mamoe.mirai.utils.BotConfiguration;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;

@@ -21,6 +21,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     static {
         NEED_AUTH_PAGES.add("/bot.html");
         NEED_AUTH_PAGES.add("/manager.html");
+        NEED_AUTH_PAGES.add("/cron.html");
+        NEED_AUTH_PAGES.add("/cron-list.html");
+        NEED_AUTH_PAGES.add("/cronAdd");
     }
 
     @Autowired

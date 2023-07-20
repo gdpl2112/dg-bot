@@ -12,6 +12,7 @@ public class CronMessage {
     @TableId(type = IdType.AUTO)
     private Integer id;
     private String qid;
+    private String desc;
     private String cron;
     private String targetId;
     private String msg;

@@ -1,3 +1,14 @@
+
+//序列化表单字段为json对象
+$.fn.serializeFormToJson = function(){
+    let arr = $(this).serializeArray();//form表单数据 name：value
+    let param = {};
+    $.each(arr,function(i,obj){ //将form表单数据封装成json对象
+        param[obj.name] = obj.value;
+    })
+    return param;
+}
+
 function formatMsgTime(timespan) {
     let dateTime = new Date(timespan)
     let year = dateTime.getFullYear()
@@ -37,7 +48,7 @@ function formatMsgTime1(timespan, or) {
     let timeSpanStr
     milliseconds = nowNew - millisecond
     if (milliseconds <= 1000 * 60) {
-        timeSpanStr = milliseconds + "秒"
+        timeSpanStr = Math.round(milliseconds/1000) + "秒"
     } else if (1000 * 60 < milliseconds && milliseconds <= 1000 * 60 * 60) {
         timeSpanStr = Math.round((milliseconds / (1000 * 60))) + '分钟'
             + Math.round((milliseconds % (1000 * 60)) / 1000) + "秒"
