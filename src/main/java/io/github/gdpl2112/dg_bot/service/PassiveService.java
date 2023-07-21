@@ -98,9 +98,9 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost imp
         qw1.eq("touch", content.trim());
         List<Passive> passives = passiveMapper.selectList(qw1);
         if (passives == null || passives.isEmpty()) {
-            QueryWrapper<Passive> qw2 = new QueryWrapper<>();
-            qw2.eq("qid", bid);
-            for (Passive pe : passiveMapper.selectList(qw2)) {
+            qw1.clear();
+            qw1.eq("qid", bid);
+            for (Passive pe : passiveMapper.selectList(qw1)) {
                 if (content.matches(pe.getTouch())) {
                     passives.add(pe);
                 }
