@@ -4,3 +4,6 @@ spring:
     driver-class-name: org.sqlite.JDBC
 server:
   port: 34740
+  servlet:
+    session:
+      timeout: 680400 #session超时时间

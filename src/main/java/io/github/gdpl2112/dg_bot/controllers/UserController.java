@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +33,11 @@ public class UserController {
     AuthMapper authMapper;
 
     @RequestMapping("/user")
-    public Object user(@AuthenticationPrincipal UserDetails userDetails) {
+    public Object user(@AuthenticationPrincipal UserDetails userDetails, HttpServletRequest request) {
+
+        HttpSession session = request.getSession();
+        System.out.println();
+
         if (userDetails != null) {
             JSONObject jo = new JSONObject();
             AuthM authM = authMapper.selectById(userDetails.getUsername());

@@ -35,12 +35,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.formLogin().loginPage("/login.html").loginProcessingUrl("/login")
-                .failureForwardUrl("/fail").failureUrl("/login.html?tips=error").defaultSuccessUrl("/");
+        http
+                .sessionManagement()
+                .and()
 
-//        http.logout().logoutUrl("/logout");
-
-        http.authorizeRequests()
+                .formLogin()
+                .loginPage("/login.html")
+//                .loginProcessingUrl("/bot/login")
+//                .failureForwardUrl("/login.html")
+//                .usernameParameter("qid")
+//                .passwordParameter("p")
+//                .failureUrl("/login.html")
+//                .defaultSuccessUrl("/bot.html")
+                .and()
+                //=============
+                .authorizeRequests()
                 //匹配这些地址
                 .mvcMatchers(NEED_AUTH_PAGES.toArray(new String[0]))
                 //需要认证
@@ -48,11 +57,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 //其他的
                 .anyRequest()
                 //全部放行
-                .permitAll();
-
-        http.rememberMe().tokenValiditySeconds(60 * 60 * 24);
-
-        http.csrf().disable();
+                .permitAll()
+                .and()
+                //========
+                .rememberMe()
+                .tokenValiditySeconds(60 * 60 * 24)
+                .and()
+                .csrf().disable();
 
         DgAuthenticationProcessingFilter dgFilter = new DgAuthenticationProcessingFilter();
 

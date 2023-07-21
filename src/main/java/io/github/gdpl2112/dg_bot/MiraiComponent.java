@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.github.gdpl2112.dg_bot.built.BuiltPlugin;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
@@ -10,6 +11,7 @@ import io.github.gdpl2112.dg_bot.service.DefaultService;
 import io.github.gdpl2112.dg_bot.service.PassiveService;
 import io.github.gdpl2112.dg_bot.service.SaveService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import net.mamoe.mirai.console.plugin.PluginManager;
 import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
 import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
 import net.mamoe.mirai.event.EventHandler;
@@ -49,12 +51,15 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     public void run(String... args) throws Exception {
         executor.submit(() -> {
             MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(new MiraiConsoleImplementationTerminal());
+            PluginManager.INSTANCE.loadPlugin(BuiltPlugin.INSTANCE);
+            PluginManager.INSTANCE.enablePlugin(BuiltPlugin.INSTANCE);
         });
         GlobalEventChannel.INSTANCE.registerListenerHost(service0);
         GlobalEventChannel.INSTANCE.registerListenerHost(service1);
         GlobalEventChannel.INSTANCE.registerListenerHost(defaultService);
         GlobalEventChannel.INSTANCE.registerListenerHost(saveService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
+
     }
 
     @EventHandler

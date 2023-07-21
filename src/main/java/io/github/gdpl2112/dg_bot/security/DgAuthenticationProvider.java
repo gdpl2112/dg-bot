@@ -13,13 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DgAuthenticationProvider implements AuthenticationProvider {
-    public static final Map<String, String> EID2TOKEN = new HashMap<>();
-
-    public static final String FORM_CODE_KEY = "code";
-    public static final String FORM_STATE_KEY = "state";
-    public static final String SESSION_CODE_KEY = FORM_CODE_KEY;
-    public static final String SESSION_STATE_KEY = FORM_STATE_KEY;
-
     private UserDetailsService userDetailsService;
 
     public DgAuthenticationProvider(UserDetailsService userDetailsService) {
@@ -31,7 +24,8 @@ public class DgAuthenticationProvider implements AuthenticationProvider {
         authenticationChecks(authentication);
         DgAuthenticationToken authDao = (DgAuthenticationToken) authentication;
         UserDetails userDetails = userDetailsService.loadUserByUsername(authDao.getPrincipal().toString());
-        DgAuthenticationToken result = new DgAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
+        DgAuthenticationToken result = new DgAuthenticationToken(userDetails, userDetails.getPassword(),
+                userDetails.getAuthorities());
         result.setDetails(authDao.getDetails());
         return result;
     }

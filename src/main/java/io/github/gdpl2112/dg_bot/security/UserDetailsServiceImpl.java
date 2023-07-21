@@ -33,7 +33,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             return null;
         }
         String id = temp.getQid();
-        return new User(id, passwordEncoder.encode(temp.getAuth()),
-                AuthorityUtils.commaSeparatedStringToAuthorityList("user"));
+        User.UserBuilder builder = User.builder();
+        builder.username(id)
+                .password(passwordEncoder.encode(temp.getAuth()))
+                .authorities(AuthorityUtils.commaSeparatedStringToAuthorityList("user"))
+        ;
+        return builder.build();
     }
 }
