@@ -29,9 +29,9 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @EnableScheduling
-public class Main implements CommandLineRunner {
+public class DgMain implements CommandLineRunner {
     public static void main(String[] args) {
-        SpringApplication.run(Main.class, args);
+        SpringApplication.run(DgMain.class, args);
     }
 
     @Autowired
@@ -45,7 +45,7 @@ public class Main implements CommandLineRunner {
         logger.info("start auto create need tables;");
         PackageScanner scanner = new PackageScannerImpl(true);
         for (Class<?> dclass :
-                scanner.scan(Main.class, Main.class.getClassLoader(), "io.github.gdpl2112.dg_bot.dao")) {
+                scanner.scan(DgMain.class, DgMain.class.getClassLoader(), "io.github.gdpl2112.dg_bot.dao")) {
             String sql = Utils.CreateTable.createTable(dclass);
             try {
                 int state = jdbcTemplate.update(sql);
