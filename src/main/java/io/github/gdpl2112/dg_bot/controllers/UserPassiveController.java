@@ -68,7 +68,7 @@ public class UserPassiveController {
         QueryWrapper<Passive> qw = new QueryWrapper<>();
         qw.eq("qid", userDetails.getUsername());
         qw.eq("touch", touch);
-        if (out != null) {
+        if (out != null && !"undefined".equals(out)) {
             qw.eq("out", out);
         }
         return passiveMapper.delete(qw) > 0;

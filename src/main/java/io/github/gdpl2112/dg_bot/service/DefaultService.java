@@ -190,7 +190,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
                 for (Passive pe : passives) {
                     sb.append(i++ + "." + pe.getOut()).append("\n");
                 }
-                contact.sendMessage(sb.toString());
+                contact.sendMessage(sb.toString().trim());
             } else contact.sendMessage("查询结果为空!");
             return;
         }
