@@ -89,17 +89,17 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             if (conf.getCancel0().equals(content)) {
                 adding.get(bid).put(sid, null);
                 contact.sendMessage("已取消!");
+                return;
             }
             if (passive.getTouch() == null) {
                 passive.setTouch(content);
                 contact.sendMessage("设置完成");
-                return;
             } else {
                 passive.setOut(content);
                 contact.sendMessage(passiveMapper.insert(passive) > 0 ? "成功!" : "失败!");
                 adding.get(bid).put(sid, null);
-                return;
             }
+            return;
         }
         if (conf.getAdd0().equals(content)) {
             Passive p = new Passive();
@@ -182,6 +182,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             return;
         }
         if (content.startsWith(conf.getSelect0())) {
+            content = content.substring(conf.getSelect0().length());
             List<Passive> passives = passiveService.getPassiveList(content);
             if (passives != null && !passives.isEmpty()) {
                 StringBuilder sb = new StringBuilder();
