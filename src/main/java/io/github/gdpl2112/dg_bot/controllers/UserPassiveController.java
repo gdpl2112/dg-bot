@@ -65,12 +65,18 @@ public class UserPassiveController {
     @RequestMapping("/p-del")
     public Boolean passiveDel(@AuthenticationPrincipal UserDetails userDetails,
                               @RequestParam String touch, @RequestParam @Nullable String out) {
-        QueryWrapper<Passive> qw = new QueryWrapper<>();
-        qw.eq("qid", userDetails.getUsername());
-        qw.eq("touch", touch);
-        if (out != null && !"undefined".equals(out)) {
-            qw.eq("out", out);
+        try {
+            QueryWrapper<Passive> qw = new QueryWrapper<>();
+            qw.eq("qid", userDetails.getUsername());
+            qw.eq("touch", touch);
+            if (out != null && !"undefined".equals(out)) {
+                qw.eq("out", out);
+            }
+            passiveMapper.delete(qw);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-        return passiveMapper.delete(qw) > 0;
     }
 }

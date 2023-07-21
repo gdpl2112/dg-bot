@@ -78,7 +78,8 @@
                                 </button> &nbsp;&nbsp;
                                 <span class="badge badge-pill">
                                     <span class="badge badge-primary badge-pill">{{e.outs.length}}</span>&nbsp;&nbsp;
-                                    <button v-on:click="del(e.touch)" type="button" class="btn btn-danger">删除</button>
+                                    <button v-on:click="del(e.touch,null)" type="button"
+                                            class="btn btn-danger">删除</button>
                                 </span>
                             </div>
                             <div class="collapse" :id="`collapse-`+i">
@@ -127,27 +128,27 @@
                 }).catch(function (err) {
                     alert(err);
                 })
-            }, del: function (touch) {
-                axios.get("/p-del?touch=" + touch).then(function (response) {
-                    if (response.data === true) {
-                        vm1.all = vm1.all.filter(function (item) {
-                            return item.touch !== touch;
-                        });
-                    }
-                }).catch(function (err) {
-                    alert(err);
-                })
             }, del: function (touch, o) {
-                axios.get("/p-del?touch=" + touch + "&out=" + o).then(function (response) {
+                let url = "/p-del?touch=" + touch;
+                if (o !== null) {
+                    url = url + "&out=" + o;
+                }
+                axios.get(url).then(function (response) {
                     if (response.data === true) {
-                        vm1.all = vm1.all.filter(function (item) {
-                            if (item.touch === touch) {
-                                item.outs = item.outs.filter(function (i0) {
-                                    return i0 !== o;
-                                })
-                            }
-                            return true
-                        });
+                        if (o !== null) {
+                            vm1.all = vm1.all.filter(function (item) {
+                                if (item.touch === touch) {
+                                    item.outs = item.outs.filter(function (i0) {
+                                        return i0 !== o;
+                                    })
+                                }
+                                return item.outs.length > 0
+                            });
+                        } else {
+                            vm1.all = vm1.all.filter(function (item) {
+                                return item.touch !== touch
+                            });
+                        }
                     }
                 }).catch(function (err) {
                     alert(err);
