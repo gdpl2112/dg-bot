@@ -36,7 +36,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     PassiveService service1;
     @Autowired
     DefaultService defaultService;
-
     @Autowired
     ThreadPoolTaskExecutor executor;
     @Autowired

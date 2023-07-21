@@ -183,7 +183,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         }
         if (content.startsWith(conf.getSelect0())) {
             content = content.substring(conf.getSelect0().length());
-            List<Passive> passives = passiveService.getPassiveList(content);
+            List<Passive> passives = passiveService.getPassiveList(bid.toString(), content);
             if (passives != null && !passives.isEmpty()) {
                 StringBuilder sb = new StringBuilder();
                 int i = 1;

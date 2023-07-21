@@ -71,7 +71,7 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost imp
         long cd = Utils.getValueOrDefault(cdMap, bid, tid, 0L);
         if (System.currentTimeMillis() > cd) {
             String out = null;
-            List<Passive> passives = getPassiveList(content);
+            List<Passive> passives = getPassiveList(bid.toString(), content);
             if (passives != null && !passives.isEmpty()) {
                 out = Utils.getRandT(passives).getOut();
                 if (out != null) {
@@ -92,8 +92,9 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost imp
     }
 
     @Nullable
-    public List<Passive> getPassiveList(String content) {
+    public List<Passive> getPassiveList(String bid, String content) {
         QueryWrapper qw1 = new QueryWrapper();
+        qw1.eq("qid", bid);
         qw1.eq("touch", content.trim());
         List<Passive> passives = passiveMapper.selectList(qw1);
         if (passives == null || passives.isEmpty()) {
