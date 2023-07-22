@@ -154,6 +154,7 @@ public class SaveService extends SimpleListenerHost {
         QueryWrapper<AllMessage> wrapper = new QueryWrapper<>();
         wrapper.eq("id", event.getMessageIds()[0]);
         wrapper.eq("internal_id", event.getMessageInternalIds()[0]);
+        wrapper.eq("bot_id", event.getBot().getId());
         List<AllMessage> msg = saveMapper.selectList(wrapper);
         if (msg != null && msg.size() > 0)
             return msg.get(0);
