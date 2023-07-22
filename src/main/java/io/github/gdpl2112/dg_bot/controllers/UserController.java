@@ -34,10 +34,6 @@ public class UserController {
 
     @RequestMapping("/user")
     public Object user(@AuthenticationPrincipal UserDetails userDetails, HttpServletRequest request) {
-
-        HttpSession session = request.getSession();
-        System.out.println();
-
         if (userDetails != null) {
             JSONObject jo = new JSONObject();
             AuthM authM = authMapper.selectById(userDetails.getUsername());

@@ -20,6 +20,8 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * 独立
  *
@@ -139,6 +141,9 @@ public class SaveService extends SimpleListenerHost {
         QueryWrapper<AllMessage> wrapper = new QueryWrapper<>();
         wrapper.eq("id", event.getMessageIds()[0]);
         wrapper.eq("internal_id", event.getMessageInternalIds()[0]);
-        return saveMapper.selectOne(wrapper);
+        List<AllMessage> msg = saveMapper.selectList(wrapper);
+        if (msg != null && msg.size() > 0)
+            return msg.get(0);
+        else return null;
     }
 }
