@@ -14,6 +14,7 @@ import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
+import net.mamoe.mirai.event.events.GroupMessageSyncEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.code.MiraiCode;
 import net.mamoe.mirai.message.data.*;
@@ -54,6 +55,11 @@ public class ScriptService extends SimpleListenerHost {
         stepScript(event.getBot(), new BaseScriptContext(event, template), event.getMessage());
     }
 
+    @EventHandler
+    public void onMessage(@NotNull GroupMessageSyncEvent event) {
+        stepScript(event.getBot(), new BaseScriptContext(event, template), event.getMessage());
+    }
+
     private void stepScript(Bot bot, BaseScriptContext context, MessageChain chain) {
         Conf conf = confMapper.selectById(bot.getId());
         if (conf == null) return;
@@ -66,7 +72,7 @@ public class ScriptService extends SimpleListenerHost {
                 javaScript.put("msg", msg);
                 javaScript.eval(conf.getCode());
             } catch (Exception e) {
-                e.printStackTrace();
+//                e.printStackTrace();
                 System.err.println(String.format("%s Bot 脚本 执行失败", bot.getId()));
             }
         });
@@ -139,7 +145,7 @@ public class ScriptService extends SimpleListenerHost {
 
         @Override
         public String getType() {
-            return event instanceof GroupMessageEvent ? "group" : event instanceof FriendMessageEvent ? "friend" : "Unknown";
+            return event instanceof GroupMessageEvent || event instanceof GroupMessageSyncEvent ? "group" : event instanceof FriendMessageEvent ? "friend" : "Unknown";
         }
     }
 }
