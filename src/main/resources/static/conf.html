@@ -131,9 +131,29 @@
                     <button v-on:click="modify('select0')" type="button" class="btn btn-outline-primary">修改</button>
                 </div>
             </div>
+            <hr>
+
+            <div class="alert alert-info text-center" role="alert">
+                自定义脚本
+            </div>
+            <button v-on:click="codePost('code')" type="button"
+                    class="btn btn-primary btn-lg btn-block">修改
+            </button>
+            <hr>
+            <div class="input-group">
+                <textarea style="height: 240px" id="code" class="form-control" aria-label="js 脚本"
+                          placeholder="java script 自定义脚本">
+
+                </textarea>
+            </div>
         </div>
     </div>
 </div>
+<br>
+<br>
+<hr>
+<br>
+<br>
 <script src="/js/utils.js"></script>
 <script>
     let vm1 = new Vue({
@@ -158,7 +178,16 @@
                 }).catch(function (err) {
                     alert(err);
                 })
-            }
+            }, codePost: function (id) {
+                let value = $("#" + id).val()
+                let df = new FormData()
+                df.set("code", value)
+                axios.post("/code-modify",df).then(function (response) {
+                    alert(response.data)
+                }).catch(function (err) {
+                    alert(err);
+                })
+            },
         }
     });
 </script>

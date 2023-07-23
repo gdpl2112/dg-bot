@@ -18,6 +18,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
 
 /**
  * @author github-kloping
@@ -56,6 +59,18 @@ public class DgMain implements CommandLineRunner {
             }
         }
         logger.info("tables create finished");
+        logger.info("tables update");
+        boolean k0 = false;
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
+            String name = e0.get("name").toString();
+            if ("code".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            System.out.println("conf添加字段");
+            jdbcTemplate.update("ALTER TABLE 'conf' ADD 'code' VARCHAR(1048576) NOT NULL DEFAULT '';");
+        }
     }
 
     /**
@@ -75,6 +90,11 @@ public class DgMain implements CommandLineRunner {
             }
         });
         return factory;
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
 }

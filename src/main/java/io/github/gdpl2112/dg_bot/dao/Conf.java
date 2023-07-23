@@ -22,4 +22,5 @@ public class Conf {
     private String add0 = "添加";
     private String cancel0 = "取消";
     private String select0 = "查询";
+    private String code = "";
 }

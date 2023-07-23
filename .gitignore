@@ -167,4 +167,7 @@ data.db
 KFCFactory.json
 android_pad.json
 bots
-src/test/java
+src/test/java/*
+node_modules
+package-lock.json
+package.json
