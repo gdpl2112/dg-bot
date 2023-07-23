@@ -25,13 +25,11 @@ manager 管理自己的qq
 
 ```javascript
 
-
 function handleUrl(s) {
     var reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
     s = s.match(reg);
     return (s)
 }
-
 
 if (msg.startsWith("解析快手图集")) {
     if (context.getType() !== "group") {
@@ -55,4 +53,6 @@ if (msg.startsWith("解析快手图集")) {
     }
     context.send(builder.build())
 }
+
+
 ```
