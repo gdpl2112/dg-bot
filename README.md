@@ -32,27 +32,28 @@ function handleUrl(s) {
 }
 
 if (msg.startsWith("解析快手图集")) {
-    if (context.getType() !== "group") {
+    if (context.getType() === "group") {
+        var urls = handleUrl(msg)
+        if (urls !== null) {
+            context.send("正在解析...\n请稍等")
+            var u0 = encodeURI(urls[0]);
+            var url = "http://kloping.top/api/search/parseImgs?url=" + u0 + "&type=ks"
+            var json = context.get(url);
+            var arr = JSON.parse(json)
+            var builder = context.forwardBuilder();
+            for (var i = 0; i < arr.length; i++) {
+                var e = arr[i];
+                builder.add(context.getSender(), context.uploadImage(e))
+            }
+            context.send(builder.build())
+        } else {
+            context.send("未发现链接")
+        }
+    } else {
         context.send("命令仅适用群聊")
-        exit(0)
     }
-    var urls = handleUrl(msg)
-    if (urls === null) {
-        context.send("未发现链接")
-        exit(0)
-    }
-    context.send("正在解析...\n请稍等")
-    var u0 = encodeURI(urls[0]);
-    var url = "http://kloping.top/api/search/parseImgs?url=" + u0 + "&type=ks"
-    var json = context.get(url);
-    var arr = JSON.parse(json)
-    var builder = context.forwardBuilder();
-    for (var i = 0; i < arr.length; i++) {
-        var e = arr[i];
-        builder.append(context.getSender(), context.uploadImage(e))
-    }
-    context.send(builder.build())
 }
+
 
 
 ```
