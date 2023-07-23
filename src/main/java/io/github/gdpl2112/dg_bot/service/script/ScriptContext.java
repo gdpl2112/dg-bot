@@ -2,10 +2,7 @@ package io.github.gdpl2112.dg_bot.service.script;
 
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.User;
-import net.mamoe.mirai.message.data.ForwardMessageBuilder;
-import net.mamoe.mirai.message.data.Image;
-import net.mamoe.mirai.message.data.Message;
-import net.mamoe.mirai.message.data.MessageChainBuilder;
+import net.mamoe.mirai.message.data.*;
 
 /**
  * script 交互对象
@@ -89,4 +86,17 @@ public interface ScriptContext {
      * @return
      */
     String post(String url, String data);
+
+    /**
+     * 创建音乐分享消息
+     *
+     * @param kind
+     * @param title
+     * @param summer
+     * @param jumUrl
+     * @param picUrl
+     * @param url
+     * @return
+     */
+    MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url);
 }

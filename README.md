@@ -23,6 +23,8 @@ manager 管理自己的qq
 
 脚本 预设变量 [context](src/main/java/io/github/gdpl2112/dg_bot/service/script/ScriptContext.java)
 
+禁止使用  exit()
+
 ```javascript
 
 function handleUrl(s) {

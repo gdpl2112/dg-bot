@@ -32,6 +32,10 @@ import java.io.ByteArrayInputStream;
  */
 @Service
 public class ScriptService extends SimpleListenerHost {
+    public ScriptService() {
+        System.setProperty("nashorn.args", "--no-deprecation-warning");
+    }
+
     @Override
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
         exception.printStackTrace();
@@ -72,7 +76,7 @@ public class ScriptService extends SimpleListenerHost {
                 javaScript.put("msg", msg);
                 javaScript.eval(conf.getCode());
             } catch (Exception e) {
-//                e.printStackTrace();
+                e.printStackTrace();
                 System.err.println(String.format("%s Bot 脚本 执行失败", bot.getId()));
             }
         });
@@ -146,6 +150,13 @@ public class ScriptService extends SimpleListenerHost {
         @Override
         public String getType() {
             return event instanceof GroupMessageEvent || event instanceof GroupMessageSyncEvent ? "group" : event instanceof FriendMessageEvent ? "friend" : "Unknown";
+        }
+
+        public MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url) {
+            MusicShare share = new MusicShare(
+                    MusicKind.valueOf(kind), title, summer
+                    , jumUrl, picUrl, url);
+            return share;
         }
     }
 }
