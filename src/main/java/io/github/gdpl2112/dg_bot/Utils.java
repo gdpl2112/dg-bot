@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
  * @date 2023-07-20
  */
 public class Utils {
+    public static final Random RANDOM = new Random();
+
     public static final <T, K1, K2> T getValueOrDefault(Map<K1, Map<K2, T>> map, K1 k1, K2 k2, T def) {
         if (map.containsKey(k1)) {
             Map<K2, T> m2 = map.get(k1);
@@ -37,17 +39,18 @@ public class Utils {
         }
     }
 
-    public static final Random RANDOM = new Random();
-
     public static <T> T getRandT(List<T> ts) {
         return ts.get(RANDOM.nextInt(ts.size()));
     }
 
-    public static boolean contains(Map<Long, List<String>> adding, Long bid, String tid) {
-        if (adding.containsKey(bid)) {
-            return adding.get(bid.longValue()).contains(tid);
+    private static final Map<Long, Object> BP_SYNC_MAP = new HashMap<>();
+
+    public static Object getBpSync(Long bid) {
+        long key = bid.longValue();
+        if (!BP_SYNC_MAP.containsKey(key)) {
+            BP_SYNC_MAP.put(key, new Object());
         }
-        return false;
+        return BP_SYNC_MAP.get(key);
     }
 
 

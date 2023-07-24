@@ -68,28 +68,31 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost imp
         if (groupConf != null) {
             if (!groupConf.getK2()) return;
         }
-        long cd = Utils.getValueOrDefault(cdMap, bid, tid, 0L);
-        if (System.currentTimeMillis() > cd) {
-            String out = null;
-            List<Passive> passives = getPassiveList(bid.toString(), content);
-            if (passives != null && !passives.isEmpty()) {
-                out = Utils.getRandT(passives).getOut();
-                if (out != null) {
-                    try {
-                        contact.sendMessage(MiraiCode.deserializeMiraiCode(out));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    Conf conf = confMapper.selectById(bid);
-                    if (conf != null) {
-                        MapUtils.append(cdMap, bid, tid, System.currentTimeMillis() + conf.getCd0() * 1000L);
-                    } else {
-                        MapUtils.append(cdMap, bid, tid, System.currentTimeMillis() + 1000L);
+        synchronized (Utils.getBpSync(bid)) {
+            long cd = Utils.getValueOrDefault(cdMap, bid, tid, 1L);
+            if (System.currentTimeMillis() > cd) {
+                String out = null;
+                List<Passive> passives = getPassiveList(bid.toString(), content);
+                if (passives != null && !passives.isEmpty()) {
+                    out = Utils.getRandT(passives).getOut();
+                    if (out != null) {
+                        try {
+                            contact.sendMessage(MiraiCode.deserializeMiraiCode(out));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        Conf conf = confMapper.selectById(bid);
+                        Long c0 = 1000L;
+                        if (conf != null) {
+                            c0 = conf.getCd0() * 1000L;
+                        }
+                        MapUtils.append(cdMap, bid, tid, System.currentTimeMillis() + c0);
                     }
                 }
             }
         }
     }
+
 
     @Nullable
     public List<Passive> getPassiveList(String bid, String content) {

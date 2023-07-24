@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
  */
 @Controller
 public class SystemController {
+
     @RequestMapping("/favicon.ico")
     public String favicon(@AuthenticationPrincipal @Nullable UserDetails userDetails) {
         String redirectURL = "http://kloping.top/icon.jpg";
