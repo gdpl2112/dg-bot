@@ -113,7 +113,7 @@ public class ScriptService extends SimpleListenerHost {
 
         @Override
         public void send(String str) {
-            event.getSubject().sendMessage(str);
+            event.getSubject().sendMessage(MiraiCode.deserializeMiraiCode(str));
         }
 
         @Override
