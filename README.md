@@ -28,7 +28,6 @@ manager 管理自己的qq
 ## 已存在可用脚本
 
 ```javascript
-
 if (msg.startsWith("解析快手图集")) {
     if (context.getType() === "group") {
         var reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
@@ -58,7 +57,11 @@ if (msg.startsWith("酷狗点歌")) {
     var jo = JSON.parse(json)
     if (jo.data.length > 0) {
         var sd = jo.data[0]
-        context.send(context.createMusicShare("KugouMusic", sd.media_name, sd.author_name, "http://kloping.top", sd.imgUrl, sd.songUrl))
+        if (sd.songUrl !== null && sd.songUrl.trim() !== "") {
+            context.send(context.createMusicShare("KugouMusic", sd.media_name, sd.author_name, "http://kloping.top", sd.imgUrl, sd.songUrl))
+        } else {
+            context.send("歌曲链接获取失败")
+        }
     } else {
         context.send("获取失败")
     }
@@ -71,13 +74,16 @@ if (msg.startsWith("网易点歌")) {
     var jo = JSON.parse(json)
     if (jo.data.length > 0) {
         var sd = jo.data[0]
-        context.send(context.createMusicShare("NeteaseCloudMusic", sd.media_name, sd.author_name, "http://kloping.top", sd.imgUrl, sd.songUrl))
+        if (sd.songUrl !== null && sd.songUrl.trim() !== "") {
+            context.send(context.createMusicShare("NeteaseCloudMusic", sd.media_name, sd.author_name, "http://kloping.top", sd.imgUrl, sd.songUrl))
+        } else {
+            context.send("歌曲链接获取失败")
+        }
     } else {
         context.send("获取失败")
     }
 }
 //============网易点歌结束
-
 
 
 ```
