@@ -25,6 +25,8 @@ manager 管理自己的qq
 
 禁止使用  exit()
 
+## 已存在可用脚本
+
 ```javascript
 
 if (msg.startsWith("解析快手图集")) {
