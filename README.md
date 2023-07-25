@@ -26,6 +26,7 @@ manager 管理自己的qq
 禁止使用  exit()
 
 ```javascript
+
 if (msg.startsWith("解析快手图集")) {
     if (context.getType() === "group") {
         var reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
@@ -37,7 +38,7 @@ if (msg.startsWith("解析快手图集")) {
             var builder = context.forwardBuilder();
             for (var i = 0; i < arr.length; i++) {
                 var e = arr[i];
-                builder.add(context.getSender(), context.uploadImage(e))
+                builder.add(context.getBot().getId(), "AI", context.uploadImage(e))
             }
             context.send(builder.build())
         } else {
@@ -47,4 +48,34 @@ if (msg.startsWith("解析快手图集")) {
         context.send("命令仅适用群聊")
     }
 }
+
+//====================解析结束
+
+if (msg.startsWith("酷狗点歌")) {
+    var json = context.requestGet("http://kloping.top/api/search/song?keyword=" + msg.substring(4) + "&type=kugou");
+    var jo = JSON.parse(json)
+    if (jo.data.length > 0) {
+        var sd = jo.data[0]
+        context.send(context.createMusicShare("KugouMusic", sd.media_name, sd.author_name, "http://kloping.top", sd.imgUrl, sd.songUrl))
+    } else {
+        context.send("获取失败")
+    }
+}
+//==============kugou点歌结束
+
+
+if (msg.startsWith("网易点歌")) {
+    var json = context.requestGet("http://kloping.top/api/search/song?keyword=" + msg.substring(4) + "&type=wy");
+    var jo = JSON.parse(json)
+    if (jo.data.length > 0) {
+        var sd = jo.data[0]
+        context.send(context.createMusicShare("NeteaseCloudMusic", sd.media_name, sd.author_name, "http://kloping.top", sd.imgUrl, sd.songUrl))
+    } else {
+        context.send("获取失败")
+    }
+}
+//============网易点歌结束
+
+
+
 ```
