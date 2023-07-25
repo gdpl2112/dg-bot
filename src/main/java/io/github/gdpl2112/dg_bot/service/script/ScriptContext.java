@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.service.script;
 
+import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.User;
 import net.mamoe.mirai.message.data.*;
@@ -10,6 +11,14 @@ import net.mamoe.mirai.message.data.*;
  * @author github.kloping
  */
 public interface ScriptContext {
+    //消息类
+
+    /**
+     * 获取bot
+     *
+     * @return
+     */
+    Bot getBot();
 
     /**
      * 发送字符串
@@ -40,14 +49,17 @@ public interface ScriptContext {
     ForwardMessageBuilder forwardBuilder();
 
     /**
-     * 上传图片
+     * 创建音乐分享消息
      *
+     * @param kind
+     * @param title
+     * @param summer
+     * @param jumUrl
+     * @param picUrl
      * @param url
      * @return
      */
-    Image uploadImage(String url);
-
-    //=======
+    MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url);
 
     /**
      * 发送者ID
@@ -64,12 +76,21 @@ public interface ScriptContext {
     Contact getSubject();
 
     /**
+     * 上传图片
+     *
+     * @param url
+     * @return
+     */
+    Image uploadImage(String url);
+
+    /**
      * 所处环境
      *
      * @return
      */
     String getType();
-    //=======
+
+    //=======工具类
 
     /**
      * get 请求
@@ -77,7 +98,7 @@ public interface ScriptContext {
      * @param url
      * @return
      */
-    String get(String url);
+    String requestGet(String url);
 
     /**
      * post 请求
@@ -85,18 +106,22 @@ public interface ScriptContext {
      * @param url
      * @return
      */
-    String post(String url, String data);
+    String requestPost(String url, String data);
 
     /**
-     * 创建音乐分享消息
+     * 获取变量
      *
-     * @param kind
-     * @param title
-     * @param summer
-     * @param jumUrl
-     * @param picUrl
-     * @param url
+     * @param name
      * @return
      */
-    MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url);
+    Object get(String name);
+
+    /**
+     * 设置变量
+     *
+     * @param name
+     * @param value
+     * @return
+     */
+    Object set(String name, Object value);
 }

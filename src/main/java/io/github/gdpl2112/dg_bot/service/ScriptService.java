@@ -1,10 +1,12 @@
 package io.github.gdpl2112.dg_bot.service;
 
+import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.service.script.ScriptContext;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
+import io.github.kloping.map.MapUtils;
 import io.github.kloping.url.UrlUtils;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
@@ -26,6 +28,8 @@ import org.springframework.web.client.RestTemplate;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.io.ByteArrayInputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author github.kloping
@@ -75,7 +79,7 @@ public class ScriptService extends SimpleListenerHost {
                 String msg = toMsg(chain);
                 javaScript.put("msg", msg);
                 javaScript.eval(conf.getCode());
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
                 System.err.println(String.format("%s Bot 脚本 执行失败", bot.getId()));
             }
@@ -91,6 +95,8 @@ public class ScriptService extends SimpleListenerHost {
         return MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) chain);
     }
 
+    public static final Map<Long, Map<String, Object>> BID_2_VARIABLES = new HashMap<>();
+
     public static class BaseScriptContext implements ScriptContext {
         private MessageEvent event;
         private RestTemplate template;
@@ -98,6 +104,11 @@ public class ScriptService extends SimpleListenerHost {
         public BaseScriptContext(MessageEvent event, RestTemplate template) {
             this.event = event;
             this.template = template;
+        }
+
+        @Override
+        public Bot getBot() {
+            return event.getBot();
         }
 
         @Override
@@ -121,10 +132,8 @@ public class ScriptService extends SimpleListenerHost {
         }
 
         @Override
-        public Image uploadImage(String url) {
-            byte[] bytes = UrlUtils.getBytesFromHttpUrl(url);
-            Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes));
-            return image;
+        public MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url) {
+            return new MusicShare(MusicKind.valueOf(kind), title, summer, jumUrl, picUrl, url);
         }
 
         @Override
@@ -138,13 +147,10 @@ public class ScriptService extends SimpleListenerHost {
         }
 
         @Override
-        public String get(String url) {
-            return template.getForObject(url, String.class);
-        }
-
-        @Override
-        public String post(String url, String data) {
-            return template.postForObject(url, data, String.class);
+        public Image uploadImage(String url) {
+            byte[] bytes = UrlUtils.getBytesFromHttpUrl(url);
+            Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes));
+            return image;
         }
 
         @Override
@@ -152,11 +158,26 @@ public class ScriptService extends SimpleListenerHost {
             return event instanceof GroupMessageEvent || event instanceof GroupMessageSyncEvent ? "group" : event instanceof FriendMessageEvent ? "friend" : "Unknown";
         }
 
-        public MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url) {
-            MusicShare share = new MusicShare(
-                    MusicKind.valueOf(kind), title, summer
-                    , jumUrl, picUrl, url);
-            return share;
+        @Override
+        public String requestGet(String url) {
+            return template.getForObject(url, String.class);
+        }
+
+        @Override
+        public String requestPost(String url, String data) {
+            return template.postForObject(url, data, String.class);
+        }
+
+        @Override
+        public Object get(String name) {
+            return Utils.getValueOrDefault(BID_2_VARIABLES, event.getBot().getId(), name, null);
+        }
+
+        @Override
+        public Object set(String name, Object value) {
+            Object ov = Utils.getValueOrDefault(BID_2_VARIABLES, event.getBot().getId(), name, null);
+            MapUtils.append(BID_2_VARIABLES, event.getBot().getId(), name, value, HashMap.class);
+            return ov;
         }
     }
 }
