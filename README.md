@@ -26,22 +26,14 @@ manager 管理自己的qq
 禁止使用  exit()
 
 ```javascript
-
-function handleUrl(s) {
-    var reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
-    s = s.match(reg);
-    return (s)
-}
-
 if (msg.startsWith("解析快手图集")) {
     if (context.getType() === "group") {
-        var urls = handleUrl(msg)
+        var reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
+        var urls = msg.match(reg)
         if (urls !== null) {
             context.send("正在解析...\n请稍等")
             var u0 = encodeURI(urls[0]);
-            var url = "http://kloping.top/api/search/parseImgs?url=" + u0 + "&type=ks"
-            var json = context.get(url);
-            var arr = JSON.parse(json)
+            var arr = JSON.parse(context.requestGet("http://kloping.top/api/search/parseImgs?url=" + u0 + "&type=ks"))
             var builder = context.forwardBuilder();
             for (var i = 0; i < arr.length; i++) {
                 var e = arr[i];
@@ -55,7 +47,4 @@ if (msg.startsWith("解析快手图集")) {
         context.send("命令仅适用群聊")
     }
 }
-
-
-
 ```
