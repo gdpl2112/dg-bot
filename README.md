@@ -28,6 +28,8 @@ manager 管理自己的qq
 ## 已存在可用脚本
 
 ```javascript
+
+
 if (msg.startsWith("解析快手图集")) {
     if (context.getType() === "group") {
         var reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
@@ -55,7 +57,7 @@ if (msg.startsWith("解析快手图集")) {
 if (msg.startsWith("酷狗点歌")) {
     var json = context.requestGet("http://kloping.top/api/search/song?keyword=" + msg.substring(4) + "&type=kugou");
     var jo = JSON.parse(json)
-    if (jo.data.length > 0) {
+    if (jo.data !== null && jo.data.length > 0) {
         var sd = jo.data[0]
         if (sd.songUrl !== null && sd.songUrl.trim() !== "") {
             context.send(context.createMusicShare("KugouMusic", sd.media_name, sd.author_name, "http://kloping.top", sd.imgUrl, sd.songUrl))
@@ -72,7 +74,7 @@ if (msg.startsWith("酷狗点歌")) {
 if (msg.startsWith("网易点歌")) {
     var json = context.requestGet("http://kloping.top/api/search/song?keyword=" + msg.substring(4) + "&type=wy");
     var jo = JSON.parse(json)
-    if (jo.data.length > 0) {
+    if (jo.data !== null && jo.data.length > 0) {
         var sd = jo.data[0]
         if (sd.songUrl !== null && sd.songUrl.trim() !== "") {
             context.send(context.createMusicShare("NeteaseCloudMusic", sd.media_name, sd.author_name, "http://kloping.top", sd.imgUrl, sd.songUrl))
