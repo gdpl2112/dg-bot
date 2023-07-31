@@ -6,6 +6,7 @@ import io.github.kloping.url.UrlUtils;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
+import net.mamoe.mirai.internal.deps.io.ktor.http.ContentType;
 import net.mamoe.mirai.message.data.*;
 import net.mamoe.mirai.utils.ExternalResource;
 
@@ -129,6 +130,8 @@ public class Parse {
                     case "Music":
                         builder.append(createMusic(contact, s2));
                         break;
+//                    case "Video":
+//                        builder.append(createVideo(contact, s2));
                     default:
                         break;
                 }
@@ -138,6 +141,7 @@ public class Parse {
         }
         return lls;
     }
+
 
     private static Message createMusic(Contact contact, String s2) {
         String[] ss = s2.split(",");

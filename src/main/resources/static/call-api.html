@@ -47,12 +47,7 @@
     </div>
 </nav>
 <br>
-<br>
-<div style="text-align: center;">
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#appendModal">
-        添加
-    </button>
-</div>
+<hr>
 <br>
 <div class="modal fade" id="appendModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -62,7 +57,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
             </div>
             <div class="modal-body">
-
                 <div class="input-group mb-3">
                     <span class="input-group-text" id="inputGroup-out">输出格式</span>
                     <input type="text" class="form-control" aria-label="Sizing example input">
@@ -89,10 +83,24 @@
     </div>
 </div>
 <br>
+<div class="container">
+    <div class="row">
+        <div class="center-block">
+            <div style="text-align: center;">
+                <button onclick="add0()" type="button" class="btn btn-primary btn-lg btn-block" data-bs-toggle="modal">
+                    添加
+                </button>
+            </div>
+            <br>
+            <hr>
+        </div>
+    </div>
+</div>
 <div class="container bg-light">
     <div class="row">
         <div class="center-block">
-            <table id="table_main" class="table table-striped">
+            <small class="form-text text-muted">此命令开关与被动回复开关一致</small>
+            <table id="table_main" class="table">
                 <thead>
                 <tr>
                     <th scope="col">#</th>
@@ -103,7 +111,7 @@
                     <th scope="col">操作</th>
                 </tr>
                 </thead>
-                <tr v-for="(e) in data">
+                <tr v-for="(e) in data" :class="getTrClass()">
                     <th scope="col"><img style="width: 40px;height: 40px;" :src="getFavicon(e)" alt="icon"></th>
                     <th scope="col" v-text="e.out"></th>
                     <th scope="col" v-text="e.outArgs"></th>
@@ -111,6 +119,7 @@
                     <th scope="col" v-text="e.url"></th>
                     <th scope="col">
                         <button v-on:click="delete0(e.touch)" type="button" class="btn btn-danger">删除</button>
+                        <button v-on:click="modify0(e)" type="button" class="btn btn-primary">修改</button>
                     </th>
                 </tr>
             </table>
@@ -136,6 +145,7 @@
         ;
 
         axios.post(url).then(function (response) {
+            trIndex = 0;
             vm1.data = response.data;
             e_out.val("")
             e_outArgs.val("")
@@ -146,33 +156,48 @@
         })
     }
 
+    function add0() {
+        $('#exampleModalLabel').html('添加一个API');
+        $('#appendModal').modal('show')
+    }
+
+    let trClasses = ["alert-primary", "alert-secondary", "alert-success", "alert-danger", "alert-warning", "alert-info", "alert-light", "alert-dark"];
+    let trIndex = 0
+
     let vm1 = new Vue({
         el: "#table_main",
         created: function () {
             axios.get("/ca/get_data").then(function (response) {
+                trIndex = 0;
                 vm1.data = response.data;
             }).catch(function (err) {
                 alert(err);
             })
         }, data: {
-            data: []
+            data: [],
         }, methods: {
             getFavicon: function (e) {
                 let u0 = e.url;
                 let i0 = u0.substr(8).indexOf("/")
                 return u0.substr(0, 9 + i0) + "favicon.ico"
-            }, getStrs: function (es) {
-                let s0 = "";
-                for (e0 of es) {
-                    s0 = s0 + "\n" + e0;
-                }
-                return s0.trim();
             }, delete0: function (touch) {
                 axios.get("/ca/delete?touch=" + touch).then(function (response) {
+                    trIndex = 0;
                     vm1.data = response.data;
                 }).catch(function (err) {
                     alert(err);
                 })
+            }, modify0: function (e) {
+                $("#inputGroup-out").next().val(e.out)
+                $("#inputGroup-outArgs").next().val(e.outArgs)
+                $("#inputGroup-touch").next().val(e.touch)
+                $("#inputGroup-url").next().val(e.url)
+
+                $('#exampleModalLabel').html('修改一个API');
+                $('#appendModal').modal('show')
+            }, getTrClass: function () {
+                let out = trClasses[trIndex++ % trClasses.length].toString();
+                return out
             }
         }
     });

@@ -73,7 +73,11 @@ public class Converter {
         if (url.contains(QID)) url = url.replaceAll(QID0, String.valueOf(qid));
         if (url.contains(GID)) url = url.replaceAll(GID0, String.valueOf(gid));
         if (url.contains(PAR_URL)) {
-            url = url.replaceAll(PAR_URL0, URLEncoder.encode(getUrlStr(Arrays.toString(args))));
+            String e1 = getUrlStr(Arrays.toString(args));
+            if (e1.contains("&") || e1.contains("?") || e1.contains("=")) {
+                e1 = URLEncoder.encode(e1);
+            }
+            url = url.replaceAll(PAR_URL0, e1);
         }
         if (url.contains(PAR_NUMBER)) {
             StringBuilder nums = new StringBuilder();

@@ -3,6 +3,7 @@ package io.github.gdpl2112.dg_bot.controllers;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.CallTemplate;
 import io.github.gdpl2112.dg_bot.mapper.CallTemplateMapper;
+import io.github.kloping.judge.Judge;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,13 +47,29 @@ public class UserCallApiController {
                          @RequestParam("out") String out,
                          @RequestParam("outArgs") String outArgs,
                          @RequestParam("url") String url) {
-        CallTemplate template = new CallTemplate();
+        if (Judge.isEmpty(touch)) return getAll(userDetails);
+        if (Judge.isEmpty(url)) return getAll(userDetails);
+        if (Judge.isEmpty(out)) return getAll(userDetails);
+        boolean modify = true;
+        CallTemplate template;
+        QueryWrapper<CallTemplate> qw = new QueryWrapper<>();
+        qw.eq("qid", userDetails.getUsername());
+        qw.eq("touch", touch);
+        template = callTemplateMapper.selectOne(qw);
+        if (template == null) {
+            modify = false;
+            template = new CallTemplate();
+        }
         template.setQid(userDetails.getUsername());
         template.setOut(out);
         template.setOutArgs(outArgs);
         template.setUrl(url);
         template.setTouch(touch);
-        callTemplateMapper.insert(template);
+        if (modify) {
+            callTemplateMapper.update(template, qw);
+        } else {
+            callTemplateMapper.insert(template);
+        }
         return getAll(userDetails);
     }
 }

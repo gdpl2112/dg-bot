@@ -46,21 +46,14 @@ public class Worker {
             if (e instanceof NullPointerException) {
                 e.printStackTrace();
             }
-            if (template.err != null && !template.err.isEmpty()) {
-                out = template.err;
-            } else {
-                out = "调用时失败";
-            }
+            e.printStackTrace();
+            out = "调用时失败";
         }
         try {
             message = Parse.getMessageFromString(out, bot.getAsFriend());
         } catch (Exception e) {
             e.printStackTrace();
-            if (template.err != null && !template.err.isEmpty()) {
-                out = template.err;
-            } else {
-                out = "类型转换时失败";
-            }
+            out = "类型转换时失败";
             message = new PlainText(out);
         }
         return message;
@@ -96,8 +89,7 @@ public class Worker {
 
     public static Connection getConnection(String url, CallTemplate template) throws Exception {
         Connection connection = org.jsoup.Jsoup.connect(url).ignoreContentType(true).ignoreHttpErrors(true)
-                .header("Host", new URL(url).getHost())
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36 Edg/100.0.1185.50");
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.67");
         connection.timeout(60000);
         return connection;
     }

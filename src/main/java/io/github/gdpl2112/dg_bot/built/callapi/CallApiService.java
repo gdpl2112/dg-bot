@@ -9,6 +9,7 @@ import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
+import net.mamoe.mirai.event.events.GroupMessageSyncEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.*;
 import org.jsoup.Connection;
@@ -20,6 +21,11 @@ public class CallApiService extends SimpleListenerHost {
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
+        onEvent(event, "g" + event.getGroup().getId());
+    }
+
+    @EventHandler
+    public void onEvent(GroupMessageSyncEvent event) {
         onEvent(event, "g" + event.getGroup().getId());
     }
 
@@ -83,6 +89,17 @@ public class CallApiService extends SimpleListenerHost {
             qw.eq("qid", bot.getId());
             qw.eq("touch", first);
             CallTemplate template = callTemplateMapper.selectOne(qw);
+            if (template == null) {
+                QueryWrapper<CallTemplate> qw1 = new QueryWrapper<>();
+                qw1.eq("qid", bot.getId());
+                for (CallTemplate callTemplate : callTemplateMapper.selectList(qw1)) {
+                    if (text.startsWith(callTemplate.touch)) {
+                        template = callTemplate;
+                        ss = new String[]{template.touch, text.substring(template.touch.length())};
+                        break;
+                    }
+                }
+            }
             if (template == null) return null;
             String[] ss0 = new String[ss.length - 1];
             System.arraycopy(ss, 1, ss0, 0, ss0.length);
