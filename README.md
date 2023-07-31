@@ -18,12 +18,15 @@ manager 管理自己的qq
 
 ~~admin 管理员平台~~
 
+### 内置功能: [API调用](expression.md)
 
-自定义脚本
+- 功能相同于: [自定义 调用 API 插件](https://github.com/gdpl2112/MiraiCallApiPlugin)
+
+### 自定义脚本
 
 脚本 预设变量 [context](src/main/java/io/github/gdpl2112/dg_bot/service/script/ScriptContext.java)
 
-禁止使用  exit()
+禁止使用 exit()
 
 ## 已存在可用脚本
 

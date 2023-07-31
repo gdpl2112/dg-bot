@@ -70,6 +70,7 @@ public class Utils {
             javaProperty2SqlColumnMap.put("Boolean", "BLOB");
             javaProperty2SqlColumnMap.put("boolean", "BLOB");
             javaProperty2SqlColumnMap.put("String", "VARCHAR(255)");
+            javaProperty2SqlColumnMap.put("String", "VARCHAR(255)");
         }
 
         public static String createTable(Class<?> cla) throws IOException {
@@ -114,7 +115,7 @@ public class Utils {
                 if (typeName == null) {
                     if (f.getType().isEnum()) {
                         typeName = javaProperty2SqlColumnMap.get("String");
-                    }
+                    } else typeName = "BLOB";
                 }
                 sb.append("`").append(typeName).append(" NOT NULL ");
                 if (f.isAnnotationPresent(TableId.class)) {
@@ -192,4 +193,5 @@ public class Utils {
             }
         }
     }
+
 }

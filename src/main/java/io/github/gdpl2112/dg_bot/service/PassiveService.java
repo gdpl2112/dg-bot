@@ -30,7 +30,7 @@ import java.util.Map;
  * @date 2023-07-20
  */
 @Service
-public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost implements CommandLineRunner {
+public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
     @Autowired
     BotService service;
     @Autowired
@@ -42,8 +42,13 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost imp
     @Autowired
     GroupConfMapper groupConfMapper;
 
-    @Override
-    public void run(String... args) throws Exception {
+    public boolean isNotOpenK2(Long bid, String tid) {
+        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
+        qw.eq("qid", bid);
+        qw.eq("tid", tid);
+        GroupConf groupConf = groupConfMapper.selectOne(qw);
+        if (groupConf != null) if (!groupConf.getK2()) return true;
+        return false;
     }
 
     @EventHandler
@@ -61,13 +66,7 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost imp
     public Map<Long, Map<String, Long>> cdMap = new HashMap<>();
 
     public void step(Long bid, String tid, String content, Contact contact) {
-        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-        qw.eq("qid", bid);
-        qw.eq("tid", tid);
-        GroupConf groupConf = groupConfMapper.selectOne(qw);
-        if (groupConf != null) {
-            if (!groupConf.getK2()) return;
-        }
+        if (isNotOpenK2(bid, tid)) return;
         synchronized (Utils.getBpSync(bid)) {
             long cd = Utils.getValueOrDefault(cdMap, bid, tid, 1L);
             if (System.currentTimeMillis() > cd) {

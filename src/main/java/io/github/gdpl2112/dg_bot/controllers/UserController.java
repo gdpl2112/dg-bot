@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,9 +58,13 @@ public class UserController {
     @Autowired
     CronMapper cronMapper;
 
+    @Autowired
+    CallTemplateMapper callTemplateMapper;
+
     @RequestMapping("/statistics")
     public Object statistics(@AuthenticationPrincipal UserDetails userDetails) {
         JSONObject jo = new JSONObject();
+
         QueryWrapper<CronMessage> qwc = new QueryWrapper<>();
         qwc.eq("qid", userDetails.getUsername());
         Long cc = cronMapper.selectCount(qwc);
@@ -71,10 +74,17 @@ public class UserController {
         qwa.eq("qid", userDetails.getUsername());
         Long ac = administratorMapper.selectCount(qwa);
         jo.put("mc", ac);
+
         QueryWrapper<Passive> qwp = new QueryWrapper<>();
         qwp.eq("qid", userDetails.getUsername());
         Long pc = passiveMapper.selectCount(qwp);
         jo.put("pc", pc);
+
+        QueryWrapper<CallTemplate> qwct = new QueryWrapper<>();
+        qwct.eq("qid", userDetails.getUsername());
+        Long cac = callTemplateMapper.selectCount(qwct);
+        jo.put("cac", cac);
+
         return jo;
     }
 

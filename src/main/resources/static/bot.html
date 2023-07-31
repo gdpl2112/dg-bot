@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <script src="/js/lib/axios.js"></script>
-    <script src="/js/lib/vue.js"></script>
-    <script src="/js/lib/jq3.6.js"></script>
+    <script src="/js/libs/axios.js"></script>
+    <script src="/js/libs/vue.js"></script>
+    <script src="/js/libs/jq3.6.js"></script>
 
     <link rel="stylesheet" href="/css/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_css_bootstrap.css"
           crossorigin="anonymous">
@@ -17,7 +17,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light tm-0">
     <a class="navbar-brand" href="/">
         <img style="opacity: 0.86;max-width: 50px; border-radius: 999px"
-             class="navbar-brand" src="http://kloping.top/icon.jpg" alt="qq"></a>
+             class="navbar-brand" src="/icon" alt="qq"></a>
     <button class="navbar-toggler" type="button" data-toggle="collapse"
             data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
             aria-expanded="false" aria-label="Toggle navigation">
@@ -89,6 +89,7 @@
                 </div>
                 <hr>
                 <div class="input-group form-inline">
+
                     <div class="alert alert-info" role="alert">
                         管理员数: {{count.mc}} &nbsp;
                         <a href="/manager.html" type="button" class="btn btn-info">管理</a>
@@ -98,9 +99,15 @@
                         cron任务数: {{count.cc}} &nbsp;
                         <a href="/cron-list.html" type="button" class="btn btn-secondary">管理</a>
                     </div> &nbsp;&nbsp;
+
                     <div class="alert alert-warning" role="alert">
                         被动消息数: {{count.pc}} &nbsp;
                         <a href="/passive.html" type="button" class="btn btn-warning">管理</a>
+                    </div>
+
+                    <div class="alert alert-primary" role="alert">
+                        调用api数: {{count.cac}} &nbsp;
+                        <a href="/call-api.html" type="button" class="btn btn-warning">管理</a>
                     </div>
                 </div>
             </div>
@@ -163,8 +170,8 @@
         }
     });
 </script>
-<script src="/js/lib/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js" crossorigin="anonymous"></script>
-<script src="/js/lib/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_js_bootstrap.bundle.js"
+<script src="/js/libs/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js" crossorigin="anonymous"></script>
+<script src="/js/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_js_bootstrap.bundle.js"
         crossorigin="anonymous"></script>
 </body>
 </html>

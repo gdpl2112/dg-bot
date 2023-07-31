@@ -2,6 +2,8 @@ package io.github.gdpl2112.dg_bot;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.BuiltPlugin;
+import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
+import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
@@ -45,6 +47,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     SaveService saveService;
     @Autowired
     ScriptService scriptService;
+    @Autowired
+    CallApiService callApiService;
 
     @Override
     public void run(String... args) throws Exception {
@@ -58,8 +62,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(defaultService);
         GlobalEventChannel.INSTANCE.registerListenerHost(saveService);
         GlobalEventChannel.INSTANCE.registerListenerHost(scriptService);
+        GlobalEventChannel.INSTANCE.registerListenerHost(callApiService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
-
     }
 
     @EventHandler
