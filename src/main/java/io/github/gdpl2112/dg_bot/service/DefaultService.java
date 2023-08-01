@@ -2,6 +2,7 @@ package io.github.gdpl2112.dg_bot.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.Administrator;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.GroupConf;
@@ -17,7 +18,6 @@ import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.message.code.MiraiCode;
-import net.mamoe.mirai.message.data.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -64,7 +64,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
-        String content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
+        String content = DgSerializer.messageChainSerializeToString(event.getMessage());
         Long bid = event.getBot().getId();
         String tid = "g" + event.getSender().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
@@ -72,7 +72,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @EventHandler
     public void onEvent(FriendMessageEvent event) {
-        String content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
+        String content = DgSerializer.messageChainSerializeToString(event.getMessage());
         Long bid = event.getBot().getId();
         String tid = "f" + event.getSender().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
@@ -92,7 +92,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
                 return;
             }
             if (passive.getTouch() == null) {
-                passive.setTouch(content);
+                passive.setTouch(filterTouch(content));
                 contact.sendMessage("设置完成");
             } else {
                 passive.setOut(content);
@@ -111,6 +111,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         if (content.startsWith(conf.getRetell())) {
             contact.sendMessage(MiraiCode.deserializeMiraiCode(content.substring(conf.getRetell().length())));
         }
+        //开回复
         if (content.startsWith(conf.getOpen0())) {
             QueryWrapper<GroupConf> qw = new QueryWrapper<>();
             qw.eq("qid", bid);
@@ -128,6 +129,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             contact.sendMessage("已开启!");
             return;
         }
+        //开监听
         if (content.startsWith(conf.getOpen1())) {
             QueryWrapper<GroupConf> qw = new QueryWrapper<>();
             qw.eq("qid", bid);
@@ -145,6 +147,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             contact.sendMessage("已开启!");
             return;
         }
+        //关回复
         if (content.startsWith(conf.getClose0())) {
             QueryWrapper<GroupConf> qw = new QueryWrapper<>();
             qw.eq("qid", bid);
@@ -163,6 +166,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             contact.sendMessage("已关闭!");
             return;
         }
+        //关监听
         if (content.startsWith(conf.getClose1())) {
             QueryWrapper<GroupConf> qw = new QueryWrapper<>();
             qw.eq("qid", bid);
@@ -195,6 +199,11 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             return;
         }
 
+    }
+
+    public String filterTouch(String content) {
+
+        return content;
     }
 
     private boolean isAdmin(Long bid, Long sid) {

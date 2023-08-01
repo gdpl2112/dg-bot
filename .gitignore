@@ -171,3 +171,5 @@ src/test/java/*
 node_modules
 package-lock.json
 package.json
+temp.json
+*.json

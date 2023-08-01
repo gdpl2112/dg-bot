@@ -1,17 +1,17 @@
 package io.github.gdpl2112.dg_bot.built.callapi;
 
 import com.alibaba.fastjson.JSON;
-import io.github.gdpl2112.dg_bot.built.Parse;
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.CallTemplate;
 import io.github.kloping.reg.MatcherUtils;
 import net.mamoe.mirai.Bot;
+import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.PlainText;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.concurrent.atomic.AtomicReference;
 
 
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class Worker {
 
-    public static Message parse(Connection connection, CallTemplate template, Bot bot, long gid, long qid) {
+    public static Message work(Connection connection, CallTemplate template, Bot bot, long gid, long qid, Contact subject) {
         Message message = null;
         String out = template.out;
         try {
@@ -50,7 +50,7 @@ public class Worker {
             out = "调用时失败";
         }
         try {
-            message = Parse.getMessageFromString(out, bot.getAsFriend());
+            message = DgSerializer.stringDeserializeToMessageChain(out, bot, subject);
         } catch (Exception e) {
             e.printStackTrace();
             out = "类型转换时失败";

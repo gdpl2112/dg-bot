@@ -2,6 +2,7 @@ package io.github.gdpl2112.dg_bot.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.GroupConf;
 import io.github.gdpl2112.dg_bot.dao.Passive;
@@ -14,11 +15,8 @@ import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
-import net.mamoe.mirai.message.code.MiraiCode;
-import net.mamoe.mirai.message.data.Message;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -31,6 +29,7 @@ import java.util.Map;
  */
 @Service
 public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
+
     @Autowired
     BotService service;
     @Autowired
@@ -53,13 +52,13 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
-        String content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
+        String content = DgSerializer.messageChainSerializeToString(event.getMessage());
         step(event.getBot().getId(), "g" + event.getGroup().getId(), content, event.getSubject());
     }
 
     @EventHandler
     public void onEvent(FriendMessageEvent event) {
-        String content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
+        String content = DgSerializer.messageChainSerializeToString(event.getMessage());
         step(event.getBot().getId(), "f" + event.getFriend().getId(), content, event.getSubject());
     }
 
@@ -76,7 +75,7 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
                     out = Utils.getRandT(passives).getOut();
                     if (out != null) {
                         try {
-                            contact.sendMessage(MiraiCode.deserializeMiraiCode(out));
+                            contact.sendMessage(DgSerializer.stringDeserializeToMessageChain(out, contact.getBot(), contact));
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
