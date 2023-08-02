@@ -5,8 +5,6 @@ import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.CallTemplate;
 import io.github.gdpl2112.dg_bot.mapper.CallTemplateMapper;
 import io.github.gdpl2112.dg_bot.service.ConfigService;
-import io.github.gdpl2112.dg_bot.service.DefaultService;
-import io.github.gdpl2112.dg_bot.service.PassiveService;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
@@ -81,15 +79,16 @@ public class CallApiService extends SimpleListenerHost {
             qw.eq("touch", first);
             CallTemplate template = callTemplateMapper.selectOne(qw);
             if (template == null) {
-                QueryWrapper<CallTemplate> qw1 = new QueryWrapper<>();
-                qw1.eq("qid", bot.getId());
-                for (CallTemplate callTemplate : callTemplateMapper.selectList(qw1)) {
-                    if (text.startsWith(callTemplate.touch)) {
-                        template = callTemplate;
-                        ss = new String[]{template.touch, text.substring(template.touch.length())};
-                        break;
-                    }
-                }
+//                QueryWrapper<CallTemplate> qw1 = new QueryWrapper<>();
+//                qw1.eq("qid", bot.getId());
+//                for (CallTemplate callTemplate : callTemplateMapper.selectList(qw1)) {
+//                    if (text.startsWith(callTemplate.touch)) {
+//                        template = callTemplate;
+//                        ss = new String[]{template.touch, text.substring(template.touch.length())};
+//                        break;
+//                    }
+//                }
+                return null;
             }
             if (template == null) return null;
             String[] ss0 = new String[ss.length - 1];
