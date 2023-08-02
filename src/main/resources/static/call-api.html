@@ -98,28 +98,52 @@
 </div>
 <div class="container bg-light">
     <div class="row">
-        <div class="center-block">
+        <div id="table_main" class="center-block">
             <small class="form-text text-muted">此命令开关与被动回复开关一致</small>
-            <table id="table_main" class="table">
+            <table class="table">
                 <thead>
+
                 <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">输出格式</th>
-                    <th scope="col">输出参数</th>
-                    <th scope="col">触发词</th>
-                    <th scope="col">地址</th>
+                    <th scope="col" class="text-center">#</th>
+                    <th scope="col">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <ul class="list-group">
+                                    <li class="list-group-item disabled" aria-disabled="true">输出格式</li>
+                                    <li class="list-group-item disabled" aria-disabled="true">输出参数</li>
+                                    <li class="list-group-item disabled" aria-disabled="true">触发词</li>
+                                    <li class="list-group-item disabled" aria-disabled="true">地址</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </th>
                     <th scope="col">操作</th>
                 </tr>
+
                 </thead>
                 <tr v-for="(e) in data" :class="getTrClass()">
                     <th scope="col"><img style="width: 40px;height: 40px;" :src="getFavicon(e)" alt="icon"></th>
-                    <th scope="col" v-text="e.out"></th>
-                    <th scope="col" v-text="e.outArgs"></th>
-                    <th scope="col" v-text="e.touch"></th>
-                    <th scope="col" v-text="e.url"></th>
                     <th scope="col">
-                        <button v-on:click="delete0(e.touch)" type="button" class="btn btn-danger">删除</button>
-                        <button v-on:click="modify0(e)" type="button" class="btn btn-primary">修改</button>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <ul class="list-group">
+                                    <li class="list-group-item disabled" aria-disabled="true" v-text="e.out">输出格式
+                                    </li>
+                                    <li class="list-group-item disabled" aria-disabled="true"
+                                        v-text="getStrArgs(e.outArgs)">输出参数
+                                    </li>
+                                    <li class="list-group-item disabled" aria-disabled="true" v-text="e.touch">触发词
+                                    </li>
+                                    <li class="list-group-item disabled" aria-disabled="true" v-text="e.url">地址</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </th>
+                    <th scope="col">
+                        <br>
+                        <button v-on:click="delete0(e.touch)" type="button" class="btn btn-danger col">删除</button>
+                        <hr>
+                        <button v-on:click="modify0(e)" type="button" class="btn btn-primary col">修改</button>
                     </th>
                 </tr>
             </table>
@@ -196,8 +220,13 @@
                 $('#exampleModalLabel').html('修改一个API');
                 $('#appendModal').modal('show')
             }, getTrClass: function () {
-                let out = trClasses[trIndex++ % trClasses.length].toString();
-                return out
+                return trClasses[trIndex++ % trClasses.length].toString()
+            }, getStrArgs: function (args) {
+                let out = "";
+                args.split(",").forEach(function (e) {
+                    out = out + e + "\n";
+                })
+                return out.trim()
             }
         }
     });

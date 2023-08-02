@@ -45,7 +45,7 @@ public class ScriptService extends SimpleListenerHost {
         exception.printStackTrace();
     }
 
-    private final ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
+    public static final ScriptEngineManager SCRIPT_ENGINE_MANAGER = new ScriptEngineManager();
 
     @Autowired
     ConfMapper confMapper;
@@ -74,7 +74,7 @@ public class ScriptService extends SimpleListenerHost {
         if (Judge.isEmpty(conf.getCode())) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                ScriptEngine javaScript = scriptEngineManager.getEngineByName("JavaScript");
+                ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
                 javaScript.put("context", context);
                 String msg = toMsg(chain);
                 javaScript.put("msg", msg);

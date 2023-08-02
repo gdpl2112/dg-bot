@@ -131,14 +131,14 @@ public class Converter {
      * get from json
      *
      * @param json json
-     * @param arg  表达式
+     * @param arg0 表达式
      * @return
      * @throws Exception
      */
-    public static Object getOutEnd(String json, String arg) {
+    public static Object getOutEnd(String json, final String arg0) {
         try {
             JSON j0 = (JSON) JSON.parse(json);
-            arg = arg.trim();
+            String arg = arg0.trim();
             String s0 = arg.trim().split("\\.")[0].trim();
             Object o = null;
             if (s0.matches("\\[\\d*]")) {
@@ -171,16 +171,17 @@ public class Converter {
                 if (arg.length() >= len) arg = arg.substring(len);
                 else arg = arg.substring(len - 1);
             }
+            if (o == null) return arg0;
             if (arg.length() > 0) {
                 return getOutEnd(JSON.toJSONString(o), arg);
             } else {
                 return o;
             }
         } catch (com.alibaba.fastjson.JSONException jex) {
-            return arg;
+            return arg0;
         } catch (Exception ex) {
             ex.printStackTrace();
-            return arg;
+            return arg0;
         }
     }
 }
