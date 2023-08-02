@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.CallTemplate;
 import io.github.gdpl2112.dg_bot.mapper.CallTemplateMapper;
+import io.github.gdpl2112.dg_bot.service.ConfigService;
 import io.github.gdpl2112.dg_bot.service.DefaultService;
 import io.github.gdpl2112.dg_bot.service.PassiveService;
 import net.mamoe.mirai.Bot;
@@ -38,7 +39,7 @@ public class CallApiService extends SimpleListenerHost {
     }
 
     @Autowired
-    DefaultService defaultService;
+    ConfigService configService;
 
     /**
      * step0
@@ -47,7 +48,7 @@ public class CallApiService extends SimpleListenerHost {
      * @param tid
      */
     private void onEvent(MessageEvent event, String tid) {
-        if (defaultService.isNotOpenK0(event.getBot().getId(), tid)) return;
+        if (configService.isNotOpenK0(event.getBot().getId(), tid)) return;
         if (event.getMessage().size() > 1) {
             String text = DgSerializer.messageChainSerializeToString(event.getMessage());
             Message message = call(text, event.getSubject().getId(), event.getSender().getId(), event.getBot(), event.getSubject());

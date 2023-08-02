@@ -52,13 +52,13 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
         step(event.getBot().getId(), "f" + event.getFriend().getId(), content, event.getSubject());
     }
 
-    @Autowired
-    DefaultService defaultService;
-
     public Map<Long, Map<String, Long>> cdMap = new HashMap<>();
 
+    @Autowired
+    ConfigService configService;
+
     public void step(Long bid, String tid, String content, Contact contact) {
-        if (defaultService.isNotOpenK2(bid, tid)) return;
+        if (configService.isNotOpenK2(bid, tid)) return;
         synchronized (Utils.getBpSync(bid)) {
             long cd = Utils.getValueOrDefault(cdMap, bid, tid, 1L);
             if (System.currentTimeMillis() > cd) {
