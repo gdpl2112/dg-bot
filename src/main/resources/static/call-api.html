@@ -100,54 +100,35 @@
     <div class="row">
         <div id="table_main" class="center-block">
             <small class="form-text text-muted">此命令开关与被动回复开关一致</small>
-            <table class="table">
-                <thead>
-
-                <tr>
-                    <th scope="col" class="text-center">#</th>
-                    <th scope="col">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">
-                                <ul class="list-group">
-                                    <li class="list-group-item disabled" aria-disabled="true">输出格式</li>
-                                    <li class="list-group-item disabled" aria-disabled="true">输出参数</li>
-                                    <li class="list-group-item disabled" aria-disabled="true">触发词</li>
-                                    <li class="list-group-item disabled" aria-disabled="true">地址</li>
-                                </ul>
-                            </li>
+            <div class="container">
+                <hr>
+                <div class="row ">
+                    <div class="col-8">
+                        <ul class="list-group">
+                            <li class="list-group-item disabled" aria-disabled="true">输出格式</li>
+                            <li class="list-group-item disabled" aria-disabled="true">输出参数</li>
+                            <li class="list-group-item disabled" aria-disabled="true">触发词</li>
+                            <li class="list-group-item disabled" aria-disabled="true">地址</li>
                         </ul>
-                    </th>
-                    <th scope="col">操作</th>
-                </tr>
-
-                </thead>
-                <tr v-for="(e) in data" :class="getTrClass()">
-                    <th scope="col"><img style="width: 40px;height: 40px;" :src="getFavicon(e)" alt="icon"></th>
-                    <th scope="col">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">
-                                <ul class="list-group">
-                                    <li class="list-group-item disabled" aria-disabled="true" v-text="e.out">输出格式
-                                    </li>
-                                    <li class="list-group-item disabled" aria-disabled="true"
-                                        v-text="getStrArgs(e.outArgs)">输出参数
-                                    </li>
-                                    <li class="list-group-item disabled" aria-disabled="true" v-text="e.touch">触发词
-                                    </li>
-                                    <li class="list-group-item disabled" aria-disabled="true" v-text="e.url">地址</li>
-                                </ul>
-                            </li>
+                    </div>
+                    <div class="col-4">操作</div>
+                </div>
+                <div v-for="(e) in data" :class="getTrClass()+' row'" style="margin-top: 15px;padding-bottom: 10px;padding-top: 10px">
+                    <div class="col-8">
+                        <ul class="list-group">
+                            <li class="list-group-item" style="overflow:scroll;" v-text="e.out">输出格式</li>
+                            <li class="list-group-item" v-text="getStrArgs(e.outArgs)">输出参数</li>
+                            <li class="list-group-item" v-text="e.touch">触发词</li>
+                            <li class="list-group-item" style="overflow:scroll;" v-text="e.url">地址</li>
                         </ul>
-                    </th>
-                    <th scope="col">
-                        <br>
-                        <button v-on:click="delete0(e.touch)" type="button" class="btn btn-danger col">删除</button>
-                        <hr>
-                        <button v-on:click="modify0(e)" type="button" class="btn btn-primary col">修改</button>
-                    </th>
-                </tr>
-            </table>
-        </div>
+                    </div>
+                    <div class="col-4">
+                        <img class="rounded img-fluid img-responsive" :src="getFavicon(e)"  style="max-width: 90px">
+                        <hr> <button v-on:click="delete0(e.touch)" type="button" class="btn btn-danger col">删除</button>
+                        <hr><button v-on:click="modify0(e)" type="button" class="btn btn-primary col">修改</button>
+                    </div>
+                </div>
+            </div>
     </div>
 </div>
 <script>
