@@ -202,7 +202,6 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
     }
 
     public String filterTouch(String content) {
-
         return content;
     }
 
@@ -214,6 +213,33 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
                 return true;
             }
         }
+        return false;
+    }
+
+    public boolean isNotOpenK2(Long bid, String tid) {
+        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
+        qw.eq("qid", bid);
+        qw.eq("tid", tid);
+        GroupConf groupConf = groupConfMapper.selectOne(qw);
+        if (groupConf != null) if (!groupConf.getK2()) return true;
+        return false;
+    }
+
+    public boolean isNotOpenK1(Long bid, String tid) {
+        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
+        qw.eq("qid", bid);
+        qw.eq("tid", tid);
+        GroupConf groupConf = groupConfMapper.selectOne(qw);
+        if (groupConf != null) if (!groupConf.getK1()) return true;
+        return false;
+    }
+
+    public boolean isNotOpenK0(Long bid, String tid) {
+        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
+        qw.eq("qid", bid);
+        qw.eq("tid", tid);
+        GroupConf groupConf = groupConfMapper.selectOne(qw);
+        if (groupConf != null) if (!groupConf.getK0()) return true;
         return false;
     }
 }

@@ -14,6 +14,10 @@ public class GroupConf {
      */
     private String tid;
     /**
+     * 调用API 开关
+     */
+    private Boolean k0 = true;
+    /**
      * 撤回监听
      */
     private Boolean k1 = true;

@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.Conf;
-import io.github.gdpl2112.dg_bot.dao.GroupConf;
 import io.github.gdpl2112.dg_bot.dao.Passive;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
@@ -41,15 +40,6 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
     @Autowired
     GroupConfMapper groupConfMapper;
 
-    public boolean isNotOpenK2(Long bid, String tid) {
-        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-        qw.eq("qid", bid);
-        qw.eq("tid", tid);
-        GroupConf groupConf = groupConfMapper.selectOne(qw);
-        if (groupConf != null) if (!groupConf.getK2()) return true;
-        return false;
-    }
-
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
@@ -62,10 +52,13 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
         step(event.getBot().getId(), "f" + event.getFriend().getId(), content, event.getSubject());
     }
 
+    @Autowired
+    DefaultService defaultService;
+
     public Map<Long, Map<String, Long>> cdMap = new HashMap<>();
 
     public void step(Long bid, String tid, String content, Contact contact) {
-        if (isNotOpenK2(bid, tid)) return;
+        if (defaultService.isNotOpenK2(bid, tid)) return;
         synchronized (Utils.getBpSync(bid)) {
             long cd = Utils.getValueOrDefault(cdMap, bid, tid, 1L);
             if (System.currentTimeMillis() > cd) {

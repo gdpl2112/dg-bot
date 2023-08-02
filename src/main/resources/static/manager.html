@@ -104,8 +104,10 @@
                             <p>tid</p>
                             <p>昵称</p>
                             <span class="badge badge-pill">
-                                <button
-                                        data-toggle="tooltip" data-placement="top" title="对象监听开关"
+
+                                <button data-toggle="tooltip" data-placement="top" title="API调用开关"
+                                        class="btn btn-outline-secondary" disabled>API调用开关</button>
+                                <button data-toggle="tooltip" data-placement="top" title="对象监听开关"
                                         class="btn btn-outline-secondary" disabled>对象监听开关</button>
 
                                 <button data-toggle="tooltip" data-placement="top" title="对象被动回复开关"
@@ -120,13 +122,20 @@
                             {{e.tid}}
                             {{e.name}}
                             <span class="badge badge-pill">
+
+                                <button v-on:click="gm0(e.tid)" type="button"
+                                        data-toggle="tooltip" data-placement="top" title="API调用开关"
+                                        :class="'btn btn-outline-'+(e.k0?'success':'danger')" v-text="(e.k0?'开':'关')">开/关</button>
+
                                 <button v-on:click="gm1(e.tid)" type="button"
                                         data-toggle="tooltip" data-placement="top" title="对象监听开关"
-                                        :class="'btn btn-outline-'+(e.k1?'success':'danger')" v-text="(e.k1?'开':'关')">开/关 </button>
+                                        :class="'btn btn-outline-'+(e.k1?'success':'danger')" v-text="(e.k1?'开':'关')">开/关</button>
 
                                 <button v-on:click="gm2(e.tid)" type="button"
                                         data-toggle="tooltip" data-placement="top" title="对象被动回复开关"
+
                                         :class="'btn btn-outline-'+(e.k2?'success':'danger')" v-text="(e.k2?'开':'关')">开/关</button>
+
                             </span>
                         </li>
                     </ul>
@@ -211,7 +220,17 @@
             glist: [],
             oGlist: [],
         }, methods: {
-            gm1: function (tid) {
+            gm0: function (tid) {
+                axios.get("/gc0?tid=" + tid).then(function (response) {
+                    if (response.data === true) {
+                        vm2.glist.forEach((e) => {
+                            if (e.tid === tid) e.k1 = !e.k1;
+                        })
+                    }
+                }).catch(function (err) {
+                    alert(err);
+                })
+            }, gm1: function (tid) {
                 axios.get("/gc1?tid=" + tid).then(function (response) {
                     if (response.data === true) {
                         vm2.glist.forEach((e) => {
