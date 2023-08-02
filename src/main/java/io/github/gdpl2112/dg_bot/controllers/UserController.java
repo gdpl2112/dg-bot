@@ -8,6 +8,7 @@ import io.github.kloping.judge.Judge;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -139,35 +140,13 @@ public class UserController {
         if (bot != null) {
             for (Friend friend : bot.getFriends()) {
                 String tid = "f" + friend.getId();
-                JSONObject jo = new JSONObject();
-                if (tid2conf.containsKey(tid)) {
-                    GroupConf f0 = tid2conf.get(tid);
-                    jo.put("k1", f0.getK1());
-                    jo.put("k2", f0.getK2());
-                } else {
-                    jo.put("k1", true);
-                    jo.put("k2", true);
-                }
-                jo.put("tid", tid);
-                jo.put("name", friend.getRemark());
-                jo.put("icon", friend.getAvatarUrl());
+                JSONObject jo = setSwitchInfo(tid2conf, tid, friend.getRemark(), friend.getAvatarUrl());
                 outList.add(jo);
             }
 
             for (Group group : bot.getGroups()) {
                 String tid = "g" + group.getId();
-                JSONObject jo = new JSONObject();
-                if (tid2conf.containsKey(tid)) {
-                    GroupConf f0 = tid2conf.get(tid);
-                    jo.put("k1", f0.getK1());
-                    jo.put("k2", f0.getK2());
-                } else {
-                    jo.put("k1", true);
-                    jo.put("k2", true);
-                }
-                jo.put("tid", tid);
-                jo.put("name", group.getName());
-                jo.put("icon", group.getAvatarUrl());
+                JSONObject jo = setSwitchInfo(tid2conf, tid, group.getName(), group.getAvatarUrl());
                 outList.add(jo);
             }
         } else {
@@ -178,13 +157,31 @@ public class UserController {
                 jo.put("tid", conf.getTid());
                 jo.put("name", conf.getTid());
                 String aid = conf.getTid().substring(1);
-                jo.put("icon",
-                        conf.getTid().substring(0, 1).equals("g") ?
-                                String.format("http://p.qlogo.cn/gh/%s/%s/640", aid, aid) :
-                                String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", aid));
+                jo.put("icon", conf.getTid().substring(0, 1).equals("g") ?
+                        String.format("http://p.qlogo.cn/gh/%s/%s/640", aid, aid) :
+                        String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", aid));
             }
         }
         return outList;
+    }
+
+    @NotNull
+    private static JSONObject setSwitchInfo(Map<String, GroupConf> tid2conf, String tid, String name, String icon) {
+        JSONObject jo = new JSONObject();
+        if (tid2conf.containsKey(tid)) {
+            GroupConf f0 = tid2conf.get(tid);
+            jo.put("k0", f0.getK0());
+            jo.put("k1", f0.getK1());
+            jo.put("k2", f0.getK2());
+        } else {
+            jo.put("k0", true);
+            jo.put("k1", true);
+            jo.put("k2", true);
+        }
+        jo.put("tid", tid);
+        jo.put("name", name);
+        jo.put("icon", icon);
+        return jo;
     }
 
     @RequestMapping("gc0")

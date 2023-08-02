@@ -107,6 +107,7 @@
 
                                 <button data-toggle="tooltip" data-placement="top" title="API调用开关"
                                         class="btn btn-outline-secondary" disabled>API调用开关</button>
+
                                 <button data-toggle="tooltip" data-placement="top" title="对象监听开关"
                                         class="btn btn-outline-secondary" disabled>对象监听开关</button>
 
@@ -224,7 +225,7 @@
                 axios.get("/gc0?tid=" + tid).then(function (response) {
                     if (response.data === true) {
                         vm2.glist.forEach((e) => {
-                            if (e.tid === tid) e.k1 = !e.k1;
+                            if (e.tid === tid) e.k0 = !e.k0;
                         })
                     }
                 }).catch(function (err) {
