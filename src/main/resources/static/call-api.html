@@ -132,17 +132,15 @@
     </div>
 </div>
 <script>
+    let e_out = $("#inputGroup-out").next();
+    let e_outArgs = $("#inputGroup-outArgs").next();
+    let e_touch = $("#inputGroup-touch").next();
+    let e_url = $("#inputGroup-url").next();
     function submit0() {
-        let e_out = $("#inputGroup-out").next();
-        let e_outArgs = $("#inputGroup-outArgs").next();
-        let e_touch = $("#inputGroup-touch").next();
-        let e_url = $("#inputGroup-url").next();
-
         let v1 = encodeURIComponent(e_out.val())
         let v2 = encodeURIComponent(e_outArgs.val())
         let v3 = encodeURIComponent(e_touch.val())
         let v4 = encodeURIComponent(e_url.val())
-
         let url = "/ca/append?out=" + v1
                 + "&outArgs=" + v2
                 + "&touch=" + v3
@@ -164,6 +162,10 @@
     function add0() {
         $('#exampleModalLabel').html('添加一个API');
         $('#appendModal').modal('show')
+        e_out.val("")
+        e_outArgs.val("")
+        e_touch.val("")
+        e_url.val("")
     }
 
     let trClasses = ["alert-primary", "alert-secondary", "alert-success", "alert-danger", "alert-warning", "alert-info", "alert-light", "alert-dark"];
@@ -193,11 +195,10 @@
                     alert(err);
                 })
             }, modify0: function (e) {
-                $("#inputGroup-out").next().val(e.out)
-                $("#inputGroup-outArgs").next().val(e.outArgs)
-                $("#inputGroup-touch").next().val(e.touch)
-                $("#inputGroup-url").next().val(e.url)
-
+                e_out.val(e.out)
+                e_outArgs.val(e.outArgs)
+                e_touch.val(e.touch)
+                e_url.val(e.url)
                 $('#exampleModalLabel').html('修改一个API');
                 $('#appendModal').modal('show')
             }, getTrClass: function () {
