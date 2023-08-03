@@ -59,6 +59,9 @@ public class CallApiService extends SimpleListenerHost {
     @Autowired
     CallTemplateMapper callTemplateMapper;
 
+    @Autowired
+    CallApiServiceWorker worker;
+
     /**
      * step1
      *
@@ -82,10 +85,10 @@ public class CallApiService extends SimpleListenerHost {
             String[] args = new String[oArgs.length - 1];
             System.arraycopy(oArgs, 1, args, 0, args.length);
             //step in
-            Connection connection = Worker.doc(bot, gid, qid, template, text, args);
+            ConnectionContext connection = worker.doc(bot, gid, qid, template, text, args);
             if (connection == null) return null;
             //step out
-            return Worker.work(connection, template, bot, gid, qid, subject);
+            return worker.work(connection, template, bot, gid, qid, subject);
         } catch (Exception e) {
             e.printStackTrace();
         }

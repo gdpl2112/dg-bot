@@ -3,13 +3,11 @@ package io.github.gdpl2112.dg_bot.built.callapi;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import io.github.kloping.io.ReadUtils;
 import io.github.kloping.number.NumberUtils;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.Member;
-import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 
 import java.net.URLEncoder;
@@ -112,19 +110,16 @@ public class Converter {
     /**
      * 从获取到的数据 按指定方式转为数据类型
      *
-     * @param t1
+     * @param context
      * @param outArg
      * @param doc0
      * @return
      * @throws Exception
      */
-    public static Object get(Connection t1, String outArg, AtomicReference<Document> doc0) throws Exception {
-        if (outArg.equals(ALL)) return ReadUtils.readAll(t1.execute().bodyStream(), "utf-8");
-        if (outArg.equals(PAR_URL)) return t1.get().location();
-        if (doc0.get() == null) {
-            doc0.set(t1.get());
-        }
-        return getOutEnd(doc0.get().body().text(), outArg);
+    public static Object get(ConnectionContext context, String outArg) throws Exception {
+        if (outArg.equals(ALL)) return context.getBody();
+        if (outArg.equals(PAR_URL)) return context.getUrl();
+        return getOutEnd(context.getBody(), outArg);
     }
 
     /**
