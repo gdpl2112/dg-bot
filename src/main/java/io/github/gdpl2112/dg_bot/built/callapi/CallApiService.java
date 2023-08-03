@@ -71,33 +71,21 @@ public class CallApiService extends SimpleListenerHost {
      */
     public Message call(String text, long gid, long qid, Bot bot, Contact subject) {
         try {
-            String[] ss = text.split("\\s|,|，");
-            if (ss == null || ss.length == 0) return null;
-            String first = ss[0];
+            String[] oArgs = text.split("\\s|,|，");
+            if (oArgs == null || oArgs.length == 0) return null;
+            String first = oArgs[0];
             QueryWrapper<CallTemplate> qw = new QueryWrapper<>();
             qw.eq("qid", bot.getId());
             qw.eq("touch", first);
             CallTemplate template = callTemplateMapper.selectOne(qw);
-            if (template == null) {
-//                QueryWrapper<CallTemplate> qw1 = new QueryWrapper<>();
-//                qw1.eq("qid", bot.getId());
-//                for (CallTemplate callTemplate : callTemplateMapper.selectList(qw1)) {
-//                    if (text.startsWith(callTemplate.touch)) {
-//                        template = callTemplate;
-//                        ss = new String[]{template.touch, text.substring(template.touch.length())};
-//                        break;
-//                    }
-//                }
-                return null;
-            }
             if (template == null) return null;
-            String[] ss0 = new String[ss.length - 1];
-            System.arraycopy(ss, 1, ss0, 0, ss0.length);
+            String[] args = new String[oArgs.length - 1];
+            System.arraycopy(oArgs, 1, args, 0, args.length);
             //step in
-            Connection connection = Worker.doc(bot, gid, qid, template, ss0);
+            Connection connection = Worker.doc(bot, gid, qid, template, text, args);
             if (connection == null) return null;
             //step out
-            return Worker.work(connection, template, bot, gid, qid,subject);
+            return Worker.work(connection, template, bot, gid, qid, subject);
         } catch (Exception e) {
             e.printStackTrace();
         }

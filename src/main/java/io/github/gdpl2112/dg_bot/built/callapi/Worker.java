@@ -60,11 +60,15 @@ public class Worker {
     }
 
     //step 1
-    public static Connection doc(Bot bot, long gid, long qid, CallTemplate template, String... args) throws Exception {
+    public static Connection doc(Bot bot, long gid, long qid, CallTemplate template, String text, String... args) throws Exception {
         int i = 1;
         String url = template.url;
-        for (String arg : args) {
-            url = url.replaceFirst(String.format(Converter.CHAR0, i++), arg);
+        if (onlyOneArg(url)) {
+            url = url.replaceAll("\\$1", text.substring(template.touch.length()).trim());
+        } else {
+            for (String arg : args) {
+                url = url.replaceFirst(String.format(Converter.CHAR0, i++), arg);
+            }
         }
         url = Converter.filterArgs(url, bot, gid, qid, args);
         url = filterCall(url, template);
@@ -74,6 +78,17 @@ public class Worker {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static boolean onlyOneArg(String url) {
+        int i = 0;
+        while (true) {
+            i++;
+            String f = String.format("$%s", i);
+            if (url.contains(f)) continue;
+            else break;
+        }
+        return i == 2;
     }
 
     public static String filterCall(String url, CallTemplate template) throws Exception {
