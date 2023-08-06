@@ -2,7 +2,9 @@ package io.github.gdpl2112.dg_bot;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import io.github.gdpl2112.dg_bot.built.callapi.Converter;
 import io.github.kloping.clasz.ClassUtils;
+import io.github.kloping.judge.Judge;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +55,113 @@ public class Utils {
         return BP_SYNC_MAP.get(key);
     }
 
+    /**
+     * 判断表达式是否成立
+     *
+     * @param jude
+     * @param json
+     * @return
+     */
+    public static boolean jude(String jude, String json) {
+        if (Judge.isEmpty(jude)) return false;
+        String[] judes = jude.split("\\|\\||&&");
+        Logic logic = null;
+        if (judes.length == 2) {
+            if (jude.contains("&&")) {
+                logic = new Logic(Logic.LIMITER_AND,
+                        new Logic(null, null, judes[1])
+                        , judes[0]);
+            } else if (jude.contains("||")) {
+                logic = new Logic(Logic.LIMITER_OR,
+                        new Logic(null, null, judes[1])
+                        , judes[0]);
+            }
+        } else {
+            logic = new Logic(null, null, judes[0]);
+        }
+        return logic.getV(json);
+    }
+
+    public static class Logic {
+        public static final String LIMITER_AND = "and";
+        public static final String LIMITER_OR = "or";
+        private String limiter;
+        private Boolean v;
+        private Logic logic;
+        private String exp;
+
+        public Boolean getV(String json) {
+            if (logic != null) {
+                if (LIMITER_AND.equals(limiter)) {
+                    return getLogic(json) && logic.getLogic(json);
+                } else if (LIMITER_OR.equals(limiter)) {
+                    return getLogic(json) || logic.getLogic(json);
+                } else return false;
+            } else return getLogic(json);
+        }
+
+        public Boolean getLogic(String json) {
+            String[] kov = exp.split("[><]|={2}");
+            String key = kov[0];
+            String value = kov[1];
+            String op = exp.substring(key.length(), key.length() + (exp.length() - key.length() - value.length()));
+            if (op.equals("==")) {
+                Object kv;
+                if (key.equals("$all")) kv = json;
+                else kv = Converter.getOutEnd(json, key, null);
+                if (value.equalsIgnoreCase("NULL")) {
+                    if (kv == null || "NULL".equalsIgnoreCase(kv.toString())) return true;
+                    else return false;
+                } else {
+                    return value.equals(kv.toString());
+                }
+            } else if (op.equals("<")) {
+                try {
+                    Double dk = Double.parseDouble(value);
+                    Double kv = Double.parseDouble(Converter.getOutEnd(json, key, null).toString());
+                    return kv < dk;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            } else if (op.equals(">")) {
+                try {
+                    Double dk = Double.parseDouble(value);
+                    Double kv = Double.parseDouble(Converter.getOutEnd(json, key, null).toString());
+                    return kv > dk;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        public Logic() {
+        }
+
+        public Logic(String limiter, Logic logic, String exp) {
+            this.limiter = limiter;
+            this.logic = logic;
+            this.exp = exp;
+        }
+
+        public void setLimiter(String limiter) {
+            this.limiter = limiter;
+        }
+
+        public void setV(Boolean v) {
+            this.v = v;
+        }
+
+        public void setLogic(Logic logic) {
+            this.logic = logic;
+        }
+
+        public void setExp(String exp) {
+            this.exp = exp;
+        }
+    }
 
     /**
      * Created by lingsf on 2019/11/5.

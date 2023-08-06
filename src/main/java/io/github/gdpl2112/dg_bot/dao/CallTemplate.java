@@ -20,5 +20,6 @@ public class CallTemplate {
     public String url;
     public String out;
     public String outArgs;
+    public String jude;
     public String err = "调用失败";
 }

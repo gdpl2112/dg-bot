@@ -46,7 +46,9 @@ public class UserCallApiController {
                          @RequestParam("touch") String touch,
                          @RequestParam("out") String out,
                          @RequestParam("outArgs") String outArgs,
-                         @RequestParam("url") String url) {
+                         @RequestParam("jude") String jude,
+                         @RequestParam("url") String url
+    ) {
         if (Judge.isEmpty(touch)) return getAll(userDetails);
         if (Judge.isEmpty(url)) return getAll(userDetails);
         if (Judge.isEmpty(out)) return getAll(userDetails);
@@ -65,6 +67,7 @@ public class UserCallApiController {
         template.setOutArgs(outArgs);
         template.setUrl(url);
         template.setTouch(touch);
+        template.setJude(jude);
         if (modify) {
             callTemplateMapper.update(template, qw);
         } else {

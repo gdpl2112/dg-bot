@@ -1,8 +1,10 @@
 package io.github.gdpl2112.dg_bot.built.callapi;
 
 import com.alibaba.fastjson.JSON;
+import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.CallTemplate;
+import io.github.kloping.judge.Judge;
 import io.github.kloping.reg.MatcherUtils;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
@@ -20,6 +22,7 @@ import java.net.URI;
 public class CallApiServiceWorker {
 
     public Message work(ConnectionContext connection, CallTemplate template, Bot bot, long gid, long qid, Contact subject) {
+        if (jude(template, connection)) return null;
         Message message = null;
         String out = template.out;
         try {
@@ -48,6 +51,7 @@ public class CallApiServiceWorker {
             out = "调用时失败";
         }
         try {
+            out = out.replaceAll("\\n", "\n");
             message = DgSerializer.stringDeserializeToMessageChain(out, bot, subject);
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,6 +59,11 @@ public class CallApiServiceWorker {
             message = new PlainText(out);
         }
         return message;
+    }
+
+    private boolean jude(CallTemplate template, ConnectionContext connection) {
+        if (Judge.isEmpty(template.jude)) return false;
+        else return Utils.jude(template.jude, connection.getBody());
     }
 
     //step 1

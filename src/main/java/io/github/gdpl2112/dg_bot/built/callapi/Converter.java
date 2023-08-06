@@ -8,11 +8,9 @@ import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.Member;
-import org.jsoup.nodes.Document;
 
 import java.net.URLEncoder;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,8 +99,7 @@ public class Converter {
         }
         if (url.contains(GNAME)) {
             Group group = bot.getGroup(gid);
-            if (group != null)
-                url = url.replaceAll(GNAME0, group.getName());
+            if (group != null) url = url.replaceAll(GNAME0, group.getName());
         }
         return url;
     }
@@ -131,6 +128,18 @@ public class Converter {
      * @throws Exception
      */
     public static Object getOutEnd(String json, final String arg0) {
+        return getOutEnd(json, arg0, arg0);
+    }
+
+    /**
+     * def
+     *
+     * @param json
+     * @param arg0
+     * @param def
+     * @return
+     */
+    public static Object getOutEnd(String json, final String arg0, String def) {
         try {
             JSON j0 = (JSON) JSON.parse(json);
             String arg = arg0.trim();
@@ -166,17 +175,17 @@ public class Converter {
                 if (arg.length() >= len) arg = arg.substring(len);
                 else arg = arg.substring(len - 1);
             }
-            if (o == null) return arg0;
+            if (o == null) return def;
             if (arg.length() > 0) {
                 return getOutEnd(JSON.toJSONString(o), arg);
             } else {
                 return o;
             }
         } catch (com.alibaba.fastjson.JSONException jex) {
-            return arg0;
+            return def;
         } catch (Exception ex) {
             ex.printStackTrace();
-            return arg0;
+            return def;
         }
     }
 }

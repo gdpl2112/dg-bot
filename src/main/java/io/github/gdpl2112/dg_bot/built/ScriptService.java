@@ -148,9 +148,14 @@ public class ScriptService extends SimpleListenerHost {
 
         @Override
         public Image uploadImage(String url) {
-            byte[] bytes = UrlUtils.getBytesFromHttpUrl(url);
-            Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes));
-            return image;
+            try {
+                byte[] bytes = UrlUtils.getBytesFromHttpUrl(url);
+                Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes));
+                return image;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
         }
 
         @Override

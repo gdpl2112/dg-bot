@@ -74,6 +74,11 @@
                     <span class="input-group-text" id="inputGroup-url">网址</span>
                     <input type="text" class="form-control" aria-label="Sizing example input">
                 </div>
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="inputGroup-jude">否条件</span>
+                    <input type="text" class="form-control" aria-label="Sizing example input">
+                </div>
+
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
@@ -109,6 +114,7 @@
                             <li class="list-group-item disabled" aria-disabled="true">输出参数</li>
                             <li class="list-group-item disabled" aria-disabled="true">触发词</li>
                             <li class="list-group-item disabled" aria-disabled="true">地址</li>
+                            <li class="list-group-item disabled" aria-disabled="true">不输出条件</li>
                         </ul>
                     </div>
                     <div class="col-4">操作</div>
@@ -120,6 +126,7 @@
                             <li class="list-group-item" v-text="getStrArgs(e.outArgs)">输出参数</li>
                             <li class="list-group-item" v-text="e.touch">触发词</li>
                             <li class="list-group-item" style="overflow:scroll;" v-text="e.url">地址</li>
+                            <li class="list-group-item" style="overflow:scroll;" v-text="e.jude">不输出条件</li>
                         </ul>
                     </div>
                     <div class="col-4">
@@ -136,15 +143,18 @@
     let e_outArgs = $("#inputGroup-outArgs").next();
     let e_touch = $("#inputGroup-touch").next();
     let e_url = $("#inputGroup-url").next();
+    let e_jude = $("#inputGroup-jude").next();
     function submit0() {
         let v1 = encodeURIComponent(e_out.val())
         let v2 = encodeURIComponent(e_outArgs.val())
         let v3 = encodeURIComponent(e_touch.val())
         let v4 = encodeURIComponent(e_url.val())
+        let v5 = encodeURIComponent(e_jude.val())
         let url = "/ca/append?out=" + v1
                 + "&outArgs=" + v2
                 + "&touch=" + v3
                 + "&url=" + v4
+                + "&jude=" + v5
         ;
 
         axios.post(url).then(function (response) {
@@ -154,6 +164,7 @@
             e_outArgs.val("")
             e_touch.val("")
             e_url.val("")
+            e_jude.val("")
         }).catch(function (err) {
             alert(err);
         })
@@ -166,6 +177,7 @@
         e_outArgs.val("")
         e_touch.val("")
         e_url.val("")
+        e_jude.val("")
     }
 
     let trClasses = ["alert-primary", "alert-secondary", "alert-success", "alert-danger", "alert-warning", "alert-info", "alert-light", "alert-dark"];
@@ -199,6 +211,7 @@
                 e_outArgs.val(e.outArgs)
                 e_touch.val(e.touch)
                 e_url.val(e.url)
+                e_jude.val(e.jude)
                 $('#exampleModalLabel').html('修改一个API');
                 $('#appendModal').modal('show')
             }, getTrClass: function () {
