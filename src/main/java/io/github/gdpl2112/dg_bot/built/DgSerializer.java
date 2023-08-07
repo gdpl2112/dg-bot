@@ -121,7 +121,7 @@ public class DgSerializer {
                     case "at":
                         long tid = -1L;
                         if (s2.contains("?")) tid = contact.getId();
-                        else Long.parseLong(s2);
+                        else tid = Long.parseLong(s2);
                         msg = new At(tid);
                         break;
                     case "voice":
