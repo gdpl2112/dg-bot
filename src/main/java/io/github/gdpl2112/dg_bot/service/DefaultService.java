@@ -17,7 +17,6 @@ import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
-import net.mamoe.mirai.message.code.MiraiCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -110,7 +109,8 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             return;
         }
         if (content.startsWith(conf.getRetell())) {
-            contact.sendMessage(MiraiCode.deserializeMiraiCode(content.substring(conf.getRetell().length())));
+            contact.sendMessage(DgSerializer.stringDeserializeToMessageChain(
+                    content.substring(conf.getRetell().length()), contact.getBot(), contact));
         }
         //开回复
         if (content.startsWith(conf.getOpen0())) {
