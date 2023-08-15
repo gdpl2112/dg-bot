@@ -9,11 +9,15 @@ import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
+import net.mamoe.mirai.message.code.MiraiCode;
+import net.mamoe.mirai.message.data.Message;
+import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,12 +47,16 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
+        if (Judge.isEmpty(content))
+            content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
         step(event.getBot().getId(), "g" + event.getGroup().getId(), content, event.getSubject());
     }
 
     @EventHandler
     public void onEvent(FriendMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
+        if (Judge.isEmpty(content))
+            content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
         step(event.getBot().getId(), "f" + event.getFriend().getId(), content, event.getSubject());
     }
 
@@ -68,7 +76,9 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
                     out = Utils.getRandT(passives).getOut();
                     if (out != null) {
                         try {
-                            contact.sendMessage(DgSerializer.stringDeserializeToMessageChain(out, contact.getBot(), contact));
+                            MessageChain msg = DgSerializer.stringDeserializeToMessageChain(out, contact.getBot(), contact);
+                            if (msg.isEmpty()) msg = MiraiCode.deserializeMiraiCode(content);
+                            contact.sendMessage(msg);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }

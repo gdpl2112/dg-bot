@@ -12,11 +12,14 @@ import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
+import net.mamoe.mirai.message.code.MiraiCode;
+import net.mamoe.mirai.message.data.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -65,6 +68,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
+        if (Judge.isEmpty(content)) content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
         Long bid = event.getBot().getId();
         String tid = "g" + event.getSender().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
@@ -73,6 +77,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
     @EventHandler
     public void onEvent(FriendMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
+        if (Judge.isEmpty(content)) content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
         Long bid = event.getBot().getId();
         String tid = "f" + event.getSender().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
