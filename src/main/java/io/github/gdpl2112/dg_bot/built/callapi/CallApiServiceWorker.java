@@ -51,7 +51,7 @@ public class CallApiServiceWorker {
             out = "调用时失败";
         }
         try {
-            out = out.replaceAll("\\n", "\n");
+            out = out.replaceAll("\\\\n", "\n");
             message = DgSerializer.stringDeserializeToMessageChain(out, bot, subject);
         } catch (Exception e) {
             e.printStackTrace();

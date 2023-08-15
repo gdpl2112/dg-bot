@@ -181,7 +181,7 @@ public class Converter {
             } else {
                 return o;
             }
-        } catch (com.alibaba.fastjson.JSONException jex) {
+        } catch (com.alibaba.fastjson.JSONException | java.lang.ClassCastException jex) {
             return def;
         } catch (Exception ex) {
             ex.printStackTrace();
