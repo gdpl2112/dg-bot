@@ -84,6 +84,14 @@ public interface ScriptContext {
     Image uploadImage(String url);
 
     /**
+     * 构建 文本
+     *
+     * @param text
+     * @return
+     */
+    PlainText newPlainText(String text);
+
+    /**
      * 所处环境
      *
      * @return

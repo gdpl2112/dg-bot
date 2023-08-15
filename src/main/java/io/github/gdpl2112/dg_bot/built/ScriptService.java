@@ -159,6 +159,11 @@ public class ScriptService extends SimpleListenerHost {
         }
 
         @Override
+        public PlainText newPlainText(String text) {
+            return new PlainText(text);
+        }
+
+        @Override
         public String getType() {
             return event instanceof GroupMessageEvent || event instanceof GroupMessageSyncEvent ? "group" : event instanceof FriendMessageEvent ? "friend" : "Unknown";
         }
