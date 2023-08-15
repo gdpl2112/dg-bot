@@ -69,7 +69,7 @@ function formatMsgTime1(timespan, or) {
 
 function formatMsgTime0(timespan) {
     let dateTime = new Date(timespan)
-    let day = dateTime.getDate()
+    let day = dateTime.getDay()
     let hour = dateTime.getHours()
     let minute = dateTime.getMinutes()
     return day + "日" + hour + ":" + minute;
