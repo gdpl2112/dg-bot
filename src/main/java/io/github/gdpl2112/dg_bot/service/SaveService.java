@@ -15,10 +15,7 @@ import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.*;
 import net.mamoe.mirai.message.code.MiraiCode;
-import net.mamoe.mirai.message.data.FlashImage;
-import net.mamoe.mirai.message.data.Message;
-import net.mamoe.mirai.message.data.MessageChainBuilder;
-import net.mamoe.mirai.message.data.SingleMessage;
+import net.mamoe.mirai.message.data.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -123,7 +120,7 @@ public class SaveService extends SimpleListenerHost {
         if (isListening(event.getBot(), "g", group.getId())) return;
         AllMessage all = getMessage(event);
         if (all != null) {
-            Message m0 = MiraiCode.deserializeMiraiCode(all.getContent());
+            Message m0 = MessageChain.deserializeFromJsonString(all.getContent());
             MessageChainBuilder builder = new MessageChainBuilder();
             builder.append("'").append(member.getNameCard()).append("(" + member.getId() + ")").append("'在群聊'")
                     .append(event.getGroup().getName()).append("(" + group.getId() + ")'撤回消息:").append(m0);
@@ -140,7 +137,7 @@ public class SaveService extends SimpleListenerHost {
         if (isListening(event.getBot(), "f", friend.getId())) return;
         AllMessage all = getMessage(event);
         if (all != null) {
-            Message m0 = MiraiCode.deserializeMiraiCode(all.getContent());
+            Message m0 = MessageChain.deserializeFromJsonString(all.getContent());
             MessageChainBuilder builder = new MessageChainBuilder();
             builder.append("'").append(friend.getNick()).append("(" + friend.getId() + ")'在私聊").append("撤回了:").append(m0);
             Message message = builder.build();

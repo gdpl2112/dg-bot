@@ -20,6 +20,7 @@ import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.message.code.MiraiCode;
 import net.mamoe.mirai.message.data.Message;
+import net.mamoe.mirai.message.data.MessageChain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -68,16 +69,16 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
-        if (Judge.isEmpty(content)) content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
+        if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
         Long bid = event.getBot().getId();
-        String tid = "g" + event.getSender().getId();
+        String tid = "g" + event.getSubject().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
     }
 
     @EventHandler
     public void onEvent(FriendMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
-        if (Judge.isEmpty(content)) content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
+        if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
         Long bid = event.getBot().getId();
         String tid = "f" + event.getSender().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());

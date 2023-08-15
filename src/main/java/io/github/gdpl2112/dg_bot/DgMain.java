@@ -3,6 +3,7 @@ package io.github.gdpl2112.dg_bot;
 import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.MySpringTool.interfaces.component.PackageScanner;
+import net.mamoe.mirai.message.data.ForwardMessage;
 import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -98,8 +99,6 @@ public class DgMain implements CommandLineRunner {
             System.out.println("call_template添加字段");
             jdbcTemplate.update("ALTER TABLE 'call_template' ADD 'jude' VARCHAR(30) NOT NULL DEFAULT '';");
         }
-
-
     }
 
     /**

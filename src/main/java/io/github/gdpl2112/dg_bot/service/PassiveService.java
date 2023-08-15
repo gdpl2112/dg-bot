@@ -15,8 +15,6 @@ import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
-import net.mamoe.mirai.message.code.MiraiCode;
-import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,16 +45,14 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
-        if (Judge.isEmpty(content))
-            content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
+        if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
         step(event.getBot().getId(), "g" + event.getGroup().getId(), content, event.getSubject());
     }
 
     @EventHandler
     public void onEvent(FriendMessageEvent event) {
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
-        if (Judge.isEmpty(content))
-            content = MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) event.getMessage());
+        if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
         step(event.getBot().getId(), "f" + event.getFriend().getId(), content, event.getSubject());
     }
 
@@ -76,8 +72,12 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
                     out = Utils.getRandT(passives).getOut();
                     if (out != null) {
                         try {
-                            MessageChain msg = DgSerializer.stringDeserializeToMessageChain(out, contact.getBot(), contact);
-                            if (msg.isEmpty()) msg = MiraiCode.deserializeMiraiCode(content);
+                            MessageChain msg = null;
+                            if (possible(out)) {
+                                msg = MessageChain.deserializeFromJsonString(out);
+                            }
+                            if (msg == null || msg.isEmpty())
+                                msg = DgSerializer.stringDeserializeToMessageChain(out, contact.getBot(), contact);
                             contact.sendMessage(msg);
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -92,6 +92,10 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
                 }
             }
         }
+    }
+
+    private boolean possible(String content) {
+        return content.startsWith("[{") && content.endsWith("}]");
     }
 
 

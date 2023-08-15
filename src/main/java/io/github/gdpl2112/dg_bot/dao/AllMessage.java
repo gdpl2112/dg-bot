@@ -5,9 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import net.mamoe.mirai.event.events.*;
-import net.mamoe.mirai.message.action.MemberNudge;
-import net.mamoe.mirai.message.code.MiraiCode;
-import net.mamoe.mirai.message.data.*;
+import net.mamoe.mirai.message.data.MessageChain;
+import net.mamoe.mirai.message.data.MessageSource;
+import net.mamoe.mirai.message.data.OnlineMessageSource;
 
 /**
  * @author github-kloping
@@ -136,7 +136,7 @@ public class AllMessage {
     }
 
     private static String getText(MessageChain chain) {
-        return MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) chain);
+        return MessageChain.serializeToJsonString(chain);
     }
 
     public int getIntTime() {
