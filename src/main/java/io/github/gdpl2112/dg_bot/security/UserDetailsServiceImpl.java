@@ -48,8 +48,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         } else {
             builder.authorities(AuthorityUtils.commaSeparatedStringToAuthorityList("user"));
         }
-
-
         return builder.build();
     }
 }

@@ -64,18 +64,15 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text">年</span>
                     </div>
-                    <input :qid="e.qid" :id="'year-'+e.qid" type="text" class="form-control o"
-                           :value="new Date(e.exp).getFullYear()">
+                    <input :qid="e.qid" :id="'year-'+e.qid" type="text" class="form-control o" :value="e.y">
                     <div class="input-group-prepend">
                         <span class="input-group-text">月</span>
                     </div>
-                    <input :qid="e.qid" :id="'month-'+e.qid" type="text" class="form-control o"
-                           :value="new Date(e.exp).getMonth()">
+                    <input :qid="e.qid" :id="'month-'+e.qid" type="text" class="form-control o" :value="e.m">
                     <div class="input-group-prepend">
                         <span class="input-group-text" id="addon-wrapping">日</span>
                     </div>
-                    <input :qid="e.qid" :id="'day-'+e.qid" type="text" class="form-control o"
-                           :value="new Date(e.exp).getDay()">
+                    <input :qid="e.qid" :id="'day-'+e.qid" type="text" class="form-control o" :value="e.d">
                     &nbsp;&nbsp;
                 </div>
                 <button type="button" class="btn btn-info" v-on:click="modify(e.qid)">修改</button>
@@ -124,12 +121,15 @@
         $(".i").change(function (e) {
             let qid = $(this).attr("qid")
             let exp = $("#exp-" + qid).val()
-            let date = new Date(Number(exp))
-            $("#year-" + qid).val(date.getFullYear())
-            $("#month-" + qid).val(date.getMonth())
-            $("#day-" + qid).val(date.getDay())
+            axios.get("/m/exp-ymd?exp=" + exp).then(function (response) {
+                let ds = response.data
+                $("#year-" + qid).val(ds[0])
+                $("#month-" + qid).val(ds[1])
+                $("#day-" + qid).val(ds[2])
+            }).catch(function (err) {
+                alert(err);
+            })
         });
-
     });
 </script>
 <script src="/js/utils.js"></script>

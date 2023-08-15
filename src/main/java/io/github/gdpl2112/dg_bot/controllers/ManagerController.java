@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.controllers;
 
+import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -21,9 +23,24 @@ public class ManagerController {
     @Autowired
     AuthMapper authMapper;
 
+    private static final SimpleDateFormat SF_DD = new SimpleDateFormat("dd");
+    private static final SimpleDateFormat SF_MM = new SimpleDateFormat("MM");
+    private static final SimpleDateFormat SF_YY = new SimpleDateFormat("yyyy");
+
     @RequestMapping("list")
     public List<AuthM> list() {
-        return authMapper.selectList(null);
+        List list = new ArrayList();
+        for (AuthM authM : authMapper.selectList(null)) {
+            JSONObject jo = new JSONObject();
+            jo.put("qid", authM.getQid());
+            jo.put("auth", authM.getAuth());
+            jo.put("exp", authM.getExp());
+            jo.put("y", SF_YY.format(authM.getExp()));
+            jo.put("m", SF_MM.format(authM.getExp()));
+            jo.put("d", SF_DD.format(authM.getExp()));
+            list.add(jo);
+        }
+        return list;
     }
 
     @RequestMapping("modify")
@@ -45,5 +62,13 @@ public class ManagerController {
             e.printStackTrace();
             return 0L;
         }
+    }
+
+    @RequestMapping("exp-ymd")
+    public String[] expYmd(@RequestParam("exp") Long exp) {
+        return new String[]{
+                SF_YY.format(exp),
+                SF_MM.format(exp),
+                SF_DD.format(exp)};
     }
 }
