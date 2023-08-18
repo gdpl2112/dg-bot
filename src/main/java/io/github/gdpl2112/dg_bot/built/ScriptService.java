@@ -189,5 +189,27 @@ public class ScriptService extends SimpleListenerHost {
             MapUtils.append(BID_2_VARIABLES, event.getBot().getId(), name, value, HashMap.class);
             return ov;
         }
+
+        @Override
+        public Integer clear() {
+            int i = 0;
+            Map<String, Object> sizeMap = BID_2_VARIABLES.get(event.getBot().getId());
+            if (sizeMap != null) {
+                i = sizeMap.size();
+                sizeMap.clear();
+            }
+            return i;
+        }
+
+        @Override
+        public Object del(String name) {
+            Map<String, Object> sizeMap = BID_2_VARIABLES.get(event.getBot().getId());
+            if (sizeMap != null) {
+                Object oa = sizeMap.get(name);
+                sizeMap.remove(name);
+                return oa;
+            }
+            return null;
+        }
     }
 }

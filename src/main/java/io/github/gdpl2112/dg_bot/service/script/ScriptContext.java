@@ -132,4 +132,19 @@ public interface ScriptContext {
      * @return
      */
     Object set(String name, Object value);
+
+    /**
+     * 清除当前账号的所有变量
+     *
+     * @return
+     */
+    Integer clear();
+
+    /**
+     * 删除指定变量
+     *
+     * @param name
+     * @return
+     */
+    Object del(String name);
 }
