@@ -68,6 +68,8 @@ public class ScriptService extends SimpleListenerHost {
         stepScript(event.getBot(), new BaseScriptContext(event, template), event.getMessage());
     }
 
+    public Map<String, ScriptException> exceptionMap = new HashMap<>();
+
     private void stepScript(Bot bot, BaseScriptContext context, MessageChain chain) {
         Conf conf = confMapper.selectById(bot.getId());
         if (conf == null) return;
@@ -81,6 +83,11 @@ public class ScriptService extends SimpleListenerHost {
                 javaScript.eval(conf.getCode());
             } catch (Throwable e) {
                 e.printStackTrace();
+                String err = Utils.getExceptionLine(e);
+                err = e + err;
+                Long bid = bot.getId();
+                ScriptException se = new ScriptException(err, System.currentTimeMillis(), bid);
+                exceptionMap.put(bid.toString(),se);
                 System.err.println(String.format("%s Bot 脚本 执行失败", bot.getId()));
             }
         });
@@ -210,6 +217,30 @@ public class ScriptService extends SimpleListenerHost {
                 return oa;
             }
             return null;
+        }
+    }
+
+    public static class ScriptException {
+        private String msg;
+        private Long time;
+        private Long qid;
+
+        public ScriptException(String msg, Long time, Long qid) {
+            this.msg = msg;
+            this.time = time;
+            this.qid = qid;
+        }
+
+        public String getMsg() {
+            return msg;
+        }
+
+        public Long getTime() {
+            return time;
+        }
+
+        public Long getQid() {
+            return qid;
         }
     }
 }

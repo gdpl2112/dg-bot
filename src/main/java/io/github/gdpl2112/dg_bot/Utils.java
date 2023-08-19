@@ -9,6 +9,7 @@ import io.github.kloping.judge.Judge;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,23 @@ public class Utils {
         }
         return BP_SYNC_MAP.get(key);
     }
+
+
+    public static String getExceptionLine(Throwable e) {
+        try {
+            Method method = Throwable.class.getDeclaredMethod("getOurStackTrace");
+            method.setAccessible(true);
+            Object[] objects = (Object[]) method.invoke(e);
+            StringBuilder sb = new StringBuilder("\r\n");
+            for (Object o : objects) {
+                sb.append(" at ").append(o.toString()).append("\r\n\t");
+            }
+            return sb.toString();
+        } catch (Exception e1) {
+            return "??";
+        }
+    }
+
 
     /**
      * 判断表达式是否成立

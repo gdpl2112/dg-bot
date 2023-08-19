@@ -63,8 +63,7 @@ function formatMsgTime1(timespan, or) {
             }
         }
     }
-    let end = day + "天" + hour + "小时" + min + "分钟" + sec + "秒";
-    return end;
+    return  day + "天" + hour + "小时" + min + "分钟" + sec + "秒";
 }
 
 function formatMsgTime0(timespan) {

@@ -7,6 +7,8 @@
     <script src="/js/libs/vue.js"></script>
     <script src="/js/libs/jq3.6.js"></script>
 
+    <link href="/css/libs/bootstarp@5.1.3_min.css" rel="stylesheet"
+          crossorigin="anonymous">
     <link rel="stylesheet" href="/css/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_css_bootstrap.css"
           crossorigin="anonymous">
     <link rel="stylesheet" href="/css/main.css">
@@ -139,6 +141,10 @@
             <button v-on:click="codePost('code')" type="button"
                     class="btn btn-primary btn-lg btn-block">修改
             </button>
+            <button v-on:click="getException()" type="button"
+                    class="btn btn-primary btn-lg btn-block">获取报错
+            </button>
+
             <hr>
             <div class="input-group">
                 <textarea style="height: 240px" id="code" class="form-control" aria-label="js 脚本"
@@ -152,6 +158,27 @@
 <br>
 <br>
 <hr>
+<br>
+<br>
+<div class="modal fade" id="modal-a" tabindex="-1" aria-labelledby="moda-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moda-label">添加一个API</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body text-danger">
+                <samp id="modal-body">
+
+                </samp>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
 <br>
 <br>
 <script src="/js/utils.js"></script>
@@ -182,17 +209,27 @@
                 let value = $("#" + id).val()
                 let df = new FormData()
                 df.set("code", value)
-                axios.post("/code-modify",df).then(function (response) {
+                axios.post("/code-modify", df).then(function (response) {
                     alert(response.data)
                 }).catch(function (err) {
                     alert(err);
                 })
-            },
+            }, getException: function () {
+                axios.get("/get-exception").then(function (response) {
+                    $("#moda-label").html("时间: " + formatMsgTime(response.data.time))
+                    $("#modal-body").html(response.data.msg.replaceAll("\r\n","<br>").replaceAll("\t","&nbsp;&nbsp;"))
+                    $('#modal-a').modal('show')
+                }).catch(function (err) {
+                    alert(err);
+                })
+            }
         }
     });
 </script>
 <script src="/js/libs/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js" crossorigin="anonymous"></script>
 <script src="/js/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_js_bootstrap.bundle.js"
+        crossorigin="anonymous"></script>
+<script src="/js/libs/http_cdn.jsdelivr.net_npm_bootstrap@5.1.3_dist_js_bootstrap.bundle.js"
         crossorigin="anonymous"></script>
 </body>
 </html>

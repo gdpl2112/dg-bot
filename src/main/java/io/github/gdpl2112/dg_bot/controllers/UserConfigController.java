@@ -2,6 +2,7 @@ package io.github.gdpl2112.dg_bot.controllers;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,5 +64,17 @@ public class UserConfigController {
         }
         conf.setCode(code);
         return confMapper.updateById(conf) > 0 ? "成功" : "失败";
+    }
+
+
+    @Autowired
+    ScriptService scriptService;
+
+    @RequestMapping("/get-exception")
+    public ScriptService.ScriptException codeModify(@AuthenticationPrincipal UserDetails userDetails) {
+        String id = userDetails.getUsername();
+        if (scriptService.exceptionMap.containsKey(id)) {
+            return scriptService.exceptionMap.get(id);
+        } else return new ScriptService.ScriptException("未发现报错", System.currentTimeMillis(), Long.valueOf(id));
     }
 }
