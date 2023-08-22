@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.service.script;
 
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.kloping.url.UrlUtils;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
@@ -40,6 +41,11 @@ public class BaseMessageScriptContext implements ScriptContext {
     @Override
     public ForwardMessageBuilder forwardBuilder() {
         return new ForwardMessageBuilder(getSubject());
+    }
+
+    @Override
+    public Message deSerialize(String msg) {
+        return DgSerializer.stringDeserializeToMessageChain(msg, event.getBot(), event.getSubject());
     }
 
     @Override

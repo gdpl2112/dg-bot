@@ -15,9 +15,13 @@ import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.User;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
-import net.mamoe.mirai.event.events.*;
-import net.mamoe.mirai.message.code.MiraiCode;
-import net.mamoe.mirai.message.data.*;
+import net.mamoe.mirai.event.events.BotEvent;
+import net.mamoe.mirai.event.events.MessageEvent;
+import net.mamoe.mirai.event.events.MessagePostSendEvent;
+import net.mamoe.mirai.event.events.MessagePreSendEvent;
+import net.mamoe.mirai.message.data.ForwardMessageBuilder;
+import net.mamoe.mirai.message.data.Image;
+import net.mamoe.mirai.message.data.Message;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -69,7 +73,7 @@ public class ScriptService extends SimpleListenerHost {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
                 javaScript.put("context", new BaseMessageScriptContext(event));
                 javaScript.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
-                String msg = toMsg(event.getMessage());
+                String msg = DgSerializer.messageChainSerializeToString(event.getMessage());
                 javaScript.put("msg", msg);
                 javaScript.eval(code);
             } catch (Throwable e) {
@@ -111,14 +115,6 @@ public class ScriptService extends SimpleListenerHost {
         System.err.println(String.format("%s Bot 脚本 执行失败", bot.getId()));
     }
 
-    private String toMsg(MessageChain chain) {
-        if (chain.size() == 2) {
-            if (chain.get(1) instanceof PlainText) {
-                return ((PlainText) chain.get(1)).getContent();
-            }
-        }
-        return MiraiCode.serializeToMiraiCode((Iterable<? extends Message>) chain);
-    }
 
     public static final Map<Long, Map<String, Object>> BID_2_VARIABLES = new HashMap<>();
 
@@ -148,6 +144,11 @@ public class ScriptService extends SimpleListenerHost {
         @Override
         public ForwardMessageBuilder forwardBuilder() {
             return new ForwardMessageBuilder(event.getBot().getAsFriend());
+        }
+
+        @Override
+        public Message deSerialize(String msg) {
+            return DgSerializer.stringDeserializeToMessageChain(msg, event.getBot(), event.getBot().getAsFriend());
         }
 
         @Override

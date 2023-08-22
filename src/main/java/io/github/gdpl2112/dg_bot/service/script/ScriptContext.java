@@ -83,6 +83,14 @@ public interface ScriptContext {
     }
 
     /**
+     * 反向 str 解析为 Message
+     *
+     * @param msg
+     * @return
+     */
+    Message deSerialize(String msg);
+
+    /**
      * 发送者ID
      *
      * @return
