@@ -12,21 +12,29 @@
 
 预设变量`utils`对象类型为[ScriptUtils](src/main/java/io/github/gdpl2112/dg_bot/service/script/ScriptUtils.java)
 
+预设变量`msg`对象类型为string 是接收到的消息内容
+
 ### 其他事件
 
+预置变量`context`对象 仅能调用 getType() 方法
 
+预设变量`utils`对象类型为[ScriptUtils](src/main/java/io/github/gdpl2112/dg_bot/service/script/ScriptUtils.java)
+
+预设变量`msg`对象类型为string 是事件类型
+
+预置变量`event`对象类型为 各种接收到的事件 事件列表如下
 
 #### 群成员
 
 ##### 成员列表变更
 
 - 成员已经加入群: MemberJoinEvent
-    - 成员被邀请加入群: Invite
-    - 成员主动加入群: Active
+  - 成员被邀请加入群: Invite
+  - 成员主动加入群: Active
 
 - 成员已经离开群: MemberLeaveEvent
-    - 成员被踢出群: Kick
-    - 成员主动离开群: Quit
+  - 成员被踢出群: Kick
+  - 成员主动离开群: Quit
 
 - 一个账号请求加入群: MemberJoinRequestEvent
 - 机器人被邀请加入群: BotInvitedJoinGroupRequestEvent
