@@ -3,18 +3,16 @@ package io.github.gdpl2112.dg_bot.built;
 import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
+import io.github.gdpl2112.dg_bot.service.script.BaseMessageScriptContext;
 import io.github.gdpl2112.dg_bot.service.script.BaseScriptUtils;
 import io.github.gdpl2112.dg_bot.service.script.ScriptContext;
-import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
-import io.github.kloping.map.MapUtils;
 import io.github.kloping.url.UrlUtils;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.User;
-import net.mamoe.mirai.event.Event;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.*;
@@ -28,7 +26,8 @@ import org.springframework.web.client.RestTemplate;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.io.ByteArrayInputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author github.kloping
@@ -52,41 +51,6 @@ public class ScriptService extends SimpleListenerHost {
     @Autowired
     RestTemplate template;
 
-    @EventHandler
-    public void onMessage(@NotNull FriendMessageEvent event) {
-        stepMsgScript(event.getBot(), new BaseScriptUtils(event.getBot().getId(), template),
-                new BaseScriptContext(event, template), event.getMessage());
-    }
-
-    @EventHandler
-    public void onMessage(@NotNull GroupMessageEvent event) {
-        stepMsgScript(event.getBot(), new BaseScriptUtils(event.getBot().getId(), template),
-                new BaseScriptContext(event, template), event.getMessage());
-    }
-
-    @EventHandler
-    public void onMessage(@NotNull GroupMessageSyncEvent event) {
-        stepMsgScript(event.getBot(), new BaseScriptUtils(event.getBot().getId(), template),
-                new BaseScriptContext(event, template), event.getMessage());
-    }
-
-    private void stepMsgScript(Bot bot, BaseScriptUtils utils, BaseScriptContext context, MessageChain chain) {
-        final String code = getScriptCode(bot.getId());
-        if (code == null) return;
-        Public.EXECUTOR_SERVICE.submit(() -> {
-            try {
-                ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
-                javaScript.put("context", context);
-                javaScript.put("utils", utils);
-                String msg = toMsg(chain);
-                javaScript.put("msg", msg);
-                javaScript.eval(code);
-            } catch (Throwable e) {
-                onException(bot, e);
-            }
-        });
-    }
-
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
         if (conf == null) return null;
@@ -94,37 +58,45 @@ public class ScriptService extends SimpleListenerHost {
         return conf.getCode();
     }
 
-    private void stepEventScript(Bot bot, BaseScriptUtils utils, Event event, String type) {
-        final String code = getScriptCode(bot.getId());
+    @EventHandler
+    public void onMessage(@NotNull MessageEvent event) {
+        if (event instanceof MessagePreSendEvent) return;
+        if (event instanceof MessagePostSendEvent) return;
+        final String code = getScriptCode(event.getBot().getId());
         if (code == null) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
-                javaScript.put("context", new Object() {
-                    public String getType() {
-                        return type;
-                    }
-                });
-                javaScript.put("event", event);
-                javaScript.put("utils", utils);
-                javaScript.put("msg", event.toString());
+                javaScript.put("context", new BaseMessageScriptContext(event));
+                javaScript.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
+                String msg = toMsg(event.getMessage());
+                javaScript.put("msg", msg);
                 javaScript.eval(code);
             } catch (Throwable e) {
-                onException(bot, e);
+                onException(event.getBot(), e);
             }
         });
     }
 
     @EventHandler
-    public void onEvent(GroupMemberEvent event) {
-        stepEventScript(event.getBot(), new BaseScriptUtils(event.getBot().getId(), template),
-                event, event.getClass().getSimpleName());
-    }
-
-    @EventHandler
-    public void onEvent(FriendEvent event) {
-        stepEventScript(event.getBot(), new BaseScriptUtils(event.getBot().getId(), template),
-                event, event.getClass().getSimpleName());
+    public void onEvent(BotEvent event) {
+        if (event instanceof MessageEvent) return;
+        if (event instanceof MessagePreSendEvent) return;
+        if (event instanceof MessagePostSendEvent) return;
+        final String code = getScriptCode(event.getBot().getId());
+        if (code == null) return;
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            try {
+                ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
+                javaScript.put("context", new BasebBotEventScriptContext(event));
+                javaScript.put("event", event);
+                javaScript.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
+                javaScript.put("msg", event.toString());
+                javaScript.eval(code);
+            } catch (Throwable e) {
+                onException(event.getBot(), e);
+            }
+        });
     }
 
     public Map<String, ScriptException> exceptionMap = new HashMap<>();
@@ -150,13 +122,12 @@ public class ScriptService extends SimpleListenerHost {
 
     public static final Map<Long, Map<String, Object>> BID_2_VARIABLES = new HashMap<>();
 
-    public static class BaseScriptContext implements ScriptContext {
-        private MessageEvent event;
-        private RestTemplate template;
 
-        public BaseScriptContext(MessageEvent event, RestTemplate template) {
-            this.event = event;
-            this.template = template;
+    public static class BasebBotEventScriptContext implements ScriptContext {
+        private BotEvent event;
+
+        public BasebBotEventScriptContext(BotEvent userEvent) {
+            this.event = userEvent;
         }
 
         @Override
@@ -166,44 +137,34 @@ public class ScriptService extends SimpleListenerHost {
 
         @Override
         public void send(String str) {
-            event.getSubject().sendMessage(MiraiCode.deserializeMiraiCode(str));
+
         }
 
         @Override
         public void send(Message message) {
-            event.getSubject().sendMessage(message);
-        }
 
-        @Override
-        public MessageChainBuilder builder() {
-            return new MessageChainBuilder();
         }
 
         @Override
         public ForwardMessageBuilder forwardBuilder() {
-            return new ForwardMessageBuilder(getSubject());
-        }
-
-        @Override
-        public MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url) {
-            return new MusicShare(MusicKind.valueOf(kind), title, summer, jumUrl, picUrl, url);
+            return new ForwardMessageBuilder(event.getBot().getAsFriend());
         }
 
         @Override
         public User getSender() {
-            return event.getSender();
+            return null;
         }
 
         @Override
         public Contact getSubject() {
-            return event.getSubject();
+            return null;
         }
 
         @Override
         public Image uploadImage(String url) {
             try {
                 byte[] bytes = UrlUtils.getBytesFromHttpUrl(url);
-                Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes));
+                Image image = Contact.uploadImage(event.getBot().getAsFriend(), new ByteArrayInputStream(bytes));
                 return image;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -212,13 +173,8 @@ public class ScriptService extends SimpleListenerHost {
         }
 
         @Override
-        public PlainText newPlainText(String text) {
-            return new PlainText(text);
-        }
-
-        @Override
         public String getType() {
-            return event instanceof GroupMessageEvent || event instanceof GroupMessageSyncEvent ? "group" : event instanceof FriendMessageEvent ? "friend" : "Unknown";
+            return event.getClass().getSimpleName();
         }
     }
 

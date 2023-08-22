@@ -38,7 +38,9 @@ public interface ScriptContext {
      *
      * @return
      */
-    MessageChainBuilder builder();
+    default MessageChainBuilder builder() {
+        return new MessageChainBuilder();
+    }
 
     /**
      * 获得一个 转发行
@@ -58,21 +60,9 @@ public interface ScriptContext {
      * @param url
      * @return
      */
-    MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url);
-
-    /**
-     * 发送者ID
-     *
-     * @return
-     */
-    User getSender();
-
-    /**
-     * 发送环境id 一般为 群id
-     *
-     * @return
-     */
-    Contact getSubject();
+    default MusicShare createMusicShare(String kind, String title, String summer, String jumUrl, String picUrl, String url) {
+        return new MusicShare(MusicKind.valueOf(kind), title, summer, jumUrl, picUrl, url);
+    }
 
     /**
      * 上传图片
@@ -88,7 +78,23 @@ public interface ScriptContext {
      * @param text
      * @return
      */
-    PlainText newPlainText(String text);
+    default PlainText newPlainText(String text) {
+        return new PlainText(text);
+    }
+
+    /**
+     * 发送者ID
+     *
+     * @return
+     */
+    User getSender();
+
+    /**
+     * 发送环境id 一般为 群id
+     *
+     * @return
+     */
+    Contact getSubject();
 
     /**
      * 所处环境 <a href="https://github.com/gdpl2112/dg-bot/blob/master/js-api.md"> 说明</a>
