@@ -9,7 +9,6 @@ import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageSyncEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
-import net.mamoe.mirai.message.code.MiraiCode;
 import net.mamoe.mirai.message.data.ForwardMessageBuilder;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
@@ -29,8 +28,14 @@ public class BaseMessageScriptContext implements ScriptContext {
     }
 
     @Override
+    public Message deSerialize(String msg) {
+        return DgSerializer.stringDeserializeToMessageChain(msg, event.getBot(), event.getSubject());
+    }
+
+    @Override
     public void send(String str) {
-        event.getSubject().sendMessage(DgSerializer.stringDeserializeToMessageChain(str,event.getBot(),event.getSubject()));
+        Message msg = DgSerializer.stringDeserializeToMessageChain(str, event.getBot(), event.getSubject());
+        event.getSubject().sendMessage(msg);
     }
 
     @Override
@@ -41,11 +46,6 @@ public class BaseMessageScriptContext implements ScriptContext {
     @Override
     public ForwardMessageBuilder forwardBuilder() {
         return new ForwardMessageBuilder(getSubject());
-    }
-
-    @Override
-    public Message deSerialize(String msg) {
-        return DgSerializer.stringDeserializeToMessageChain(msg, event.getBot(), event.getSubject());
     }
 
     @Override

@@ -22,6 +22,7 @@ import net.mamoe.mirai.event.events.MessagePreSendEvent;
 import net.mamoe.mirai.message.data.ForwardMessageBuilder;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
+import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -73,13 +74,18 @@ public class ScriptService extends SimpleListenerHost {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
                 javaScript.put("context", new BaseMessageScriptContext(event));
                 javaScript.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
-                String msg = DgSerializer.messageChainSerializeToString(event.getMessage());
+                String msg = toMsg(event.getMessage());
                 javaScript.put("msg", msg);
                 javaScript.eval(code);
             } catch (Throwable e) {
                 onException(event.getBot(), e);
             }
         });
+    }
+
+    private String toMsg(MessageChain chain) {
+        String msg = DgSerializer.messageChainSerializeToString(chain);
+        return msg;
     }
 
     @EventHandler
@@ -115,9 +121,7 @@ public class ScriptService extends SimpleListenerHost {
         System.err.println(String.format("%s Bot 脚本 执行失败", bot.getId()));
     }
 
-
     public static final Map<Long, Map<String, Object>> BID_2_VARIABLES = new HashMap<>();
-
 
     public static class BasebBotEventScriptContext implements ScriptContext {
         private BotEvent event;

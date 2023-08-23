@@ -131,6 +131,9 @@ public class DgSerializer {
                     case "music":
                         msg = createMusic(bot, s2);
                         break;
+                    case "marketface":
+                        msg = MARKET_FACE_MAP.get(Integer.parseInt(s2));
+                        break;
                     default:
                         msg = new PlainText(s2);
                         break;
@@ -211,6 +214,8 @@ public class DgSerializer {
         return builder.build();
     }
 
+
+    public static final Map<Integer, MarketFace> MARKET_FACE_MAP = new HashMap<>();
     public static final io.github.kloping.arr.ArrSerializer ARR_SERIALIZER = new ArrSerializer();
 
     static {
@@ -255,6 +260,13 @@ public class DgSerializer {
             @Override
             public String serializer(MusicShare o) {
                 return String.format("<music:%s>", o.getMusicUrl());
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<MarketFace>(MarketFace.class) {
+            @Override
+            public String serializer(MarketFace o) {
+                MARKET_FACE_MAP.put(o.getId(), o);
+                return String.format("<marketface:%s>", o.getId());
             }
         });
         ARR_SERIALIZER.setMode(1);
