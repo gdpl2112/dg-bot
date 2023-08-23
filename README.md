@@ -28,7 +28,7 @@ manager 管理自己的qq
 
 禁止使用 exit()
 
-[js脚本文档](./js-api.md)
+### **_[js脚本文档](./js-api.md)_**
 
 ## 已存在可用脚本
 
