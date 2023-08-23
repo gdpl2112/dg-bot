@@ -30,7 +30,7 @@ public class BaseMessageScriptContext implements ScriptContext {
 
     @Override
     public void send(String str) {
-        event.getSubject().sendMessage(MiraiCode.deserializeMiraiCode(str));
+        event.getSubject().sendMessage(DgSerializer.stringDeserializeToMessageChain(str,event.getBot(),event.getSubject()));
     }
 
     @Override

@@ -257,6 +257,7 @@ public class DgSerializer {
                 return String.format("<music:%s>", o.getMusicUrl());
             }
         });
+        ARR_SERIALIZER.setMode(1);
     }
 
     public static String messageChainSerializeToString(MessageChain chain) {
