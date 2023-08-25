@@ -30,6 +30,8 @@ manager 管理自己的qq
 
 ### **_[js脚本文档](./js-api.md)_**
 
+[更多脚本](https://github.com/gdpl2112/dg-script)
+
 ## 已存在可用脚本
 
 ```javascript
