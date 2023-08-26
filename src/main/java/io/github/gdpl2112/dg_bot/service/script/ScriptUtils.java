@@ -1,5 +1,7 @@
 package io.github.gdpl2112.dg_bot.service.script;
 
+import net.mamoe.mirai.message.data.Image;
+
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +29,16 @@ public interface ScriptUtils {
      * @return
      */
     String requestPost(String url, String data);
+
+    /**
+     * 查询image url 通过image id
+     *
+     * @param imageId
+     * @return
+     */
+    default String queryUrlFromId(String imageId) {
+        return Image.queryUrl(Image.fromId(imageId));
+    }
 
     /**
      * 获取变量
