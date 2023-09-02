@@ -14,7 +14,6 @@ import net.mamoe.mirai.contact.Member;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.*;
-import net.mamoe.mirai.message.code.MiraiCode;
 import net.mamoe.mirai.message.data.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,13 +147,16 @@ public class SaveService extends SimpleListenerHost {
     }
 
     public synchronized AllMessage getMessage(MessageRecallEvent event) {
+        return getMessage(event.getMessageIds()[0], event.getMessageInternalIds()[0], String.valueOf(event.getBot().getId()));
+    }
+
+    public synchronized AllMessage getMessage(int id, int iid, String bid) {
         QueryWrapper<AllMessage> wrapper = new QueryWrapper<>();
-        wrapper.eq("id", event.getMessageIds()[0]);
-        wrapper.eq("internal_id", event.getMessageInternalIds()[0]);
-        wrapper.eq("bot_id", event.getBot().getId());
+        wrapper.eq("id", id);
+        wrapper.eq("internal_id", iid);
+        wrapper.eq("bot_id", bid);
         List<AllMessage> msg = saveMapper.selectList(wrapper);
-        if (msg != null && msg.size() > 0)
-            return msg.get(0);
+        if (msg != null && msg.size() > 0) return msg.get(0);
         else return null;
     }
 }

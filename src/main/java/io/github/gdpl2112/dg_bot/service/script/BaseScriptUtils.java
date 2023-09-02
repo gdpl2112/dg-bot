@@ -1,8 +1,10 @@
 package io.github.gdpl2112.dg_bot.service.script;
 
 import io.github.gdpl2112.dg_bot.Utils;
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.kloping.map.MapUtils;
+import net.mamoe.mirai.message.data.MessageChain;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -24,6 +26,11 @@ public class BaseScriptUtils implements ScriptUtils {
     @Override
     public String requestPost(String url, String data) {
         return template.postForObject(url, data, String.class);
+    }
+
+    @Override
+    public String serialize(MessageChain chain) {
+        return DgSerializer.messageChainSerializeToString(chain);
     }
 
     @Override

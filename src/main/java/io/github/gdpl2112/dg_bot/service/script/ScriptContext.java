@@ -91,6 +91,14 @@ public interface ScriptContext {
     Message deSerialize(String msg);
 
     /**
+     * 从id获取MessageChain 可用于直接发送
+     *
+     * @param id
+     * @return
+     */
+    MessageChain getMessageChainById(int id);
+
+    /**
      * 发送者ID
      *
      * @return

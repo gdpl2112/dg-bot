@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.built;
 
 import com.alibaba.fastjson.JSON;
+import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.kloping.arr.ArrSerializer;
 import io.github.kloping.io.ReadUtils;
 import io.github.kloping.url.UrlUtils;
@@ -267,6 +268,12 @@ public class DgSerializer {
             public String serializer(MarketFace o) {
                 MARKET_FACE_MAP.put(o.getId(), o);
                 return String.format("<marketface:%s>", o.getId());
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<QuoteReply>(QuoteReply.class) {
+            @Override
+            public String serializer(QuoteReply o) {
+                return String.format("<qr:%s>", AllMessage.latest(0, o.getSource().getInternalIds()));
             }
         });
         ARR_SERIALIZER.setMode(1);

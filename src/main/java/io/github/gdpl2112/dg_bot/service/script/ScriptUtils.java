@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.service.script;
 
 import net.mamoe.mirai.message.data.Image;
+import net.mamoe.mirai.message.data.MessageChain;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,14 @@ public interface ScriptUtils {
     default String queryUrlFromId(String imageId) {
         return Image.queryUrl(Image.fromId(imageId));
     }
+
+    /**
+     * 正向解析mes为定制string
+     *
+     * @param chain
+     * @return
+     */
+    String serialize(MessageChain chain);
 
     /**
      * 获取变量

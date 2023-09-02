@@ -1,8 +1,11 @@
 package io.github.gdpl2112.dg_bot.built;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
+import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
+import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.script.BaseMessageScriptContext;
 import io.github.gdpl2112.dg_bot.service.script.BaseScriptUtils;
 import io.github.gdpl2112.dg_bot.service.script.ScriptContext;
@@ -24,6 +27,7 @@ import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -32,6 +36,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -56,6 +61,9 @@ public class ScriptService extends SimpleListenerHost {
     @Autowired
     RestTemplate template;
 
+    @Autowired
+    SaveMapper saveMapper;
+
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
         if (conf == null) return null;
@@ -72,7 +80,7 @@ public class ScriptService extends SimpleListenerHost {
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
-                javaScript.put("context", new BaseMessageScriptContext(event));
+                javaScript.put("context", new BaseMessageScriptContext(event, saveMapper));
                 javaScript.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
                 String msg = toMsg(event.getMessage());
                 javaScript.put("msg", msg);
@@ -98,7 +106,7 @@ public class ScriptService extends SimpleListenerHost {
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
-                javaScript.put("context", new BasebBotEventScriptContext(event));
+                javaScript.put("context", new BasebBotEventScriptContext(event, saveMapper));
                 javaScript.put("event", event);
                 javaScript.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
                 javaScript.put("msg", event.toString());
@@ -125,9 +133,11 @@ public class ScriptService extends SimpleListenerHost {
 
     public static class BasebBotEventScriptContext implements ScriptContext {
         private BotEvent event;
+        private SaveMapper saveMapper;
 
-        public BasebBotEventScriptContext(BotEvent userEvent) {
+        public BasebBotEventScriptContext(BotEvent userEvent, SaveMapper saveMapper) {
             this.event = userEvent;
+            this.saveMapper = saveMapper;
         }
 
         @Override
@@ -153,6 +163,11 @@ public class ScriptService extends SimpleListenerHost {
         @Override
         public Message deSerialize(String msg) {
             return DgSerializer.stringDeserializeToMessageChain(msg, event.getBot(), event.getBot().getAsFriend());
+        }
+
+        @Override
+        public MessageChain getMessageChainById(int id) {
+            return getSingleMessages(id, event, saveMapper);
         }
 
         @Override
@@ -183,6 +198,17 @@ public class ScriptService extends SimpleListenerHost {
         }
     }
 
+    @Nullable
+    public static MessageChain getSingleMessages(int id, BotEvent event, SaveMapper saveMapper) {
+        QueryWrapper<AllMessage> wrapper = new QueryWrapper<>();
+        wrapper.eq("internal_id", id);
+        wrapper.eq("bot_id", event.getBot().getId());
+        List<AllMessage> msg = saveMapper.selectList(wrapper);
+        if (msg != null && msg.size() > 0) {
+            return MessageChain.deserializeFromJsonString(msg.get(0).getContent());
+        }
+        return null;
+    }
     public static class ScriptException {
         private String msg;
         private Long time;

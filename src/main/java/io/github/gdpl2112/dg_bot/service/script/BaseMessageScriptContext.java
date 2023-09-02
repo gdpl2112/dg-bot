@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.service.script;
 
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
+import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.kloping.url.UrlUtils;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
@@ -12,14 +13,18 @@ import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.ForwardMessageBuilder;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
+import net.mamoe.mirai.message.data.MessageChain;
 
 import java.io.ByteArrayInputStream;
 
+
 public class BaseMessageScriptContext implements ScriptContext {
     private MessageEvent event;
+    private SaveMapper saveMapper;
 
-    public BaseMessageScriptContext(MessageEvent event) {
+    public BaseMessageScriptContext(MessageEvent event, SaveMapper saveMapper) {
         this.event = event;
+        this.saveMapper = saveMapper;
     }
 
     @Override
@@ -46,6 +51,11 @@ public class BaseMessageScriptContext implements ScriptContext {
     @Override
     public ForwardMessageBuilder forwardBuilder() {
         return new ForwardMessageBuilder(getSubject());
+    }
+
+    @Override
+    public MessageChain getMessageChainById(int id) {
+        return io.github.gdpl2112.dg_bot.built.ScriptService.getSingleMessages(id, event, saveMapper);
     }
 
     @Override
