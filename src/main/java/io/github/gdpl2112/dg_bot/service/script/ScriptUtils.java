@@ -31,6 +31,7 @@ public interface ScriptUtils {
      */
     String requestPost(String url, String data);
 
+
     /**
      * 查询image url 通过image id
      *
@@ -48,6 +49,7 @@ public interface ScriptUtils {
      * @return
      */
     String serialize(MessageChain chain);
+
 
     /**
      * 获取变量
@@ -87,4 +89,14 @@ public interface ScriptUtils {
      * @return
      */
     List<Map.Entry<String, Object>> list();
+
+    /**
+     * js 创建Java的对象
+     *
+     * @param name 类全名 如: java.util.HashMap
+     * @param args 参数可选
+     * @param <T>
+     * @return
+     */
+    <T> T newObject(String name, Object... args);
 }

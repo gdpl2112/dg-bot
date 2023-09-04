@@ -7,6 +7,7 @@ import io.github.kloping.map.MapUtils;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.springframework.web.client.RestTemplate;
 
+import java.lang.reflect.Constructor;
 import java.util.*;
 
 public class BaseScriptUtils implements ScriptUtils {
@@ -69,7 +70,24 @@ public class BaseScriptUtils implements ScriptUtils {
 
     @Override
     public List<Map.Entry<String, Object>> list() {
-        if (ScriptService.BID_2_VARIABLES.containsKey(bid)) return new LinkedList<>(ScriptService.BID_2_VARIABLES.get(bid).entrySet());
+        if (ScriptService.BID_2_VARIABLES.containsKey(bid))
+            return new LinkedList<>(ScriptService.BID_2_VARIABLES.get(bid).entrySet());
         return new ArrayList<>();
+    }
+
+    @Override
+    public <T> T newObject(String name, Object... args) {
+        try {
+            Class cla = Class.forName(name);
+            List<Class> list = new ArrayList<>();
+            for (Object arg : args) {
+                list.add(arg.getClass());
+            }
+            Constructor constructor = cla.getDeclaredConstructor(list.toArray(new Class[0]));
+            return (T) constructor.newInstance(args);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
