@@ -20,6 +20,13 @@ public interface ScriptContext {
     Bot getBot();
 
     /**
+     * 获取元数据
+     *
+     * @return
+     */
+    MessageChain getRaw();
+
+    /**
      * 发送字符串
      *
      * @param str
@@ -91,7 +98,8 @@ public interface ScriptContext {
     Message deSerialize(String msg);
 
     /**
-     * 从id获取MessageChain 可用于直接发送
+     * 从id获取MessageChain 可用于直接发送 <br>
+     * !! 仅能获取半小时以内的数据
      *
      * @param id
      * @return

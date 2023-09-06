@@ -63,33 +63,6 @@ public class SaveService extends SimpleListenerHost {
     }
 
     @EventHandler
-    public void onMessage(@NotNull FriendMessageEvent event) throws Exception {
-        save(AllMessage.factory(event));
-        for (SingleMessage singleMessage : event.getMessage()) {
-            if (singleMessage instanceof FlashImage) {
-                FlashImage image = (FlashImage) singleMessage;
-                Friend friend = event.getFriend();
-                if (isListening(event.getBot(), "f", friend.getId())) return;
-                MessageChainBuilder builder = new MessageChainBuilder();
-                builder.append("'").append(friend.getNick()).append("(" + friend.getId() + ")'在私聊").append("发送了[闪照]:")
-                        .append(image.getImage());
-                event.getBot().getAsFriend().sendMessage(builder.build());
-            }
-        }
-    }
-
-    private boolean isListening(Bot event, String t, long friend) {
-        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-        qw.eq("qid", event.getId());
-        qw.eq("tid", t + friend);
-        GroupConf groupConf = groupConfMapper.selectOne(qw);
-        if (groupConf != null) {
-            if (!groupConf.getK1()) return true;
-        }
-        return false;
-    }
-
-    @EventHandler
     public void onMessage(@NotNull FriendMessageSyncEvent event) throws Exception {
         save(AllMessage.factory(event));
     }
@@ -105,8 +78,35 @@ public class SaveService extends SimpleListenerHost {
     }
 
 
+    @EventHandler
+    public void onMessage(@NotNull FriendMessageEvent event) throws Exception {
+        save(AllMessage.factory(event));
+        for (SingleMessage singleMessage : event.getMessage()) {
+            if (singleMessage instanceof FlashImage) {
+                FlashImage image = (FlashImage) singleMessage;
+                Friend friend = event.getFriend();
+                if (isListening(event.getBot(), "f", friend.getId())) return;
+                MessageChainBuilder builder = new MessageChainBuilder();
+                builder.append("'").append(friend.getNick()).append("(" + friend.getId() + ")'在私聊").append("发送了[闪照]:")
+                        .append(image.getImage());
+                event.getBot().getAsFriend().sendMessage(builder.build());
+            }
+        }
+    }
+
     private Contact[] all(MessageRecallEvent recallEvent) {
         return new Contact[]{recallEvent.getBot().getAsFriend()};
+    }
+
+    private boolean isListening(Bot event, String t, long friend) {
+        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
+        qw.eq("qid", event.getId());
+        qw.eq("tid", t + friend);
+        GroupConf groupConf = groupConfMapper.selectOne(qw);
+        if (groupConf != null) {
+            if (!groupConf.getK1()) return true;
+        }
+        return false;
     }
 
     @Autowired

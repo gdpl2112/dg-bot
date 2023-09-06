@@ -141,8 +141,8 @@ public class ScriptService extends SimpleListenerHost {
         }
 
         @Override
-        public Bot getBot() {
-            return event.getBot();
+        public MessageChain getRaw() {
+            return null;
         }
 
         @Override
@@ -153,6 +153,21 @@ public class ScriptService extends SimpleListenerHost {
         @Override
         public void send(Message message) {
 
+        }
+
+        @Override
+        public Bot getBot() {
+            return event.getBot();
+        }
+
+        @Override
+        public User getSender() {
+            return null;
+        }
+
+        @Override
+        public Contact getSubject() {
+            return null;
         }
 
         @Override
@@ -168,16 +183,6 @@ public class ScriptService extends SimpleListenerHost {
         @Override
         public MessageChain getMessageChainById(int id) {
             return getSingleMessages(id, event, saveMapper);
-        }
-
-        @Override
-        public User getSender() {
-            return null;
-        }
-
-        @Override
-        public Contact getSubject() {
-            return null;
         }
 
         @Override

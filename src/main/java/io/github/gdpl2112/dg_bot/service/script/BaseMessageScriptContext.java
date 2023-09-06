@@ -33,6 +33,11 @@ public class BaseMessageScriptContext implements ScriptContext {
     }
 
     @Override
+    public MessageChain getRaw() {
+        return event.getMessage();
+    }
+
+    @Override
     public Message deSerialize(String msg) {
         return DgSerializer.stringDeserializeToMessageChain(msg, event.getBot(), event.getSubject());
     }
