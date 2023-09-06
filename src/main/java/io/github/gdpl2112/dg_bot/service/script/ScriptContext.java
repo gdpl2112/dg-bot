@@ -99,7 +99,7 @@ public interface ScriptContext {
 
     /**
      * 从id获取MessageChain 可用于直接发送 <br>
-     * !! 仅能获取半小时以内的数据
+     * !! 仅能获取2小时以内的数据
      *
      * @param id
      * @return
