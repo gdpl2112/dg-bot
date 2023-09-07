@@ -98,15 +98,15 @@ public class CallApiServiceWorker {
         return i == 2;
     }
 
-    public String filterCall(String url, CallTemplate template) throws Exception {
-        for (String s : MatcherUtils.matcherAll(url, "\\$call.?(.+)")) {
-            String ex = s.substring(s.indexOf("call") + 4, s.indexOf("("));
+    public String filterCall(String out, CallTemplate template) throws Exception {
+        for (String s : MatcherUtils.matcherAll(out, "\\$call.?(.+)")) {
+            String ex = s.substring(s.indexOf("call") + 5, s.indexOf("("));
             String u0 = s.substring(s.indexOf("(") + 1, s.lastIndexOf(")"));
             String body = getConnection(u0).getBody();
-            if (ex.isEmpty()) url = url.replace(s, body);
-            else url = url.replace(s, Converter.getOutEnd(body, ex).toString());
+            if (ex.isEmpty()) out = out.replace(s, body);
+            else out = out.replace(s, Converter.getOutEnd(body, ex).toString());
         }
-        return url;
+        return out;
     }
 
     @Autowired
