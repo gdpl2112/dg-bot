@@ -127,7 +127,7 @@ public class DgSerializer {
                         break;
                     case "voice":
                     case "audio":
-                        msg = createVoiceMessageInGroup(s2, bot.getId(), bot);
+                        msg = createVoiceMessageInGroup(s2, bot.getId(), contact);
                         break;
                     case "music":
                         msg = createMusic(bot, s2);
@@ -184,7 +184,7 @@ public class DgSerializer {
         return bytes;
     }
 
-    public static Message createVoiceMessageInGroup(String url, long id, Bot contact) {
+    public static Message createVoiceMessageInGroup(String url, long id, Contact contact) {
         ExternalResource resource = null;
         try {
             byte[] bytes = UrlUtils.getBytesFromHttpUrl(url);
@@ -193,7 +193,7 @@ public class DgSerializer {
                 return ((Group) contact).uploadAudio(resource);
             } else if (contact instanceof Friend) {
                 return ((Friend) contact).uploadAudio(resource);
-            }
+            } else return new PlainText(url);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -206,7 +206,6 @@ public class DgSerializer {
                 }
             }
         }
-        return null;
     }
 
     public static Message createForwardMessageByPic(Contact contact, Bot bot, String[] picUrl) {
