@@ -31,9 +31,76 @@ public class DgSerializer {
     private static final Pattern PATTER_AT = Pattern.compile("<at:[\\d+|?]+>");
     private static final Pattern PATTER_MUSIC = Pattern.compile("<music:\\d+>");
     private static final Pattern PATTER_VOICE = Pattern.compile("<audio:.+>");
-    public static final Pattern[] PATTERNS = {PATTER_FACE, PATTER_PIC, PATTER_URL, PATTER_AT, PATTER_VOICE, PATTER_MUSIC};
+    private static final Pattern PATTER_MIRAI_FACE = Pattern.compile("\\[mirai:face:.*?]");
+    private static final Pattern PATTER_MIRAI_IMAGE = Pattern.compile("\\[mirai:image:.*?]");
+
+    public static final Pattern[] PATTERNS = {PATTER_FACE, PATTER_PIC, PATTER_URL, PATTER_AT, PATTER_VOICE, PATTER_MUSIC, PATTER_MIRAI_FACE, PATTER_MIRAI_IMAGE};
 
     private static final String BASE64 = "base64,";
+
+    public static final Map<Integer, MarketFace> MARKET_FACE_MAP = new HashMap<>();
+
+    public static MessageChain stringDeserializeToMessageChain(String str, Bot bot, Contact contact) {
+        if (str == null || str.isEmpty() || bot == null) return null;
+        MessageChainBuilder builder = new MessageChainBuilder();
+        goToFormat(str, builder, bot, contact);
+        MessageChain message = builder.build();
+        return message;
+    }
+
+    private static List<Object> goToFormat(String sb, MessageChainBuilder builder, Bot bot, Contact contact) {
+        List<Object> allElements = getAllElements(sb);
+        for (Object o : allElements) {
+            String str = o.toString();
+            boolean k = (str.startsWith("<") || str.startsWith("[")) && !str.matches("\\[.+]请使用最新版手机QQ体验新功能");
+            if (k) {
+                Message msg = null;
+                String ss = str.replaceAll("[<>\\[\\]]", "");
+                int i1 = ss.indexOf(":");
+                String s1 = ss.substring(0, i1);
+                String s2 = ss.substring(i1 + 1);
+                switch (s1.toLowerCase()) {
+                    case "pic":
+                        msg = createImage(contact, bot, s2);
+                        break;
+                    case "face":
+                        msg = new Face(Integer.parseInt(s2));
+                        break;
+                    case "at":
+                        long tid = -1L;
+                        if (s2.contains("?")) tid = contact.getId();
+                        else tid = Long.parseLong(s2);
+                        msg = new At(tid);
+                        break;
+                    case "voice":
+                    case "audio":
+                        msg = createVoiceMessageInGroup(s2, bot.getId(), contact);
+                        break;
+                    case "music":
+                        msg = createMusic(bot, s2);
+                        break;
+                    case "marketface":
+                        msg = MARKET_FACE_MAP.get(Integer.parseInt(s2));
+                        break;
+                    case "mirai":
+                        String type = s2.substring(0, s2.indexOf(":"));
+                        String c0 = s2.substring(s2.indexOf(":") + 1, s2.length());
+                        if (type.equals("face"))
+                            msg = new Face(Integer.parseInt(c0));
+                        else if (type.equals("image"))
+                            msg = createImage(contact, bot, c0);
+                        break;
+                    default:
+                        msg = new PlainText(s2);
+                        break;
+                }
+                if (msg != null) builder.append(msg);
+            } else {
+                builder.append(str);
+            }
+        }
+        return allElements;
+    }
 
     public static List<Object> getAllElements(String line) {
         List<String> list = new ArrayList<>();
@@ -53,7 +120,7 @@ public class DgSerializer {
 
     public static void algorithmFill(List<String> list, String line) {
         if (list == null || line == null || line.isEmpty()) return;
-        Map<Integer, String> nm = getNearestOne(line, PATTER_FACE, PATTER_PIC, PATTER_URL, PATTER_AT, PATTER_VOICE, PATTER_MUSIC);
+        Map<Integer, String> nm = getNearestOne(line, PATTERNS);
         if (nm.isEmpty()) {
             list.add(line);
             return;
@@ -92,61 +159,6 @@ public class DgSerializer {
             return null;
         }
     }
-
-    public static MessageChain stringDeserializeToMessageChain(String str, Bot bot, Contact contact) {
-        if (str == null || str.isEmpty() || bot == null) return null;
-        MessageChainBuilder builder = new MessageChainBuilder();
-        goToFormat(str, builder, bot, contact);
-        MessageChain message = builder.build();
-        return message;
-    }
-
-    private static List<Object> goToFormat(String sb, MessageChainBuilder builder, Bot bot, Contact contact) {
-        List<Object> allElements = getAllElements(sb);
-        for (Object o : allElements) {
-            String str = o.toString();
-            boolean k = (str.startsWith("<") || str.startsWith("[")) && !str.matches("\\[.+]请使用最新版手机QQ体验新功能");
-            if (k) {
-                Message msg = null;
-                String ss = str.replaceAll("[<>]", "");
-                int i1 = ss.indexOf(":");
-                String s1 = ss.substring(0, i1);
-                String s2 = ss.substring(i1 + 1);
-                switch (s1.toLowerCase()) {
-                    case "pic":
-                        msg = createImage(contact, bot, s2);
-                        break;
-                    case "face":
-                        msg = new Face(Integer.parseInt(s2));
-                        break;
-                    case "at":
-                        long tid = -1L;
-                        if (s2.contains("?")) tid = contact.getId();
-                        else tid = Long.parseLong(s2);
-                        msg = new At(tid);
-                        break;
-                    case "voice":
-                    case "audio":
-                        msg = createVoiceMessageInGroup(s2, bot.getId(), contact);
-                        break;
-                    case "music":
-                        msg = createMusic(bot, s2);
-                        break;
-                    case "marketface":
-                        msg = MARKET_FACE_MAP.get(Integer.parseInt(s2));
-                        break;
-                    default:
-                        msg = new PlainText(s2);
-                        break;
-                }
-                if (msg != null) builder.append(msg);
-            } else {
-                builder.append(str);
-            }
-        }
-        return allElements;
-    }
-
 
     private static Message createMusic(Bot contact, String vals) {
         String[] ss = vals.split(",");
@@ -214,9 +226,7 @@ public class DgSerializer {
         return builder.build();
     }
 
-
-    public static final Map<Integer, MarketFace> MARKET_FACE_MAP = new HashMap<>();
-    public static final io.github.kloping.arr.ArrSerializer ARR_SERIALIZER = new ArrSerializer();
+    public static final ArrSerializer ARR_SERIALIZER = new ArrSerializer();
 
     static {
         ARR_SERIALIZER.add(new ArrSerializer.Rule<Image>(Image.class) {

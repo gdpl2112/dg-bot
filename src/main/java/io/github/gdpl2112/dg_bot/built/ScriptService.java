@@ -53,6 +53,8 @@ public class ScriptService extends SimpleListenerHost {
         exception.printStackTrace();
     }
 
+    public static final Map<Long, Map<String, Object>> BID_2_VARIABLES = new HashMap<>();
+
     public static final ScriptEngineManager SCRIPT_ENGINE_MANAGER = new ScriptEngineManager();
 
     @Autowired
@@ -63,6 +65,8 @@ public class ScriptService extends SimpleListenerHost {
 
     @Autowired
     SaveMapper saveMapper;
+
+    public Map<String, ScriptException> exceptionMap = new HashMap<>();
 
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
@@ -117,8 +121,6 @@ public class ScriptService extends SimpleListenerHost {
         });
     }
 
-    public Map<String, ScriptException> exceptionMap = new HashMap<>();
-
     private void onException(Bot bot, Throwable e) {
         e.printStackTrace();
         String err = Utils.getExceptionLine(e);
@@ -128,8 +130,6 @@ public class ScriptService extends SimpleListenerHost {
         exceptionMap.put(bid.toString(), se);
         System.err.println(String.format("%s Bot 脚本 执行失败", bot.getId()));
     }
-
-    public static final Map<Long, Map<String, Object>> BID_2_VARIABLES = new HashMap<>();
 
     public static class BasebBotEventScriptContext implements ScriptContext {
         private BotEvent event;
@@ -214,6 +214,7 @@ public class ScriptService extends SimpleListenerHost {
         }
         return null;
     }
+
     public static class ScriptException {
         private String msg;
         private Long time;
