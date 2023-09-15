@@ -2,13 +2,16 @@ package io.github.gdpl2112.dg_bot;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.BuiltPlugin;
-import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
+import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
-import io.github.gdpl2112.dg_bot.service.*;
+import io.github.gdpl2112.dg_bot.service.CronService;
+import io.github.gdpl2112.dg_bot.service.DefaultService;
+import io.github.gdpl2112.dg_bot.service.PassiveService;
+import io.github.gdpl2112.dg_bot.service.SaveService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import net.mamoe.mirai.console.plugin.PluginManager;
 import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
@@ -80,9 +83,14 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             authMapper.insert(auth);
             logger.info(String.format("%s管理秘钥生成完成:%s", bid, auth.getAuth()));
         } else {
-            auth.setT0(System.currentTimeMillis());
-            authMapper.updateById(auth);
-            logger.info(String.format("%s登录成功,管理秘钥:%s", bid, auth.getAuth()));
+            if (auth.getExp() < System.currentTimeMillis()) {
+                event.getBot().close();
+                logger.error(String.format("%s已到期,强制下线", bid));
+            } else {
+                auth.setT0(System.currentTimeMillis());
+                authMapper.updateById(auth);
+                logger.info(String.format("%s登录成功,管理秘钥:%s", bid, auth.getAuth()));
+            }
         }
     }
 
