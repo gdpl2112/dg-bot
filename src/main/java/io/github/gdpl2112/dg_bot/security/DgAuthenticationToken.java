@@ -49,4 +49,12 @@ public class DgAuthenticationToken extends AbstractAuthenticationToken {
         super.eraseCredentials();
         this.credentials = null;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) return false;
+        if (obj.getClass() != this.getClass()) return false;
+        DgAuthenticationToken token = (DgAuthenticationToken) obj;
+        return token.getPrincipal().equals(this.principal) && token.getCredentials().equals(this.credentials);
+    }
 }
