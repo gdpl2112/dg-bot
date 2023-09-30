@@ -89,6 +89,10 @@ public interface ScriptContext {
         return new PlainText(text);
     }
 
+    default SuperFace toSuperFace(int id) {
+        return SuperFace.from(new Face(id));
+    }
+
     /**
      * 反向 str 解析为 Message
      *
