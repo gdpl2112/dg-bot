@@ -3,7 +3,6 @@ package io.github.gdpl2112.dg_bot;
 import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.MySpringTool.interfaces.component.PackageScanner;
-import net.mamoe.mirai.message.data.ForwardMessage;
 import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -75,6 +74,17 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("ALTER TABLE 'conf' ADD 'code' VARCHAR(1048576) NOT NULL DEFAULT '';");
         }
 
+        k0 = false;
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
+            String name = e0.get("name").toString();
+            if ("rsid".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            System.out.println("conf添加字段");
+            jdbcTemplate.update("ALTER TABLE 'conf' ADD 'rsid' VARCHAR(20) NOT NULL DEFAULT '';");
+        }
 
         k0 = false;
         for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('group_conf')")) {

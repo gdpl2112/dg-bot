@@ -23,4 +23,5 @@ public class Conf {
     private String cancel0 = "取消";
     private String select0 = "查询";
     private String code = "";
+    private String rsid = "";
 }

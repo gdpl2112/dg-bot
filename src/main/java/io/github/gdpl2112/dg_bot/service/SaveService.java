@@ -2,9 +2,13 @@ package io.github.gdpl2112.dg_bot.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
+import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.GroupConf;
+import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
+import io.github.kloping.judge.Judge;
+import io.github.kloping.number.NumberUtils;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
@@ -89,13 +93,40 @@ public class SaveService extends SimpleListenerHost {
                 MessageChainBuilder builder = new MessageChainBuilder();
                 builder.append("'").append(friend.getNick()).append("(" + friend.getId() + ")'在私聊").append("发送了[闪照]:")
                         .append(image.getImage());
-                event.getBot().getAsFriend().sendMessage(builder.build());
+                Message message = builder.build();
+                for (Contact contact : all(event.getBot(), event.getBot().getId())) {
+                    contact.sendMessage(message);
+                }
             }
         }
     }
 
-    private Contact[] all(MessageRecallEvent recallEvent) {
-        return new Contact[]{recallEvent.getBot().getAsFriend()};
+    @Autowired
+    ConfMapper confMapper;
+
+    private Contact[] all(Bot bot, Long qid) {
+        Conf conf = confMapper.selectById(qid);
+        if (conf == null || Judge.isEmpty(conf.getRsid())) return new Contact[]{bot.getAsFriend()};
+        else {
+            try {
+                String rsid = conf.getRsid();
+                if (rsid.startsWith("g")) {
+                    String rsids = NumberUtils.findNumberFromString(rsid);
+                    Long sid = Long.valueOf(rsids);
+                    Group group = bot.getGroup(sid);
+                    if (group == null) throw new NullPointerException("group is null");
+                    return new Contact[]{group};
+                } else {
+                    String rsids = NumberUtils.findNumberFromString(rsid);
+                    Long sid = Long.valueOf(rsids);
+                    Friend friend = bot.getFriend(sid);
+                    if (friend == null) throw new NullPointerException("friend is null");
+                    return new Contact[]{friend};
+                }
+            } catch (NullPointerException e) {
+                return new Contact[]{bot.getAsFriend()};
+            }
+        }
     }
 
     private boolean isListening(Bot event, String t, long friend) {
@@ -124,7 +155,7 @@ public class SaveService extends SimpleListenerHost {
             builder.append("'").append(member.getNameCard()).append("(" + member.getId() + ")").append("'在群聊'")
                     .append(event.getGroup().getName()).append("(" + group.getId() + ")'撤回消息:").append(m0);
             Message message = builder.build();
-            for (Contact contact : all(event)) {
+            for (Contact contact : all(event.getBot(), event.getBot().getId())) {
                 contact.sendMessage(message);
             }
         }
@@ -140,7 +171,7 @@ public class SaveService extends SimpleListenerHost {
             MessageChainBuilder builder = new MessageChainBuilder();
             builder.append("'").append(friend.getNick()).append("(" + friend.getId() + ")'在私聊").append("撤回了:").append(m0);
             Message message = builder.build();
-            for (Contact contact : all(event)) {
+            for (Contact contact : all(event.getBot(), event.getBot().getId())) {
                 contact.sendMessage(message);
             }
         }

@@ -133,6 +133,16 @@
                     <button v-on:click="modify('select0')" type="button" class="btn btn-outline-primary">修改</button>
                 </div>
             </div>
+            <small class="form-text text-muted">纯数字为好友f(id);g(id)为群聊;找不到时则发到自己bot</small>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">监听发送到:</span>
+                </div>
+                <input id="rsid" type="text" class="form-control" aria-label="">
+                <div class="input-group-append">
+                    <button v-on:click="modify('rsid')" type="button" class="btn btn-outline-primary">修改</button>
+                </div>
+            </div>
             <hr>
 
             <div class="alert alert-info text-center" role="alert">

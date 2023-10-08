@@ -1,6 +1,6 @@
 @media (max-width: 1080px) {
     body {
-        background-image: url("/img/bg1.jpg");
+        background-image: url("https://p.xiaofankj.com.cn/images/2023/10/08/169673379265221a60dccfe.jpg");
         background-repeat: no-repeat;
         background-size: 100% 100%;
         background-attachment: fixed;
@@ -12,7 +12,7 @@
     body {
         width: 100%;
         height: 100%;
-        background: url("/img/bg.jpg") no-repeat center center fixed;
+        background: url("https://p.xiaofankj.com.cn/images/2023/10/08/169673376865221a488a8f2.jpg") no-repeat center center fixed;
         background-size: 100%;
         -webkit-background-size: cover;
         -o-background-size: cover;

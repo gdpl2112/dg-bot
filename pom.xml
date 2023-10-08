@@ -36,6 +36,11 @@
             <version>0.6.1-M2</version>
         </dependency>
         <dependency>
+            <groupId>io.github.Kloping</groupId>
+            <artifactId>JvUtils</artifactId>
+            <version>0.4.9-R3</version>
+        </dependency>
+        <dependency>
             <groupId>net.mamoe</groupId>
             <artifactId>mirai-core-jvm</artifactId>
             <version>${mirai-version}</version>
