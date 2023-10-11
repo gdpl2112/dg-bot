@@ -125,7 +125,7 @@ public class BaseScriptUtils implements ScriptUtils {
             for (Map<String, Object> map : list) {
                 JSONObject jo = new JSONObject();
                 for (String key : map.keySet()) {
-                    jo.put(key, jo.get(key));
+                    jo.put(key, map.get(key));
                 }
                 out.add(jo);
             }
@@ -141,7 +141,7 @@ public class BaseScriptUtils implements ScriptUtils {
             for (Map<String, Object> map : list) {
                 JSONObject jo = new JSONObject();
                 for (String key : map.keySet()) {
-                    jo.put(key, jo.get(key));
+                    jo.put(key, map.get(key));
                 }
                 return jo;
             }
