@@ -5,9 +5,17 @@ import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.kloping.map.MapUtils;
 import net.mamoe.mirai.message.data.MessageChain;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.web.client.RestTemplate;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 public class BaseScriptUtils implements ScriptUtils {
@@ -89,5 +97,47 @@ public class BaseScriptUtils implements ScriptUtils {
             e.printStackTrace();
             return null;
         }
+    }
+
+    @Override
+    public boolean executeSql(String sql) {
+        try {
+            Connection connection = DriverManager.getConnection(String.format("jdbc:sqlite:user-%s-db.db", bid));
+            Statement statement = connection.createStatement();
+            boolean k = statement.execute(sql);
+            statement.close();
+            connection.close();
+            return k;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public List<Map<String, Object>> executeSelect(String sql) {
+        JdbcTemplate template = getJdbcTemplate(bid);
+        return template.queryForList(sql);
+    }
+
+    private static Map<Long, JdbcTemplate> templateMap = new HashMap<>();
+
+    @NotNull
+    private static JdbcTemplate getJdbcTemplate(long bid) {
+        if (templateMap.containsKey(bid)) return templateMap.get(bid);
+        DataSource dataSource = new AbstractDataSource() {
+            @Override
+            public Connection getConnection() throws SQLException {
+                return DriverManager.getConnection(String.format("jdbc:sqlite:user-%s-db.db", bid));
+            }
+
+            @Override
+            public Connection getConnection(String username, String password) throws SQLException {
+                return DriverManager.getConnection(String.format("jdbc:sqlite:user-%s-db.db", bid));
+            }
+        };
+        JdbcTemplate template = new JdbcTemplate(dataSource);
+        templateMap.put(bid, template);
+        return template;
     }
 }

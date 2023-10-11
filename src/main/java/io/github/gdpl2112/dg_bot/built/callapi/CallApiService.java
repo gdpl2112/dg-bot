@@ -21,6 +21,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class CallApiService extends SimpleListenerHost {
 
+    @Autowired
+    ConfigService configService;
+
+    @Autowired
+    CallTemplateMapper callTemplateMapper;
+
+    @Autowired
+    CallApiServiceWorker worker;
+
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
         onEvent(event, "g" + event.getGroup().getId());
@@ -35,9 +44,6 @@ public class CallApiService extends SimpleListenerHost {
     public void onEvent(FriendMessageEvent event) {
         onEvent(event, "f" + event.getFriend().getId());
     }
-
-    @Autowired
-    ConfigService configService;
 
     /**
      * step0
@@ -55,12 +61,6 @@ public class CallApiService extends SimpleListenerHost {
             }
         }
     }
-
-    @Autowired
-    CallTemplateMapper callTemplateMapper;
-
-    @Autowired
-    CallApiServiceWorker worker;
 
     /**
      * step1

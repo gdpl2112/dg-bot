@@ -134,5 +134,4 @@ public class DgMain implements CommandLineRunner {
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
-
 }

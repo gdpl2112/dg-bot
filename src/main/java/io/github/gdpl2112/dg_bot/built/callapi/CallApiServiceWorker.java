@@ -20,6 +20,9 @@ import java.net.URI;
 
 @Component
 public class CallApiServiceWorker {
+    @Autowired
+    RestTemplate restTemplate;
+
 
     public Message work(ConnectionContext connection, CallTemplate template, Bot bot, long gid, long qid, Contact subject) {
         if (jude(template, connection)) return null;
@@ -65,8 +68,8 @@ public class CallApiServiceWorker {
         if (Judge.isEmpty(template.jude)) return false;
         else return Utils.jude(template.jude, connection.getBody());
     }
-
     //step 1
+
     public ConnectionContext doc(Bot bot, long gid, long qid, CallTemplate template, String text, String... args) throws Exception {
         int i = 1;
         String url = template.url;
@@ -108,9 +111,6 @@ public class CallApiServiceWorker {
         }
         return out;
     }
-
-    @Autowired
-    RestTemplate restTemplate;
 
     public ConnectionContext getConnection(String url) throws Exception {
         String body = restTemplate.getForObject(url, String.class);

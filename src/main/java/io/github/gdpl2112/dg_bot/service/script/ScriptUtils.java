@@ -99,4 +99,23 @@ public interface ScriptUtils {
      * @return
      */
     <T> T newObject(String name, Object... args);
+
+    /**
+     * 基于自己bot执行一句sql
+     * (通用 只返回 Boolean)
+     *
+     * @param sql
+     * @return
+     */
+    boolean executeSql(String sql);
+
+    /**
+     * 执行一句查询sql 返回 list<map>
+     * <br> list.size 返回记录数量
+     * <br> map<string,obj> 对应 键值对
+     *
+     * @param sql
+     * @return
+     */
+    List<Map<String, Object>> executeSelect(String sql);
 }

@@ -38,7 +38,6 @@ public class BaseComponent {
         return NoOpPasswordEncoder.getInstance();
     }
 
-
     @Bean
     public SessionRegistryImpl sessionRegistry() {
         return new SessionRegistryImpl();
