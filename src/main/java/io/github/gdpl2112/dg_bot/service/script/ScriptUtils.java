@@ -110,12 +110,18 @@ public interface ScriptUtils {
     boolean executeSql(String sql);
 
     /**
-     * 执行一句查询sql 返回 list<map>
-     * <br> list.size 返回记录数量
-     * <br> map<string,obj> 对应 键值对
+     * 执行一句查询sql 返回 list obj
      *
      * @param sql
      * @return
      */
-    List<Map<String, Object>> executeSelect(String sql);
+    List<Object> executeSelectList(String sql);
+
+    /**
+     * 执行一句查询sql 返回 单个对象
+     *
+     * @param sql
+     * @return
+     */
+    Object executeSelectOne(String sql);
 }

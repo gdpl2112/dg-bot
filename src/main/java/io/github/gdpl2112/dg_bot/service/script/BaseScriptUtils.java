@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.service.script;
 
+import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
@@ -115,9 +116,37 @@ public class BaseScriptUtils implements ScriptUtils {
     }
 
     @Override
-    public List<Map<String, Object>> executeSelect(String sql) {
+    public List<Object> executeSelectList(String sql) {
         JdbcTemplate template = getJdbcTemplate(bid);
-        return template.queryForList(sql);
+        List<Map<String, Object>> list = template.queryForList(sql);
+        if (list.size() == 0) return null;
+        else {
+            List out = new ArrayList();
+            for (Map<String, Object> map : list) {
+                JSONObject jo = new JSONObject();
+                for (String key : map.keySet()) {
+                    jo.put(key, jo.get(key));
+                }
+                out.add(jo);
+            }
+            return out;
+        }
+    }
+
+    @Override
+    public Object executeSelectOne(String sql) {
+        JdbcTemplate template = getJdbcTemplate(bid);
+        List<Map<String, Object>> list = template.queryForList(sql);
+        if (list.size() >= 0) {
+            for (Map<String, Object> map : list) {
+                JSONObject jo = new JSONObject();
+                for (String key : map.keySet()) {
+                    jo.put(key, jo.get(key));
+                }
+                return jo;
+            }
+        }
+        return null;
     }
 
     private static Map<Long, JdbcTemplate> templateMap = new HashMap<>();
