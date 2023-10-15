@@ -3,6 +3,8 @@ package io.github.gdpl2112.dg_bot.controllers;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
+import io.github.kloping.judge.Judge;
+import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,12 +34,20 @@ public class ManagerController {
         List list = new ArrayList();
         for (AuthM authM : authMapper.selectList(null)) {
             JSONObject jo = new JSONObject();
-            jo.put("qid", authM.getQid());
+            Long qid = Long.valueOf(authM.getQid());
+            jo.put("qid", qid);
             jo.put("auth", authM.getAuth());
             jo.put("exp", authM.getExp());
             jo.put("y", SF_YY.format(authM.getExp()));
             jo.put("m", SF_MM.format(authM.getExp()));
             jo.put("d", SF_DD.format(authM.getExp()));
+            Bot bot = Bot.getInstanceOrNull(qid);
+            if (bot != null && bot.isOnline()) {
+                String nick = bot.getNick();
+                jo.put("t0", authM.getT0());
+            } else{
+                jo.put("t0", -1L);
+            }
             list.add(jo);
         }
         return list;

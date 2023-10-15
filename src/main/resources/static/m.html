@@ -61,6 +61,11 @@
                     <input :qid="e.qid" :id="'exp-'+e.qid" type="text" class="form-control i" :value="e.exp">
                 </div>
                 <div class="input-group">
+                    <div class="alert alert-secondary" role="alert">
+                        自上次登录已在线时长:
+                        <div :class="'form-group mx-sm-5 mb-2 '+ ji0(e.t0)">{{formatMsgTime1(e.t0, "未在线")}}
+                        </div>
+                    </div>
                     <div class="input-group-prepend">
                         <span class="input-group-text">年</span>
                     </div>
@@ -101,6 +106,12 @@
                 }).catch(function (err) {
                     alert(err);
                 })
+            }, ji0: function (t) {
+                if (t <= 0) {
+                    return "alert alert-danger"
+                } else {
+                    return "alert alert-success"
+                }
             }
         }
     });
