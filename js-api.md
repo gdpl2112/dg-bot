@@ -7,6 +7,13 @@
 脚本执行会预置变量 以辅助完成脚本功能
 ```
 
+**_所有脚本禁止使用 exit_**
+
+### 报错
+一般的脚本/程序报错 可在**配置中心中**获取报错 查看
+若 报错中 含有 `"未开启", "NOT OPEN", "not open", "exit", "end", "stop"` [词汇](src/main/java/io/github/gdpl2112/dg_bot/built/ScriptService.java#59) 则不记录为报错
+一般用于主动抛出错误 未达到停止程序的效果
+
 ### 一般消息事件friend/group
 
 预置变量`context`对象类型为[ScriptContext](src/main/java/io/github/gdpl2112/dg_bot/service/script/ScriptContext.java)

@@ -56,6 +56,7 @@ public class ScriptService extends SimpleListenerHost {
     public static final Map<Long, Map<String, Object>> BID_2_VARIABLES = new HashMap<>();
 
     public static final ScriptEngineManager SCRIPT_ENGINE_MANAGER = new ScriptEngineManager();
+    public static final String[] NOT_PRINTS = {"未开启", "NOT OPEN", "not open", "exit", "end", "stop"};
 
     @Autowired
     ConfMapper confMapper;
@@ -67,6 +68,7 @@ public class ScriptService extends SimpleListenerHost {
     SaveMapper saveMapper;
 
     public Map<String, ScriptException> exceptionMap = new HashMap<>();
+
 
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
@@ -122,6 +124,12 @@ public class ScriptService extends SimpleListenerHost {
     }
 
     private void onException(Bot bot, Throwable e) {
+        if (e instanceof javax.script.ScriptException) {
+            String e1 = e.getMessage();
+            for (String e0 : NOT_PRINTS) {
+                if (e1.contains(e0)) return;
+            }
+        }
         e.printStackTrace();
         String err = Utils.getExceptionLine(e);
         err = e + err;
