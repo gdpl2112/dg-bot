@@ -87,6 +87,18 @@ public class DgMain implements CommandLineRunner {
         }
 
         k0 = false;
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
+            String name = e0.get("name").toString();
+            if ("nu".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            System.out.println("conf添加字段");
+            jdbcTemplate.update("ALTER TABLE 'conf' ADD 'nu' VARCHAR(255) NOT NULL DEFAULT '';");
+        }
+
+        k0 = false;
         for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('group_conf')")) {
             String name = e0.get("name").toString();
             if ("k0".equals(name)) {

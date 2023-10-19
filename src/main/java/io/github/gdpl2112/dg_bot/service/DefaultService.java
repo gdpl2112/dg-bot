@@ -16,14 +16,15 @@ import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
+import net.mamoe.mirai.event.events.BotOfflineEvent;
+import net.mamoe.mirai.event.events.BotOnlineEvent;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
-import net.mamoe.mirai.message.code.MiraiCode;
-import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,16 +36,22 @@ import java.util.Map;
  */
 @Service
 public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost implements CommandLineRunner {
+
     @Autowired
     BotService service;
+
     @Autowired
     Logger logger;
+
     @Autowired
     PassiveMapper passiveMapper;
+
     @Autowired
     ConfMapper confMapper;
+
     @Autowired
     GroupConfMapper groupConfMapper;
+
     @Autowired
     AdministratorMapper administratorMapper;
 
@@ -82,6 +89,25 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         Long bid = event.getBot().getId();
         String tid = "f" + event.getSender().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
+    }
+
+    @Autowired
+    RestTemplate template;
+
+    @EventHandler
+    public void onEvent(BotOnlineEvent event) {
+        Conf conf = confMapper.selectById(event.getBot().getId());
+        if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+            template.getForObject(conf.getNu() + event.toString(), String.class);
+        }
+    }
+
+    @EventHandler
+    public void onEvent(BotOfflineEvent event) {
+        Conf conf = confMapper.selectById(event.getBot().getId());
+        if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+            template.getForObject(conf.getNu() + event.toString(), String.class);
+        }
     }
 
     private Map<Long, Map<Long, Passive>> adding = new HashMap<>();

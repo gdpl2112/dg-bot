@@ -24,4 +24,5 @@ public class Conf {
     private String select0 = "查询";
     private String code = "";
     private String rsid = "";
+    private String nu = "";
 }
