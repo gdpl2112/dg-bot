@@ -12,6 +12,7 @@ import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
 import net.mamoe.mirai.contact.Contact;
@@ -96,18 +97,22 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @EventHandler
     public void onEvent(BotOnlineEvent event) {
-        Conf conf = confMapper.selectById(event.getBot().getId());
-        if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-            template.getForObject(conf.getNu() + event.toString(), String.class);
-        }
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            Conf conf = confMapper.selectById(event.getBot().getId());
+            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+                template.getForObject(conf.getNu() + event.toString(), String.class);
+            }
+        });
     }
 
     @EventHandler
     public void onEvent(BotOfflineEvent event) {
-        Conf conf = confMapper.selectById(event.getBot().getId());
-        if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-            template.getForObject(conf.getNu() + event.toString(), String.class);
-        }
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            Conf conf = confMapper.selectById(event.getBot().getId());
+            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+                template.getForObject(conf.getNu() + event.toString(), String.class);
+            }
+        });
     }
 
     private Map<Long, Map<Long, Passive>> adding = new HashMap<>();
