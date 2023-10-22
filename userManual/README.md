@@ -6,7 +6,7 @@
 - 1、登录链接
 
 
-    http://47.100.93.243:34740/bot/login?qid=(qq号)&p=(password)
+    http://IP:PORT/bot/login?qid=(qq号)&p=(password)
     #以给定登录链接为准
 
 - 2、基础界面
