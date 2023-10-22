@@ -15,6 +15,7 @@ import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
+import io.github.kloping.url.UrlUtils;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.BotOfflineEvent;
@@ -97,22 +98,22 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @EventHandler
     public void onEvent(BotOnlineEvent event) {
-//        Public.EXECUTOR_SERVICE.submit(() -> {
-//            Conf conf = confMapper.selectById(event.getBot().getId());
-//            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-//                template.getForObject(conf.getNu() + event.toString(), String.class);
-//            }
-//        });
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            Conf conf = confMapper.selectById(event.getBot().getId());
+            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
+            }
+        });
     }
 
     @EventHandler
     public void onEvent(BotOfflineEvent event) {
-//        Public.EXECUTOR_SERVICE.submit(() -> {
-//            Conf conf = confMapper.selectById(event.getBot().getId());
-//            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-//                template.getForObject(conf.getNu() + event.toString(), String.class);
-//            }
-//        });
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            Conf conf = confMapper.selectById(event.getBot().getId());
+            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
+            }
+        });
     }
 
     private Map<Long, Map<Long, Passive>> adding = new HashMap<>();
