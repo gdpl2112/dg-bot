@@ -98,7 +98,6 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
         return content.startsWith("[{") && content.endsWith("}]");
     }
 
-
     @Nullable
     public List<Passive> getPassiveList(String bid, String content) {
         QueryWrapper<Passive> qw1 = new QueryWrapper<Passive>();

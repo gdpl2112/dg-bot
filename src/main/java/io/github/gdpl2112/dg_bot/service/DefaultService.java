@@ -97,22 +97,22 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @EventHandler
     public void onEvent(BotOnlineEvent event) {
-        Public.EXECUTOR_SERVICE.submit(() -> {
-            Conf conf = confMapper.selectById(event.getBot().getId());
-            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-                template.getForObject(conf.getNu() + event.toString(), String.class);
-            }
-        });
+//        Public.EXECUTOR_SERVICE.submit(() -> {
+//            Conf conf = confMapper.selectById(event.getBot().getId());
+//            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+//                template.getForObject(conf.getNu() + event.toString(), String.class);
+//            }
+//        });
     }
 
     @EventHandler
     public void onEvent(BotOfflineEvent event) {
-        Public.EXECUTOR_SERVICE.submit(() -> {
-            Conf conf = confMapper.selectById(event.getBot().getId());
-            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-                template.getForObject(conf.getNu() + event.toString(), String.class);
-            }
-        });
+//        Public.EXECUTOR_SERVICE.submit(() -> {
+//            Conf conf = confMapper.selectById(event.getBot().getId());
+//            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+//                template.getForObject(conf.getNu() + event.toString(), String.class);
+//            }
+//        });
     }
 
     private Map<Long, Map<Long, Passive>> adding = new HashMap<>();

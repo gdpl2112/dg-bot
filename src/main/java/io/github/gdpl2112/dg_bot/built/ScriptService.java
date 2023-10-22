@@ -18,10 +18,7 @@ import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.User;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
-import net.mamoe.mirai.event.events.BotEvent;
-import net.mamoe.mirai.event.events.MessageEvent;
-import net.mamoe.mirai.event.events.MessagePostSendEvent;
-import net.mamoe.mirai.event.events.MessagePreSendEvent;
+import net.mamoe.mirai.event.events.*;
 import net.mamoe.mirai.message.data.ForwardMessageBuilder;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
@@ -107,6 +104,8 @@ public class ScriptService extends SimpleListenerHost {
         if (event instanceof MessageEvent) return;
         if (event instanceof MessagePreSendEvent) return;
         if (event instanceof MessagePostSendEvent) return;
+        if (event instanceof BotOnlineEvent) return;
+        if (event instanceof BotOfflineEvent) return;
         final String code = getScriptCode(event.getBot().getId());
         if (code == null) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
