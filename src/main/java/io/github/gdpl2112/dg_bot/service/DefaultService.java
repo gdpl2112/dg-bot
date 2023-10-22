@@ -62,7 +62,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @Override
     public void run(String... args) throws Exception {
-
+        System.out.println("=================DefService=====================================");
     }
 
     private Conf getConf(Long bid) {
@@ -98,12 +98,12 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @EventHandler
     public void onEvent(BotOnlineEvent event) {
-        Public.EXECUTOR_SERVICE.submit(() -> {
-            Conf conf = confMapper.selectById(event.getBot().getId());
-            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
-            }
-        });
+//        Public.EXECUTOR_SERVICE.submit(() -> {
+//            Conf conf = confMapper.selectById(event.getBot().getId());
+//            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+//                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
+//            }
+//        });
     }
 
     @EventHandler
