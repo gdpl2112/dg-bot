@@ -8,15 +8,7 @@
 - 撤回监听 #功能1
 - 更多功能请pr
 
-web 结构
-
-index 介绍 及 开通方式
-
-login 指定qq与token 登录 #scurity auth
-
-manager 管理自己的qq
-
-~~admin 管理员平台~~
+## [用户使用手册](userManual/README.md)
 
 ### 内置功能: [API调用](expression.md)
 
