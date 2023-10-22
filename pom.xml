@@ -33,7 +33,7 @@
         <dependency>
             <groupId>io.github.Kloping</groupId>
             <artifactId>SpringTool</artifactId>
-            <version>0.6.1-M2</version>
+            <version>0.6.2-R1</version>
         </dependency>
         <dependency>
             <groupId>io.github.Kloping</groupId>
