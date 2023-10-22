@@ -27,7 +27,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <mirai-version>2.16.0-RC</mirai-version>
+        <mirai-version>2.16.0</mirai-version>
     </properties>
     <dependencies>
         <dependency>
