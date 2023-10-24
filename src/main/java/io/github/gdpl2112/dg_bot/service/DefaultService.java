@@ -96,25 +96,25 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
     @Autowired
     RestTemplate template;
 
-//    @EventHandler
-//    public void onEvent(BotOnlineEvent event) {
-//        Public.EXECUTOR_SERVICE.submit(() -> {
-//            Conf conf = confMapper.selectById(event.getBot().getId());
-//            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-//                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
-//            }
-//        });
-//    }
-//
-//    @EventHandler
-//    public void onEvent(BotOfflineEvent event) {
-//        Public.EXECUTOR_SERVICE.submit(() -> {
-//            Conf conf = confMapper.selectById(event.getBot().getId());
-//            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-//                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
-//            }
-//        });
-//    }
+    @EventHandler
+    public void onEvent(BotOnlineEvent event) {
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            Conf conf = confMapper.selectById(event.getBot().getId());
+            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
+            }
+        });
+    }
+
+    @EventHandler
+    public void onEvent(BotOfflineEvent event) {
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            Conf conf = confMapper.selectById(event.getBot().getId());
+            if (conf != null && Judge.isNotEmpty(conf.getNu())) {
+                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
+            }
+        });
+    }
 
     private Map<Long, Map<Long, Passive>> adding = new HashMap<>();
 
