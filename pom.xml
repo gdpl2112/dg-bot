@@ -96,7 +96,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
-
         <!--kotlin支持-->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -135,6 +134,5 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
-
     </dependencies>
 </project>
