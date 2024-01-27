@@ -108,8 +108,13 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
             qw1.clear();
             qw1.eq("qid", bid);
             for (Passive pe : passiveMapper.selectList(qw1)) {
-                if (content.matches(pe.getTouch())) {
-                    passives.add(pe);
+                try {
+                    if (content.matches(pe.getTouch())) {
+                        passives.add(pe);
+                    }
+                } catch (Exception e) {
+                    System.err.println(e.getMessage());
+                    continue;
                 }
             }
         }
