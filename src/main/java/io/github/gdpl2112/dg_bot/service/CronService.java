@@ -1,18 +1,24 @@
 package io.github.gdpl2112.dg_bot.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
+import io.github.gdpl2112.dg_bot.service.script.BaseScriptUtils;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.date.CronUtils;
 import kotlin.coroutines.CoroutineContext;
+import net.mamoe.mirai.Bot;
 import org.jetbrains.annotations.NotNull;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import javax.script.ScriptEngine;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,12 +55,32 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
         logger.info("cron任务加载完成");
     }
 
+    @Autowired
+    RestTemplate template;
+
     public int appendTask(CronMessage msg) {
         Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
             @Override
             public void execute(JobExecutionContext context) throws JobExecutionException {
                 logger.log(String.format("开始执行%s => %s cron任务", msg.getQid(), msg.getTargetId()));
-                service.send(msg.getQid(), msg.getTargetId(), msg.getMsg());
+                if (msg.getTargetId().endsWith("FUNCTION")) {
+                    long bid = Long.parseLong(msg.getQid());
+                    Bot bot = Bot.getInstanceOrNull(bid);
+                    if (bot == null) {
+                        logger.waring(String.format("%s 用户实例获取失败! 可能掉线或未登录", bid));
+                    } else {
+                        try {
+                            ScriptEngine javaScript = ScriptService.SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
+                            javaScript.put("utils", new BaseScriptUtils(bid, template));
+                            javaScript.put("bot", bot);
+                            javaScript.eval(msg.getMsg());
+                        } catch (Exception e) {
+                            ScriptService.onException(bot, e);
+                        }
+                    }
+                } else {
+                    service.send(msg.getQid(), msg.getTargetId(), msg.getMsg());
+                }
                 logger.log(String.format("执行%s => %s cron任务结束", msg.getQid(), msg.getTargetId()));
             }
         });

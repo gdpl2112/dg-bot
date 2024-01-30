@@ -64,7 +64,7 @@ public class ScriptService extends SimpleListenerHost {
     @Autowired
     SaveMapper saveMapper;
 
-    public Map<String, ScriptException> exceptionMap = new HashMap<>();
+    public static Map<String, ScriptException> exceptionMap = new HashMap<>();
 
 
     private String getScriptCode(long bid) {
@@ -122,7 +122,7 @@ public class ScriptService extends SimpleListenerHost {
         });
     }
 
-    private void onException(Bot bot, Throwable e) {
+    public static void onException(Bot bot, Throwable e) {
         if (e instanceof javax.script.ScriptException) {
             String e1 = e.getMessage();
             for (String e0 : NOT_PRINTS) {
