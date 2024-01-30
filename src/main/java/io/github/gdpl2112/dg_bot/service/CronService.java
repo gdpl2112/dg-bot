@@ -2,13 +2,24 @@ package io.github.gdpl2112.dg_bot.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
+import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
+import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
+import io.github.gdpl2112.dg_bot.service.script.BaseMessageScriptContext;
 import io.github.gdpl2112.dg_bot.service.script.BaseScriptUtils;
+import io.github.gdpl2112.dg_bot.service.script.ScriptContext;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.date.CronUtils;
+import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
+import net.mamoe.mirai.contact.Contact;
+import net.mamoe.mirai.contact.User;
+import net.mamoe.mirai.message.data.ForwardMessageBuilder;
+import net.mamoe.mirai.message.data.Image;
+import net.mamoe.mirai.message.data.Message;
+import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -71,8 +82,57 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                     } else {
                         try {
                             ScriptEngine javaScript = ScriptService.SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
+                            javaScript.put("context", new ScriptContext() {
+                                @Override
+                                public Bot getBot() {
+                                    return bot;
+                                }
+
+                                @Override
+                                public MessageChain getRaw() {
+                                    return null;
+                                }
+
+                                @Override
+                                public void send(String str) {
+
+                                }
+
+                                @Override
+                                public void send(Message message) {
+
+                                }
+
+                                @Override
+                                public ForwardMessageBuilder forwardBuilder() {
+                                    return new ForwardMessageBuilder(bot.getAsFriend());
+                                }
+
+                                @Override
+                                public MessageChain getMessageChainById(int id) {
+                                    return null;
+                                }
+
+                                @Override
+                                public User getSender() {
+                                    return bot.getAsFriend();
+                                }
+
+                                @Override
+                                public Contact getSubject() {
+                                    return bot.getAsFriend();
+                                }
+
+                                @Override
+                                public String getType() {
+                                    return "cron";
+                                }
+                            });
                             javaScript.put("utils", new BaseScriptUtils(bid, template));
                             javaScript.put("bot", bot);
+                            final String code = getScriptCode(bid);
+                            if (code == null) return;
+                            javaScript.eval(code);
                             javaScript.eval(msg.getMsg());
                         } catch (Exception e) {
                             ScriptService.onException(bot, e);
@@ -87,6 +147,17 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
         bid2cm.put(msg.getQid(), msg);
         cm2cron.put(msg.getId(), id);
         return id;
+    }
+
+    @Autowired
+    ConfMapper confMapper;
+
+
+    private String getScriptCode(long bid) {
+        Conf conf = confMapper.selectById(bid);
+        if (conf == null) return null;
+        if (Judge.isEmpty(conf.getCode())) return null;
+        return conf.getCode();
     }
 
     public void del(String id) {

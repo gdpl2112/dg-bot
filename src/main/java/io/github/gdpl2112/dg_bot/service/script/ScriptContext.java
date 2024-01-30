@@ -1,9 +1,13 @@
 package io.github.gdpl2112.dg_bot.service.script;
 
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
+import io.github.kloping.url.UrlUtils;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.User;
 import net.mamoe.mirai.message.data.*;
+
+import java.io.ByteArrayInputStream;
 
 /**
  * script 交互对象
@@ -77,7 +81,16 @@ public interface ScriptContext {
      * @param url
      * @return
      */
-    Image uploadImage(String url);
+    default Image uploadImage(String url) {
+        try {
+            byte[] bytes = UrlUtils.getBytesFromHttpUrl(url);
+            Image image = Contact.uploadImage(getBot().getAsFriend(), new ByteArrayInputStream(bytes));
+            return image;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     /**
      * 构建 文本
@@ -99,7 +112,9 @@ public interface ScriptContext {
      * @param msg
      * @return
      */
-    Message deSerialize(String msg);
+    default Message deSerialize(String msg) {
+        return DgSerializer.stringDeserializeToMessageChain(msg, getBot(), getBot().getAsFriend());
+    }
 
     /**
      * 从id获取MessageChain 可用于直接发送 <br>
