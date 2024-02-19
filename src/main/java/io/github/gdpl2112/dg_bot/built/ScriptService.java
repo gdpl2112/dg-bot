@@ -6,6 +6,7 @@ import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
+import io.github.gdpl2112.dg_bot.service.ConfigService;
 import io.github.gdpl2112.dg_bot.service.script.BaseMessageScriptContext;
 import io.github.gdpl2112.dg_bot.service.script.BaseScriptUtils;
 import io.github.gdpl2112.dg_bot.service.script.ScriptContext;
@@ -64,6 +65,9 @@ public class ScriptService extends SimpleListenerHost {
     @Autowired
     SaveMapper saveMapper;
 
+    @Autowired
+    ConfigService configService;
+
     public static Map<String, ScriptException> exceptionMap = new HashMap<>();
 
 
@@ -78,6 +82,8 @@ public class ScriptService extends SimpleListenerHost {
     public void onMessage(@NotNull MessageEvent event) {
         if (event instanceof MessagePreSendEvent) return;
         if (event instanceof MessagePostSendEvent) return;
+        String tid = event instanceof GroupMessageEvent ? "g" + event.getSubject().getId() : event instanceof FriendMessageEvent ? "f" + event.getSender().getId() : null;
+        if (tid != null) if (configService.isNotOpenK2(event.getBot().getId(), tid)) return;
         final String code = getScriptCode(event.getBot().getId());
         if (code == null) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
