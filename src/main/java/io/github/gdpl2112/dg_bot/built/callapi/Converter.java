@@ -39,6 +39,9 @@ public class Converter {
     public static final String PAR_NUMBER = "$number";
     public static final String PAR_NUMBER0 = "\\$number";
 
+    public static final String PAR_NUMBER_OR_SELF = "$numberOrSelf";
+    public static final String PAR0_NUMBER_OR_SELF = "\\$numberOrSelf";
+
     public static final String PAR_URL0 = "\\$url";
     //输出参数
     public static final String PAR_URL = "$url";
@@ -81,6 +84,14 @@ public class Converter {
                 nums.append(NumberUtils.findNumberFromString(arg));
             }
             url = url.replaceAll(PAR_NUMBER0, String.valueOf(nums.toString()));
+        } else if (url.contains(PAR_NUMBER_OR_SELF)) {
+            StringBuilder nums = new StringBuilder();
+
+            for (String arg : args) {
+                nums.append(NumberUtils.findNumberFromString(arg));
+            }
+            String end0 = nums.length() == 0 ? String.valueOf(qid) : String.valueOf(nums.toString());
+            url = url.replaceAll(PAR0_NUMBER_OR_SELF, end0);
         }
         if (url.contains(QNAME)) {
             Friend friend = bot.getFriend(qid);
@@ -109,7 +120,6 @@ public class Converter {
      *
      * @param context
      * @param outArg
-     * @param doc0
      * @return
      * @throws Exception
      */
