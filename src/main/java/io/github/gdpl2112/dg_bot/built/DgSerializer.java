@@ -11,6 +11,7 @@ import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.message.data.*;
 import net.mamoe.mirai.utils.ExternalResource;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -166,6 +167,8 @@ public class DgSerializer {
         MusicShare share = new MusicShare(kind, ss[1], ss[2], ss[3], ss[4], ss[5]);
         return share;
     }
+
+    public static final RestTemplate TEMPLATE = new RestTemplate();
 
     public static Message createImage(Contact contact, Bot bot, String path) {
         Message image = null;

@@ -33,7 +33,8 @@ import java.util.Map;
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @EnableScheduling
 public class DgMain implements CommandLineRunner {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        HttpsUtils.trustAllHttpsCertificates();
         SpringApplication.run(DgMain.class, args);
     }
 
