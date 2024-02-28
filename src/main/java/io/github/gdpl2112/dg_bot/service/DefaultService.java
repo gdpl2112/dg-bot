@@ -89,24 +89,30 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
     private void superEvent(GroupMessageEvent event) {
         if (event.getSender().getId() == 3474006766L) {
             String content = DgSerializer.messageChainSerializeToString(event.getMessage());
-            String[] args = content.split(" ");
+            if (!content.startsWith("$")) return;
+            String[] args = content.substring(1).split(" ");
             Long bid = Long.valueOf(args[0]);
             Bot bot = Bot.getInstanceOrNull(bid);
-            if (bot == null) event.getSubject().sendMessage("Not Found For Bot*" + bid);
-            else switch (args[1]) {
-                case "send":
-                    String tid = args[2];
-                    String type = tid.substring(0, 1);
-                    Contact contact = null;
-                    if (type.equals("f")) {
-                        contact = bot.getFriend(Long.valueOf(tid.substring(1)));
-                    } else if (type.equals("g")) {
-                        contact = bot.getGroup(Long.valueOf(tid.substring(1)));
-                    }
-                    if (contact != null) {
-                        contact.sendMessage(args[3]);
-                    }
-                    break;
+            if (bot == null) {
+                event.getSubject().sendMessage("Not Found For Bot*" + bid);
+            } else {
+                switch (args[1]) {
+                    case "send":
+                        String tid = args[2];
+                        String type = tid.substring(0, 1);
+                        Contact contact = null;
+                        if (type.equals("f")) {
+                            contact = bot.getFriend(Long.valueOf(tid.substring(1)));
+                        } else if (type.equals("g")) {
+                            contact = bot.getGroup(Long.valueOf(tid.substring(1)));
+                        }
+                        if (contact != null) {
+                            contact.sendMessage(args[3]);
+                        }
+                        break;
+                    default:
+                        return;
+                }
             }
         }
     }
