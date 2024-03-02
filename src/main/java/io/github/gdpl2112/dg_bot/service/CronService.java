@@ -6,7 +6,6 @@ import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
-import io.github.gdpl2112.dg_bot.service.script.BaseMessageScriptContext;
 import io.github.gdpl2112.dg_bot.service.script.BaseScriptUtils;
 import io.github.gdpl2112.dg_bot.service.script.ScriptContext;
 import io.github.kloping.MySpringTool.interfaces.Logger;
@@ -17,7 +16,6 @@ import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.User;
 import net.mamoe.mirai.message.data.ForwardMessageBuilder;
-import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
@@ -74,7 +72,7 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
             @Override
             public void execute(JobExecutionContext context) throws JobExecutionException {
                 logger.log(String.format("开始执行%s => %s cron任务", msg.getQid(), msg.getTargetId()));
-                if (msg.getTargetId().endsWith("FUNCTION")) {
+                if (msg.getTargetId().endsWith("FUNCTION") || msg.getTargetId().endsWith("function")) {
                     long bid = Long.parseLong(msg.getQid());
                     Bot bot = Bot.getInstanceOrNull(bid);
                     if (bot == null) {
@@ -130,6 +128,7 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                             });
                             javaScript.put("utils", new BaseScriptUtils(bid, template));
                             javaScript.put("bot", bot);
+                            javaScript.put("msg", "");
                             final String code = getScriptCode(bid);
                             if (code == null) return;
                             javaScript.eval(code);
