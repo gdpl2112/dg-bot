@@ -1,7 +1,6 @@
 package io.github.gdpl2112.dg_bot;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import io.github.gdpl2112.dg_bot.built.BuiltPlugin;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
@@ -57,8 +56,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     public void run(String... args) throws Exception {
         executor.submit(() -> {
             MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(new MiraiConsoleImplementationTerminal());
-            PluginManager.INSTANCE.loadPlugin(BuiltPlugin.INSTANCE);
-            PluginManager.INSTANCE.enablePlugin(BuiltPlugin.INSTANCE);
         });
         GlobalEventChannel.INSTANCE.registerListenerHost(service0);
         GlobalEventChannel.INSTANCE.registerListenerHost(service1);
