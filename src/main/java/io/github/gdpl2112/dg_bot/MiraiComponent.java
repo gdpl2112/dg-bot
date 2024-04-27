@@ -12,7 +12,6 @@ import io.github.gdpl2112.dg_bot.service.DefaultService;
 import io.github.gdpl2112.dg_bot.service.PassiveService;
 import io.github.gdpl2112.dg_bot.service.SaveService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
-import net.mamoe.mirai.console.plugin.PluginManager;
 import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
 import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
 import net.mamoe.mirai.event.EventHandler;
@@ -21,6 +20,7 @@ import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -52,11 +52,16 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     CallApiService callApiService;
 
+    @Bean
+    public Object start() {
+        MiraiConsoleImplementationTerminal terminal = new MiraiConsoleImplementationTerminal();
+        MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(terminal);
+        return terminal;
+    }
+
+
     @Override
     public void run(String... args) throws Exception {
-        executor.submit(() -> {
-            MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(new MiraiConsoleImplementationTerminal());
-        });
         GlobalEventChannel.INSTANCE.registerListenerHost(service0);
         GlobalEventChannel.INSTANCE.registerListenerHost(service1);
         GlobalEventChannel.INSTANCE.registerListenerHost(defaultService);
