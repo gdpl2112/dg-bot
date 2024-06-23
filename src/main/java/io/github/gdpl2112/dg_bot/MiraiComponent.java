@@ -56,12 +56,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     public Object start() {
         MiraiConsoleImplementationTerminal terminal = new MiraiConsoleImplementationTerminal();
         MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(terminal);
-        return terminal;
-    }
-
-
-    @Override
-    public void run(String... args) throws Exception {
         GlobalEventChannel.INSTANCE.registerListenerHost(service0);
         GlobalEventChannel.INSTANCE.registerListenerHost(service1);
         GlobalEventChannel.INSTANCE.registerListenerHost(defaultService);
@@ -69,6 +63,12 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(scriptService);
         GlobalEventChannel.INSTANCE.registerListenerHost(callApiService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
+        return terminal;
+    }
+
+
+    @Override
+    public void run(String... args) throws Exception {
     }
 
     @EventHandler
