@@ -15,6 +15,10 @@
     </parent>
     <repositories>
         <repository>
+            <id>s01_snapshots</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
+        <repository>
             <id>ali-m</id>
             <url>https://maven.aliyun.com/repository/public</url>
         </repository>
