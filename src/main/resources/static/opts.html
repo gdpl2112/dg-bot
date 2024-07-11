@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+    <script src="/js/libs/axios.js"></script>
+    <script src="/js/libs/vue.js"></script>
+    <script src="/js/libs/jq3.6.js"></script>
+
+    <link crossorigin="anonymous" href="/css/libs/bootstarp@5.1.3_min.css"
+          rel="stylesheet">
+    <link crossorigin="anonymous" href="/css/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_css_bootstrap.css"
+          rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    <title>QQ代挂-可选功能开关</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light tm-0">
+    <a class="navbar-brand" href="/">
+        <img alt="qq"
+             class="navbar-brand" src="/icon" style="opacity: 0.86;max-width: 50px; border-radius: 999px"></a>
+    <button aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"
+            class="navbar-toggler" data-target="#navbarSupportedContent"
+            data-toggle="collapse" type="button">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+                <a class="nav-link" href="/">QQ代挂 <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="http://kloping.top/">kloping's</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link disabled">更多功能;敬请期待.</a>
+            </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+            <a class="dropdown-item" href="https://github.com/gdpl2112/dg-bot" target="_blank">
+                <img alt="github" loading="lazy" src="https://s.nmxc.ltd/sakurairo_vision/@2.6/display_icon/sora/github.png"
+                     style="opacity: 0.86;max-width: 35px">
+                github 开源地址
+            </a>
+        </form>
+    </div>
+</nav>
+<br>
+<hr>
+<br>
+<br>
+
+<div class="container bg-light">
+    <div class="row">
+        <div class="center-block" id="table_main">
+            <small class="form-text text-muted">此命令开关与被动回复开关一致</small>
+            <div class="container">
+                <hr>
+                <div class="row ">
+                    <div class="col-8">
+                        <ul class="list-group">
+                            <li aria-disabled="true" class="list-group-item disabled">功能</li>
+                            <li aria-disabled="true" class="list-group-item disabled">名字</li>
+                            <li aria-disabled="true" class="list-group-item disabled">描述</li>
+                        </ul>
+                    </div>
+                    <div class="col-4">操作 开关</div>
+                </div>
+                <div :class="getTrClass()+' row'" style="margin-top: 15px;padding-bottom: 10px;padding-top: 10px"
+                     v-for="(e) in data">
+                    <div class="col-8">
+                        <ul class="list-group">
+                            <li class="list-group-item" style="overflow:scroll;" v-text="e.opt">输出格式</li>
+                            <li class="list-group-item" v-text="e.name">输出参数</li>
+                            <li class="list-group-item" style="overflow:scroll;" v-text="e.desc">不输出条件</li>
+                        </ul>
+                    </div>
+                    <div class="col-4">
+                        <div class="custom-control custom-switch">
+                            <button v-on:click="toggle(e.opt)" type="button" :class="'btn btn-' + (e.open ? 'success' : 'danger')">{{(e.open ? '开启' : '关闭')}}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let vm1 = new Vue({
+            el: "#table_main",
+            created: function () {
+                axios.get("/opts").then(function (response) {
+                    vm1.data = response.data;
+                }).catch(function (err) {
+                    alert(err);
+                })
+            }, data: {
+                data: [],
+            }, methods: {
+                getTrClass: function () {
+                    return 'alert-info'
+                },
+                toggle: function (opt) {
+                    axios.get("/opts/toggle?opt="+opt).then(function (response) {
+                        vm1.data = response.data
+                    }).catch(function (err) {
+                        alert(err);
+                    })
+                }
+            }
+        });
+    </script>
+    <br>
+    <script crossorigin="anonymous"
+            src="/js/libs/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js"></script>
+    <script crossorigin="anonymous"
+            src="/js/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_js_bootstrap.bundle.js"></script>
+    <script crossorigin="anonymous"
+            src="/js/libs/http_cdn.jsdelivr.net_npm_bootstrap@5.1.3_dist_js_bootstrap.bundle.js"></script>
+</body>
+</html>

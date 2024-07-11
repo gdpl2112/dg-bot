@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -33,9 +34,12 @@ import java.util.Map;
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @EnableScheduling
 public class DgMain implements CommandLineRunner {
+
+    public static ConfigurableApplicationContext applicationContext;
+
     public static void main(String[] args) throws Exception {
         HttpsUtils.trustAllHttpsCertificates();
-        SpringApplication.run(DgMain.class, args);
+        applicationContext = SpringApplication.run(DgMain.class, args);
     }
 
     @Autowired

@@ -29,6 +29,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +135,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         Public.EXECUTOR_SERVICE.submit(() -> {
             Conf conf = confMapper.selectById(event.getBot().getId());
             if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
+                UrlUtils.getStringFromHttpUrl(conf.getNu() + URLEncoder.encode(event.toString()));
             }
         });
     }
@@ -144,7 +145,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         Public.EXECUTOR_SERVICE.submit(() -> {
             Conf conf = confMapper.selectById(event.getBot().getId());
             if (conf != null && Judge.isNotEmpty(conf.getNu())) {
-                UrlUtils.getStringFromHttpUrl(conf.getNu() + event.toString());
+                UrlUtils.getStringFromHttpUrl(conf.getNu() + URLEncoder.encode(event.toString()));
             }
         });
     }
