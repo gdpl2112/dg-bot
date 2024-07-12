@@ -80,12 +80,9 @@ public class OptionalService implements ListenerHost {
     private Map<String, BaseOptional> bos = new HashMap<>();
 
     public List<OptionalDto> getOptionalDtos(String id) {
-        QueryWrapper<Optional> qw = new QueryWrapper<>();
-        qw.eq("qid", id);
         List<OptionalDto> dtos = new LinkedList<>();
         getBos().forEach((k, v) -> {
-            qw.eq("opt", k);
-            Optional one = optionalMapper.selectOne(qw);
+            Optional one = optionalMapper.selectByQidAndOpt(id, k);
             if (one == null) {
                 one = new Optional();
                 one.setQid(id);
@@ -98,10 +95,7 @@ public class OptionalService implements ListenerHost {
     }
 
     public boolean isOpen(String id, String name) {
-        QueryWrapper<Optional> qw = new QueryWrapper<>();
-        qw.eq("qid", id);
-        qw.eq("opt", name);
-        Optional optional = optionalMapper.selectOne(qw);
+        Optional optional = optionalMapper.selectByQidAndOpt(id, name);
         return optional == null ? false : optional.getOpen();
     }
 }
