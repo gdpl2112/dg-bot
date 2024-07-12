@@ -2,6 +2,7 @@ package io.github.gdpl2112.dg_bot.service.optionals;
 
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.ListenerHost;
+import net.mamoe.mirai.event.events.FriendMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.PlainText;
@@ -28,8 +29,8 @@ public class SongPoint extends BaseOptional   {
         return NAME;
     }
 
-    @EventHandler
-    public void pointOnly(GroupMessageEvent event) throws Exception {
+    @Override
+    public void run(GroupMessageEvent event) {
         StringBuilder line = new StringBuilder();
         for (SingleMessage singleMessage : event.getMessage()) {
             if (singleMessage instanceof PlainText) {
@@ -75,5 +76,10 @@ public class SongPoint extends BaseOptional   {
             if (r == null) event.getSubject().sendMessage("点歌时异常!");
             else event.getSubject().sendMessage(r);
         }
+    }
+
+    @Override
+    public void run(FriendMessageEvent event) {
+
     }
 }
