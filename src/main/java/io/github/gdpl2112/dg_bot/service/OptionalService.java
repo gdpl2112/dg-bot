@@ -9,7 +9,9 @@ import io.github.gdpl2112.dg_bot.service.optionals.BaseOptional;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.ListenerHost;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
+import net.mamoe.mirai.event.events.FriendMessageSyncEvent;
 import net.mamoe.mirai.event.events.GroupMessageEvent;
+import net.mamoe.mirai.event.events.GroupMessageSyncEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -36,13 +38,14 @@ public class OptionalService implements ListenerHost {
         });
     }
 
-    private synchronized Map<String, BaseOptional> getBos() {
-        if (!bos.isEmpty()) return bos;
-        for (String beanName : DgMain.applicationContext.getBeanNamesForType(BaseOptional.class)) {
-            BaseOptional bo = (BaseOptional) DgMain.applicationContext.getBean(beanName);
-            bos.put(beanName, bo);
-        }
-        return bos;
+    @EventHandler
+    public void onEvent(GroupMessageSyncEvent event) {
+        String id = String.valueOf(event.getBot().getId());
+        getBos().forEach((k, v) -> {
+            if (isOpen(id, k)) {
+                v.run(event);
+            }
+        });
     }
 
     @EventHandler
@@ -53,6 +56,25 @@ public class OptionalService implements ListenerHost {
                 v.run(event);
             }
         });
+    }
+
+    @EventHandler
+    public void onEvent(FriendMessageSyncEvent event) {
+        String id = String.valueOf(event.getBot().getId());
+        getBos().forEach((k, v) -> {
+            if (isOpen(id, k)) {
+                v.run(event);
+            }
+        });
+    }
+
+    private synchronized Map<String, BaseOptional> getBos() {
+        if (!bos.isEmpty()) return bos;
+        for (String beanName : DgMain.applicationContext.getBeanNamesForType(BaseOptional.class)) {
+            BaseOptional bo = (BaseOptional) DgMain.applicationContext.getBean(beanName);
+            bos.put(beanName, bo);
+        }
+        return bos;
     }
 
     private Map<String, BaseOptional> bos = new HashMap<>();
