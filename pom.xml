@@ -84,6 +84,11 @@
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
         </dependency>
+        <!--mysql-->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
         <!-- jdbc -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

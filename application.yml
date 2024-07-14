@@ -2,6 +2,12 @@ spring:
   datasource:
     url: jdbc:sqlite:data.db
     driver-class-name: org.sqlite.JDBC
+    msgs:
+      url: jdbc:mysql://localhost:3306/msgdb?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true
+      driver-class-name: com.mysql.jdbc.Driver
+      username: root
+      password: root
+
 server:
   port: 34740
   servlet:

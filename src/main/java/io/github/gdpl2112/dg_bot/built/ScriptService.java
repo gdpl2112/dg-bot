@@ -222,7 +222,7 @@ public class ScriptService extends SimpleListenerHost {
         wrapper.eq("internal_id", id);
         wrapper.eq("bot_id", event.getBot().getId());
         List<AllMessage> msg = saveMapper.selectList(wrapper);
-        if (msg != null && msg.size() > 0) {
+        if (msg != null && !msg.isEmpty()) {
             return MessageChain.deserializeFromJsonString(msg.get(0).getContent());
         }
         return null;

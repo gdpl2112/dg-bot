@@ -5,6 +5,7 @@ import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
+import io.github.gdpl2112.dg_bot.dao.Msgs;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.*;
@@ -52,6 +53,9 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     OptionalService optionalService;
 
+    @Autowired
+    MsgsService msgsService;
+
     @Bean
     public Object start() {
         MiraiConsoleImplementationTerminal terminal = new MiraiConsoleImplementationTerminal();
@@ -64,6 +68,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(callApiService);
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
+        GlobalEventChannel.INSTANCE.registerListenerHost(msgsService);
         return terminal;
     }
 
