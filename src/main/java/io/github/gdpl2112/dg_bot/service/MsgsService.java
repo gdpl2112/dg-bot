@@ -15,8 +15,15 @@ import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.SingleMessage;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * @author github.kloping
@@ -125,7 +132,7 @@ public class MsgsService extends SimpleListenerHost {
     @Value("${spring.datasource.msgs.username}")
     private String username;
     @Value("${spring.datasource.msgs.password}")
-    private String passwrod;
+    private String password;
 
     private JdbcTemplate template = null;
 
@@ -134,19 +141,47 @@ public class MsgsService extends SimpleListenerHost {
         MysqlDataSource dataSource = new MysqlDataSource();
         dataSource.setUrl(url);
         dataSource.setUser(username);
-        dataSource.setPassword(passwrod);
+        dataSource.setPassword(password);
         template = new JdbcTemplate();
         template.setDataSource(dataSource);
         return template;
     }
 
     private void insert0(Msgs msgs) {
-        String sql = String.format("INSERT INTO " +
-                        "`msgs` (`bot_id`, `name`, `subject_id`, `sender_name`, `sender_id`, `msg`, `image_url`, `time`, `type`) " +
-                        "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', %s, '%s');"
-                , msgs.getBotId(), msgs.getName(), msgs.getSubjectId(), msgs.getSenderName(), msgs.getSenderId(),
-                msgs.getMsg(), msgs.getImageUrl(), msgs.getTime(), msgs.getType());
-        jdbcTemplate()
-                .update(sql);
+        try {
+            //sql, 每行加空格
+            String sql = "INSERT INTO `msgs` (`bot_id`, `name`, `subject_id`, `sender_name`, `sender_id`, `msg`, `image_url`, `time`, `type`) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+
+            PreparedStatement ptmt = jdbcTemplate().getDataSource().getConnection().prepareStatement(sql); //预编译SQL，减少sql执行
+
+            ptmt.setString(1, msgs.getBotId());
+            ptmt.setString(2, msgs.getName());
+            ptmt.setString(3, msgs.getSubjectId());
+            ptmt.setString(4, msgs.getSenderName());
+            ptmt.setString(5, msgs.getSenderId());
+            ptmt.setString(6, msgs.getMsg());
+            ptmt.setString(7, msgs.getImageUrl());
+            ptmt.setLong(8, msgs.getTime());
+            ptmt.setString(9, msgs.getType());
+
+            ptmt.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
+
+    private static final RowMapper<Msgs> rowMapper = BeanPropertyRowMapper.newInstance(Msgs.class);
+
+    public List<Msgs> msgsList(UserDetails userDetails, Long time) {
+        String sql = null;
+        if (time == null) {
+            sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), 0, 100);
+        } else {
+            sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' AND `time`<%s ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), 0, 100);
+        }
+        return jdbcTemplate().query(sql, rowMapper);
+    }
+
+
 }

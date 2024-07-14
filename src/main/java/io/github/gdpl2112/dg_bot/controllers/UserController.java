@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.*;
 import io.github.gdpl2112.dg_bot.mapper.*;
+import io.github.gdpl2112.dg_bot.service.MsgsService;
 import io.github.kloping.judge.Judge;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Friend;
@@ -251,5 +252,13 @@ public class UserController {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    @Autowired
+    MsgsService msgsService;
+
+    @RequestMapping("ml")
+    public Object ml(@AuthenticationPrincipal UserDetails userDetails, @RequestParam(required = false) Long time) {
+        return msgsService.msgsList(userDetails, time);
     }
 }

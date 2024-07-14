@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.Passive;
 import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
 import io.github.gdpl2112.dg_bot.pack.PassiveMessage;
+import net.mamoe.mirai.contact.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
