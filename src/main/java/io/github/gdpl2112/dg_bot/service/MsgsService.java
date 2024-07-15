@@ -86,6 +86,11 @@ public class MsgsService extends SimpleListenerHost {
     }
 
     @EventHandler
+    public void onMessage(@NotNull FriendMessageEvent event) throws Exception {
+        save(event);
+    }
+
+    @EventHandler
     public void onMessage(@NotNull StrangerMessageEvent event) throws Exception {
         save(event);
     }
@@ -178,7 +183,7 @@ public class MsgsService extends SimpleListenerHost {
         if (time == null) {
             sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), 0, 100);
         } else {
-            sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' AND `time`<%s ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), 0, 100);
+            sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' AND `time`<%s ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), time, 0, 100);
         }
         return jdbcTemplate().query(sql, rowMapper);
     }

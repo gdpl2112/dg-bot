@@ -119,7 +119,6 @@
 
         /* 滚动槽 */
         ::-webkit-scrollbar-track {
-            -webkit-box-shadow: inset006pxrgba(0, 0, 0, 0.3);
             border-radius: 8px;
         }
 
@@ -127,21 +126,27 @@
         ::-webkit-scrollbar-thumb {
             border-radius: 10px;
             background: rgba(0, 0, 0, 0);
-            -webkit-box-shadow: inset006pxrgba(0, 0, 0, 0.5);
         }
 
     </style>
 </head>
 <body>
+
 <ul class="list-group" id="mqs">
-    <li class="list-group-item active" aria-current="true">消息列表</li>
-    <li class="list-group-item" v-for="e in gr(data).values()" v-on:click="tom(e.subjectId)">
-        <div class="avatar">
-            <img :src="getAvatar(e)"/></div>
-        </div>
-        {{e.name}}
+    <li class="list-group-item" aria-current="true">
+        <button v-on:click="load()" type="button" class="btn btn-success">load</button>
     </li>
+    <li class="list-group-item active" aria-current="true">list</li>
+
+    <li class="list-group-item" v-for="a in list" v-on:click="tom(a.subjectId)">
+        <span class="avatar">
+            <img :src="getAvatar(a)" alt="icon"/>
+        </span>
+        <span>{{a.name}}</span>
+    </li>
+
 </ul>
+
 <div id="chat0" style="height: 760px;
             width: 900px;
             border-radius: 4px;
@@ -155,10 +160,10 @@
             <div class="item item-center"><span>{{formatMsgTime(e.time)}}</span></div>
             <div :class="'item item-'+(e.botId===e.senderId?'right':'left')">
                 <div class="avatar">
-                    <img :src="getAvatar(e)"/>
+                    <img :src="getAvatar(e)" alt=""/>
                 </div>
                 {{e.senderName}} <br>
-                <div v-if="e.msg!==''" class="bubble bubble-left">
+                <div class="bubble bubble-left">
                     {{e.msg}}
                 </div>
                 <div v-if="e.imageUrl!==''" class="bubble bubble-left">
@@ -172,7 +177,7 @@
             display: flex;
             flex-flow: column;
             background-color: #fff;">
-        <label for="textarea">输入信息:</label>
+        <label for="textarea">msg:</label>
         <textarea style="flex: 1;
             padding: 5px;
             font-size: 14px;
@@ -199,23 +204,37 @@
     </div>
 </div>
 <script>
+
     let vm1 = new Vue({
         el: "#mqs",
         created: function () {
             axios.get("/ml").then(function (response) {
-                vm1.data = response.data
+                vm1.data = response.data;
+                for (let d of vm1.data) {
+                    vm1.gkv.set(d.subjectId, d)
+                    vm1.time = vm1.time > d.time ? d.time : vm1.time
+                }
+                vm1.list = vm1.gkv.values()
             }).catch(function (err) {
                 alert(err);
             })
         }, data: {
             data: [],
+            gkv: new Map(),
+            list: [],
+            time: 9999999999999
         }, methods: {
-            gr: function (data) {
-                var g0 = new Map
-                for (let i = 0; i < data.length; i++) {
-                    g0.set(data[i].subjectId, data[i])
-                }
-                return g0;
+            load: function () {
+                axios.get("/ml?time=" + vm1.time).then(function (response) {
+                    for (let d of response.data) {
+                        vm1.data.push(d)
+                        vm1.gkv.set(d.subjectId, d)
+                        vm1.time = vm1.time > d.time ? d.time : vm1.time
+                    }
+                    vm1.list = vm1.gkv.values()
+                }).catch(function (err) {
+                    alert(err);
+                })
             },
             tom: function (sid) {
                 vm2.data = []
@@ -236,47 +255,45 @@
     });
 
     let vm2 = new Vue({
-                el: "#chat0",
-                created: function () {
+        el: "#chat0",
+        created: function () {
 
-                }, data: {
-                    data: []
-                }, methods: {
-                    getAvatar: function (d0) {
-                        return 'https://q2.qlogo.cn/headimg_dl?dst_uin=' + d0.senderId + '&spec=640'
-                    },
-                    formatMsgTime: function (timespan) {
-                        let dateTime = new Date(timespan)
-                        let year = dateTime.getFullYear()
-                        let month = dateTime.getMonth() + 1
-                        let day = dateTime.getDate()
-                        let hour = dateTime.getHours()
-                        let minute = dateTime.getMinutes()
-                        let millisecond = dateTime.getTime()
-                        let now = new Date()
-                        let nowNew = now.getTime()
-                        let milliseconds = 0
-                        let timeSpanStr
-                        milliseconds = nowNew - millisecond
-                        if (milliseconds <= 1000 * 60) {
-                            timeSpanStr = '刚刚'
-                        } else if (1000 * 60 < milliseconds && milliseconds <= 1000 * 60 * 60) {
-                            timeSpanStr = Math.round((milliseconds / (1000 * 60))) + '分钟前'
-                        } else if (1000 * 60 * 60 < milliseconds && milliseconds <= 1000 * 60 * 60 * 24) {
-                            timeSpanStr = Math.round(milliseconds / (1000 * 60 * 60)) + '小时前'
-                        } else if (1000 * 60 * 60 * 24 < milliseconds && milliseconds <= 1000 * 60 * 60 * 24 * 15) {
-                            timeSpanStr = Math.round(milliseconds / (1000 * 60 * 60 * 24)) + '天前'
-                        } else if (milliseconds > 1000 * 60 * 60 * 24 * 15 && year === now.getFullYear()) {
-                            timeSpanStr = month + '-' + day + ' ' + hour + ':' + minute
-                        } else {
-                            timeSpanStr = year + '-' + month + '-' + day + ' ' + hour + ':' + minute
-                        }
-                        return timeSpanStr
-                    }
-
+        }, data: {
+            data: []
+        }, methods: {
+            getAvatar: function (d0) {
+                return 'https://q2.qlogo.cn/headimg_dl?dst_uin=' + d0.senderId + '&spec=640'
+            },
+            formatMsgTime: function (timespan) {
+                let dateTime = new Date(timespan)
+                let year = dateTime.getFullYear()
+                let month = dateTime.getMonth() + 1
+                let day = dateTime.getDate()
+                let hour = dateTime.getHours()
+                let minute = dateTime.getMinutes()
+                let millisecond = dateTime.getTime()
+                let now = new Date()
+                let nowNew = now.getTime()
+                let milliseconds = 0
+                let timeSpanStr
+                milliseconds = nowNew - millisecond
+                if (milliseconds <= 1000 * 60) {
+                    timeSpanStr = '刚刚'
+                } else if (1000 * 60 < milliseconds && milliseconds <= 1000 * 60 * 60) {
+                    timeSpanStr = Math.round((milliseconds / (1000 * 60))) + '分钟前'
+                } else if (1000 * 60 * 60 < milliseconds && milliseconds <= 1000 * 60 * 60 * 24) {
+                    timeSpanStr = Math.round(milliseconds / (1000 * 60 * 60)) + '小时前'
+                } else if (1000 * 60 * 60 * 24 < milliseconds && milliseconds <= 1000 * 60 * 60 * 24 * 15) {
+                    timeSpanStr = Math.round(milliseconds / (1000 * 60 * 60 * 24)) + '天前'
+                } else if (milliseconds > 1000 * 60 * 60 * 24 * 15 && year === now.getFullYear()) {
+                    timeSpanStr = month + '-' + day + ' ' + hour + ':' + minute
+                } else {
+                    timeSpanStr = year + '-' + month + '-' + day + ' ' + hour + ':' + minute
                 }
-            })
-    ;
+                return timeSpanStr
+            }
+        }
+    });
 </script>
 <script src="/js/utils.js"></script>
 <script src="/js/libs/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js" crossorigin="anonymous"></script>
