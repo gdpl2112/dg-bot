@@ -2,6 +2,7 @@ package io.github.gdpl2112.dg_bot.service;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.gdpl2112.dg_bot.dao.Msgs;
+import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Friend;
@@ -82,7 +83,28 @@ public class MsgsService extends SimpleListenerHost {
 
     @EventHandler
     public void onMessage(@NotNull FriendMessageSyncEvent event) throws Exception {
-        save(event);
+        Msgs msgs = new Msgs();
+        Friend subj = event.getSubject();
+        msgs.setName(subj.getNick());
+        msgs.setType("friend");
+        msgs.setTime(System.currentTimeMillis());
+        msgs.setSubjectId(String.valueOf(event.getSubject().getId()));
+        msgs.setSenderId(String.valueOf(event.getBot().getId()));
+        msgs.setBotId(String.valueOf(event.getBot().getId()));
+        msgs.setSenderName(event.getSender().getNick());
+        StringBuilder sb = null;
+        for (SingleMessage singleMessage : event.getMessage()) {
+            if (singleMessage instanceof PlainText) {
+                PlainText text = (PlainText) singleMessage;
+                if (sb == null) sb = new StringBuilder();
+                sb.append(text.getContent());
+            } else if (singleMessage instanceof Image) {
+                String url = Image.queryUrl((Image) singleMessage);
+                msgs.setImageUrl(url);
+            }
+        }
+        msgs.setMsg(sb == null ? "" : sb.toString());
+        insert0(msgs);
     }
 
     @EventHandler
@@ -178,12 +200,20 @@ public class MsgsService extends SimpleListenerHost {
 
     private static final RowMapper<Msgs> rowMapper = BeanPropertyRowMapper.newInstance(Msgs.class);
 
-    public List<Msgs> msgsList(UserDetails userDetails, Long time) {
+    public List<Msgs> msgsList(UserDetails userDetails, Long time, String type) {
         String sql = null;
-        if (time == null) {
-            sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), 0, 100);
+        if (Judge.isEmpty(type)) {
+            if (time == null) {
+                sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), 0, 100);
+            } else {
+                sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' AND `time`<%s ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), time, 0, 100);
+            }
         } else {
-            sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' AND `time`<%s ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), time, 0, 100);
+            if (time == null) {
+                sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' AND `type`='%s' ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), type, 0, 100);
+            } else {
+                sql = String.format("SELECT * FROM msgs WHERE bot_id='%s' AND `type`='%s' AND `time`<%s ORDER BY `time` DESC LIMIT %s,%s;", userDetails.getUsername(), type, time, 0, 100);
+            }
         }
         return jdbcTemplate().query(sql, rowMapper);
     }

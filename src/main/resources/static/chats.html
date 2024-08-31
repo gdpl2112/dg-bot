@@ -131,21 +131,22 @@
     </style>
 </head>
 <body>
-
-<ul class="list-group" id="mqs">
-    <li class="list-group-item" aria-current="true">
+<div id="mqs">
+    <div class="list-group-item" aria-current="true">
         <button v-on:click="load()" type="button" class="btn btn-success">load</button>
-    </li>
-    <li class="list-group-item active" aria-current="true">list</li>
-
-    <li class="list-group-item" v-for="a in list" v-on:click="tom(a.subjectId)">
+        <button v-on:click="ccc()" type="button" class="btn btn-success">change</button>
+    </div>
+    <ul class="list-group" style="overflow: scroll;max-height: 580px">
+        <li class="list-group-item active" aria-current="true">list</li>
+        <li class="list-group-item" v-for="a in list" v-on:click="tom(a.subjectId)">
         <span class="avatar">
             <img :src="getAvatar(a)" alt="icon"/>
         </span>
-        <span>{{a.name}}</span>
-    </li>
+            <span>{{a.name}}</span>
+        </li>
 
-</ul>
+    </ul>
+</div>
 
 <div id="chat0" style="height: 760px;
             width: 900px;
@@ -204,7 +205,7 @@
     </div>
 </div>
 <script>
-
+    let type = "friend";
     let vm1 = new Vue({
         el: "#mqs",
         created: function () {
@@ -225,7 +226,7 @@
             time: 9999999999999
         }, methods: {
             load: function () {
-                axios.get("/ml?time=" + vm1.time).then(function (response) {
+                axios.get("/ml?type=" + type + "&time=" + vm1.time).then(function (response) {
                     for (let d of response.data) {
                         vm1.data.push(d)
                         vm1.gkv.set(d.subjectId, d)
@@ -250,6 +251,12 @@
                 } else if (d0.type === "friend") {
                     return 'https://q2.qlogo.cn/headimg_dl?dst_uin=' + d0.subjectId + '&spec=640'
                 }
+            }, ccc: function () {
+                type = type === "friend" ? "group" : "friend";
+                vm1.time = 9999999999999
+                vm1.data = []
+                vm1.gkv.clear()
+                this.load()
             }
         }
     });
