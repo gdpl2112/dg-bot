@@ -50,6 +50,7 @@ public class DgMain implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        logger.setLogLevel(1);
         logger.info("start auto create need tables;");
         PackageScanner scanner = new PackageScannerImpl(true);
         for (Class<?> dclass :
