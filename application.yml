@@ -16,4 +16,4 @@ server:
 super:
   qid: 3474006766
 gsuid:
-  url: ws://kloping.top:18765/ws/bot
+  url: ws://192.168.0.105:8765/ws/dgbot
