@@ -131,7 +131,6 @@ public class GsuidClient extends WebSocketClient implements BaseOptional {
         super.onMessage(bytes);
         String json = new String(bytes.array(), Charset.forName("utf-8"));
         onMessage(json);
-        logger.log(json);
     }
 
     @Override
