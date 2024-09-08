@@ -1,6 +1,5 @@
 package io.github.gdpl2112.dg_bot.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.DgMain;
 import io.github.gdpl2112.dg_bot.dao.Optional;
 import io.github.gdpl2112.dg_bot.dto.OptionalDto;
@@ -31,8 +30,9 @@ public class OptionalService implements ListenerHost {
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
         String id = String.valueOf(event.getBot().getId());
+        String tid = "g" + event.getSubject().getId();
         getBos().forEach((k, v) -> {
-            if (isOpen(id, k)) {
+            if (isOpen(id, tid, k)) {
                 v.run(event);
             }
         });
@@ -41,8 +41,9 @@ public class OptionalService implements ListenerHost {
     @EventHandler
     public void onEvent(GroupMessageSyncEvent event) {
         String id = String.valueOf(event.getBot().getId());
+        String tid = "g" + event.getSubject().getId();
         getBos().forEach((k, v) -> {
-            if (isOpen(id, k)) {
+            if (isOpen(id, tid, k)) {
                 v.run(event);
             }
         });
@@ -51,8 +52,9 @@ public class OptionalService implements ListenerHost {
     @EventHandler
     public void onEvent(FriendMessageEvent event) {
         String id = String.valueOf(event.getBot().getId());
+        String tid = "f" + event.getSubject().getId();
         getBos().forEach((k, v) -> {
-            if (isOpen(id, k)) {
+            if (isOpen(id, tid, k)) {
                 v.run(event);
             }
         });
@@ -61,8 +63,9 @@ public class OptionalService implements ListenerHost {
     @EventHandler
     public void onEvent(FriendMessageSyncEvent event) {
         String id = String.valueOf(event.getBot().getId());
+        String tid = "f" + event.getSubject().getId();
         getBos().forEach((k, v) -> {
-            if (isOpen(id, k)) {
+            if (isOpen(id, tid, k)) {
                 v.run(event);
             }
         });
@@ -94,8 +97,13 @@ public class OptionalService implements ListenerHost {
         return dtos;
     }
 
-    public boolean isOpen(String id, String name) {
+    @Autowired
+    ConfigService configService;
+
+    public boolean isOpen(String id, String tid, String name) {
         Optional optional = optionalMapper.selectByQidAndOpt(id, name);
-        return optional == null ? false : optional.getOpen();
+        if (optional == null ? false : optional.getOpen()) {
+            return configService.isNotOpenK2(Long.valueOf(id), tid);
+        } else return false;
     }
 }
