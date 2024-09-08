@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * @author github.kloping
  */
 @Component
-public class SongPoint extends BaseOptional   {
+public class SongPoint implements BaseOptional   {
     public static final String DESC = "包含[点歌,QQ点歌,酷狗点歌,网易点歌,取消点歌,取消选择] 功能";
     public static final String NAME = "异步点歌";
 
@@ -41,7 +41,7 @@ public class SongPoint extends BaseOptional   {
 
     @Override
     public void run(MessageEvent event) {
-        String out = getLineString(event);
+        String out = io.github.gdpl2112.dg_bot.Utils.getLineString(event);
         String name = null;
         String type = null;
         if (out.startsWith("酷狗点歌") && out.length() > 4) {

@@ -15,3 +15,5 @@ server:
       timeout: 680400 #session超时时间
 super:
   qid: 3474006766
+gsuid:
+  url: ws://kloping.top:18765/ws/bot

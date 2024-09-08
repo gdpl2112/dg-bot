@@ -5,6 +5,10 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import io.github.gdpl2112.dg_bot.built.callapi.Converter;
 import io.github.kloping.clasz.ClassUtils;
 import io.github.kloping.judge.Judge;
+import net.mamoe.mirai.event.events.MessageEvent;
+import net.mamoe.mirai.message.data.PlainText;
+import net.mamoe.mirai.message.data.SingleMessage;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -98,6 +102,17 @@ public class Utils {
             logic = new Logic(null, null, judes[0]);
         }
         return logic.getV(json);
+    }
+
+    @NotNull
+    public static String getLineString(MessageEvent event) {
+        StringBuilder line = new StringBuilder();
+        for (SingleMessage singleMessage : event.getMessage()) {
+            if (singleMessage instanceof PlainText) {
+                line.append(((PlainText) singleMessage).getContent().trim());
+            }
+        }
+        return line.toString().trim();
     }
 
     public static class Logic {

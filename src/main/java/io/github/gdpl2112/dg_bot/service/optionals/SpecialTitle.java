@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * @author github.kloping
  */
 @Component
-public class SpecialTitle extends BaseOptional {
+public class SpecialTitle implements BaseOptional {
 
     @Override
     public String getDesc() {
@@ -33,7 +33,7 @@ public class SpecialTitle extends BaseOptional {
         if (game == null) return;
         NormalMember member = game.getGroup().getBotAsMember();
         if (member.getPermission() == MemberPermission.OWNER) {
-            String out = getLineString(event);
+            String out = io.github.gdpl2112.dg_bot.Utils.getLineString(event);
             if (out.startsWith("我要头衔")) {
                 String title = out.substring(4);
                 NormalMember m1 = game.getGroup().get(game.getSender().getId());

@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  * @author github.kloping
  */
 @Component
-public class ShortVideoParse extends BaseOptional {
+public class ShortVideoParse implements BaseOptional {
     @Override
     public String getDesc() {
         return "自动检测消息中解析[快手/抖音][短视频/图集]短链接并解析发送结果";
@@ -35,7 +35,7 @@ public class ShortVideoParse extends BaseOptional {
 
     @Override
     public void run(MessageEvent event) {
-        String out = getLineString(event);
+        String out = io.github.gdpl2112.dg_bot.Utils.getLineString(event);
         if (out.contains(KS_LINK)) {
             Matcher matcher = pattern.matcher(out);
             if (matcher.find()) parseKs(matcher.group(), event);
