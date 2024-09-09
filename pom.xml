@@ -26,10 +26,6 @@
             <id>m1</id>
             <url>https://repo1.maven.org/maven2/</url>
         </repository>
-        <repository>
-            <id>mirai-snapshots</id>
-            <url>https://repo.mirai.mamoe.net/snapshots</url>
-        </repository>
     </repositories>
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -57,7 +53,6 @@
             <groupId>top.mrxiaom</groupId>
             <artifactId>overflow-core</artifactId>
             <version>2.16.0-db61867-SNAPSHOT</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.mamoe</groupId>
@@ -69,11 +64,6 @@
                     <artifactId>mirai-core-jvm</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>net.mamoe</groupId>
-            <artifactId>mirai-console</artifactId>
-            <version>${mirai-version}</version>
         </dependency>
         <dependency>
             <groupId>net.mamoe</groupId>
