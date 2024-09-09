@@ -103,7 +103,7 @@ public class OptionalService implements ListenerHost {
     public boolean isOpen(String id, String tid, String name) {
         Optional optional = optionalMapper.selectByQidAndOpt(id, name);
         if (optional == null ? false : optional.getOpen()) {
-            return configService.isNotOpenK2(Long.valueOf(id), tid);
+            return !configService.isNotOpenK2(Long.valueOf(id), tid);
         } else return false;
     }
 }
