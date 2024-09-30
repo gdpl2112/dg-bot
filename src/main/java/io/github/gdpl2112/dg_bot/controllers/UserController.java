@@ -257,11 +257,11 @@ public class UserController {
     @Autowired
     MsgsService msgsService;
 
-    @RequestMapping("ml")
-    public Object ml(@AuthenticationPrincipal UserDetails userDetails
-            , @RequestParam(required = false) Long time
-            , @RequestParam(value = "type",defaultValue = "") String type
-    ) {
-        return msgsService.msgsList(userDetails, time, type);
-    }
+//    @RequestMapping("ml")
+//    public Object ml(@AuthenticationPrincipal UserDetails userDetails
+//            , @RequestParam(required = false) Long time
+//            , @RequestParam(value = "type",defaultValue = "") String type
+//    ) {
+//        return msgsService.msgsList(userDetails, time, type);
+//    }
 }

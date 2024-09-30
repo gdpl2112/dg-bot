@@ -1,36 +1,14 @@
 package io.github.gdpl2112.dg_bot.service;
 
-import com.mysql.cj.jdbc.MysqlDataSource;
-import io.github.gdpl2112.dg_bot.dao.Msgs;
-import io.github.kloping.judge.Judge;
-import kotlin.coroutines.CoroutineContext;
-import net.mamoe.mirai.contact.Contact;
-import net.mamoe.mirai.contact.Friend;
-import net.mamoe.mirai.contact.Group;
-import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
-import net.mamoe.mirai.event.events.*;
-import net.mamoe.mirai.message.data.Image;
-import net.mamoe.mirai.message.data.OnlineMessageSource;
-import net.mamoe.mirai.message.data.PlainText;
-import net.mamoe.mirai.message.data.SingleMessage;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.List;
 
 /**
  * @author github.kloping
  */
 @Service
 public class MsgsService extends SimpleListenerHost {
+/*
 
     @Override
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
@@ -217,6 +195,5 @@ public class MsgsService extends SimpleListenerHost {
         }
         return jdbcTemplate().query(sql, rowMapper);
     }
-
-
+*/
 }
