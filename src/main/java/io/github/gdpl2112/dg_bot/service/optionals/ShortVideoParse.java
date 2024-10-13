@@ -3,14 +3,15 @@ package io.github.gdpl2112.dg_bot.service.optionals;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import io.github.gdpl2112.dg_bot.dao.GroupConf;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.url.UrlUtils;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
-import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.MessageEvent;
-import net.mamoe.mirai.message.data.*;
+import net.mamoe.mirai.message.data.ForwardMessageBuilder;
+import net.mamoe.mirai.message.data.Image;
+import net.mamoe.mirai.message.data.MessageChainBuilder;
+import net.mamoe.mirai.message.data.PlainText;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -117,7 +118,9 @@ public class ShortVideoParse implements BaseOptional {
                 .append("\n✉️ ").append(gt.gt("photo.commentCount"));
 
         ForwardMessageBuilder author = null;
-        if (!gt.gt("shareUserPhotos", JSONArray.class).isEmpty()) {
+        JSONArray array = gt.gt("shareUserPhotos", JSONArray.class);
+
+        if (array != null && !array.isEmpty()) {
             author = new ForwardMessageBuilder(bot.getAsFriend());
             bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("shareUserPhotos[0].headUrl", String.class));
             image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
