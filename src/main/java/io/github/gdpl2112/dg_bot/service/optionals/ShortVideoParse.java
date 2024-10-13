@@ -109,7 +109,7 @@ public class ShortVideoParse implements BaseOptional {
         byte[] bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("photo.coverUrls[0].url", String.class));
         Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
         builder.append(image)
-                .append(gt.gt("shareInfo.shareTitle").toString())
+                .append(gt.gt("photo.caption").toString())
                 .append("作者").append(gt.gt("photo.userName")).append("/").append(gt.gt("photo.userSex"))
                 .append("\n粉丝:").append(gt.gt("counts.fanCount"))
                 .append("\n💗 ").append(gt.gt("photo.likeCount"))
