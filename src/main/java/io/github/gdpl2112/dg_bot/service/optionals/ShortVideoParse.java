@@ -98,6 +98,10 @@ public class ShortVideoParse implements BaseOptional {
     public void parseKs(String url, MessageEvent event) {
         String out = TEMPLATE.getForObject("http://localhost/api/cre/jxvv?url=" + url, String.class);
         JSONObject result = JSON.parseObject(out);
+        if (!result.containsKey("result")) {
+            sendToAsVideo(event, result);
+            return;
+        }
         if (result.getInteger("result") < 0) {
             event.getSubject().sendMessage("解析异常!\n若链接无误请反馈.");
             return;
@@ -161,6 +165,22 @@ public class ShortVideoParse implements BaseOptional {
             }
             event.getSubject().sendMessage(fbuilder.build());
         }
+    }
+
+
+    private void sendToAsVideo(MessageEvent event, JSONObject result) {
+        Bot bot = event.getBot();
+
+        var builder = new MessageChainBuilder();
+        byte[] bytes = UrlUtils.getBytesFromHttpUrl(result.getString("coverUrl"));
+        Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
+        builder.append(image).append(result.getString("caption").toString()).append("\n💗 ").append(result.getString("likeCount")).append("\n👁︎︎ ").append(result.getString("viewCount"));
+        builder.append("\n视频时长:" + (result.getInteger("duration") / 1000) + "s");
+        event.getSubject().sendMessage(builder.build());
+
+        var de0 = new ForwardMessageBuilder(bot.getAsFriend());
+        de0.add(bot.getId(), "AI", new PlainText("视频直链: " + result.getString("photoUrl")));
+        event.getSubject().sendMessage(de0.build());
     }
 
 
