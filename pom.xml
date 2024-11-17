@@ -16,7 +16,7 @@
     <repositories>
         <repository>
             <id>s01_snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
         </repository>
         <repository>
             <id>ali-m</id>
@@ -50,9 +50,9 @@
             <version>2.11.0</version>
         </dependency>
         <dependency>
-            <groupId>top.mrxiaom</groupId>
-            <artifactId>overflow-core</artifactId>
-            <version>2.16.0-db61867-SNAPSHOT</version>
+            <groupId>top.mrxiaom.mirai</groupId>
+            <artifactId>overflow-core-all</artifactId>
+            <version>1.0.0.525-ce542f0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>net.mamoe</groupId>
