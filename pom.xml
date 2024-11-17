@@ -69,6 +69,12 @@
             <groupId>net.mamoe</groupId>
             <artifactId>mirai-console-terminal</artifactId>
             <version>${mirai-version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.mamoe</groupId>
+                    <artifactId>mirai-core-jvm</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!--wss-->
         <dependency>
