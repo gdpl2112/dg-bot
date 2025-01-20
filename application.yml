@@ -17,3 +17,7 @@ super:
   qid: 3474006766
 gsuid:
   url: ws://192.168.0.105:8765/ws/dgbot
+
+opt:
+  p1:
+    host: 127.0.0.1

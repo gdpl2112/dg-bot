@@ -12,6 +12,7 @@ import net.mamoe.mirai.message.data.ForwardMessageBuilder;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import net.mamoe.mirai.message.data.PlainText;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -95,8 +96,11 @@ public class ShortVideoParse implements BaseOptional {
         event.getSubject().sendMessage(fbuilder.build());
     }
 
+    @Value("${opt.p1.host:localhost}")
+    String host;
+
     public void parseKs(String url, MessageEvent event) {
-        String out = TEMPLATE.getForObject("http://localhost/api/cre/jxvv?url=" + url, String.class);
+        String out = TEMPLATE.getForObject("http://" + host + "/api/cre/jxvv?url=" + url, String.class);
         JSONObject result = JSON.parseObject(out);
         if (!result.containsKey("result")) {
             sendToAsVideo(event, result);
