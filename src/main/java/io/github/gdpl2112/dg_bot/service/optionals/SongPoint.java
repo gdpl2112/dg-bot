@@ -209,7 +209,7 @@ public class SongPoint implements BaseOptional {
     }
 
     private static String listWySongs(Long qid, String type, Integer p, String name) throws Exception {
-        Document doc0 = getDocument("http://192.168.0.106/api/music/search?keyword=" + URLEncoder.encode(name));
+        Document doc0 = getDocument("http://192.168.0.106/api/music/search?keyword=" + name);
         String content = doc0.wholeText();
         StringBuilder sb = new StringBuilder();
         JSONArray arr = JSON.parseArray(content);
