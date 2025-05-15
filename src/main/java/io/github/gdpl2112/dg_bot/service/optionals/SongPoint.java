@@ -4,12 +4,14 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.kloping.date.FrameUtils;
-import net.mamoe.mirai.event.EventHandler;
-import net.mamoe.mirai.event.ListenerHost;
-import net.mamoe.mirai.event.events.FriendMessageEvent;
-import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
-import net.mamoe.mirai.message.data.*;
+import net.mamoe.mirai.internal.deps.okhttp3.Call;
+import net.mamoe.mirai.internal.deps.okhttp3.OkHttpClient;
+import net.mamoe.mirai.internal.deps.okhttp3.Request;
+import net.mamoe.mirai.internal.deps.okhttp3.Response;
+import net.mamoe.mirai.message.data.Message;
+import net.mamoe.mirai.message.data.MusicKind;
+import net.mamoe.mirai.message.data.MusicShare;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * @author github.kloping
  */
 @Component
-public class SongPoint implements BaseOptional   {
+public class SongPoint implements BaseOptional {
     public static final String DESC = "包含[点歌,QQ点歌,酷狗点歌,网易点歌,取消点歌,取消选择] 功能";
     public static final String NAME = "异步点歌";
 
@@ -108,11 +111,23 @@ public class SongPoint implements BaseOptional   {
         }, 20, 30, TimeUnit.MINUTES);
     }
 
+    private static OkHttpClient okHttpClient;
+
+    static {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        okHttpClient = builder.build();
+    }
 
     @NotNull
     public static Document getDocument(String url) {
+        Request.Builder builder = new Request.Builder();
         try {
-            Document doc0 = Jsoup.connect(url).ignoreHttpErrors(true).ignoreContentType(true).header("Connection", "Keep-Alive").header("User-Agent", "Apache-HttpClient/4.5.14 (Java/17.0.8.1)").header("Accept-Encoding", "br,deflate,gzip,x-gzip").get();
+            Call call = okHttpClient.newCall(builder.get()
+                    .header("Connection", "keep-alive")
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.67")
+                    .url(url).build());
+            Response response = call.execute();
+            Document doc0 = Jsoup.parse(response.body().string());
             return doc0;
         } catch (IOException e) {
             e.printStackTrace();
@@ -128,7 +143,16 @@ public class SongPoint implements BaseOptional   {
      * @throws Exception
      */
     public static String getRedirectUrl(String path) throws Exception {
-        Document doc0 = getDocument(path);
+        Document doc0 = null;
+        try {
+            doc0 = Jsoup.connect(path).ignoreHttpErrors(true)
+                    .ignoreContentType(true).header("Connection", "Keep-Alive")
+                    .header("User-Agent", "Apache-HttpClient/4.5.14 (Java/17.0.8.1)")
+                    .header("Accept-Encoding", "br,deflate,gzip,x-gzip").get();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
         return doc0.location();
     }
 
@@ -185,7 +209,7 @@ public class SongPoint implements BaseOptional   {
     }
 
     private static String listWySongs(Long qid, String type, Integer p, String name) throws Exception {
-        Document doc0 = getDocument("http://kloping.top/api/music/search?keyword=" + name);
+        Document doc0 = getDocument("http://192.168.0.106/api/music/search?keyword=" + URLEncoder.encode(name));
         String content = doc0.wholeText();
         StringBuilder sb = new StringBuilder();
         JSONArray arr = JSON.parseArray(content);
@@ -246,8 +270,8 @@ public class SongPoint implements BaseOptional   {
         JSONArray arr = JSON.parseArray(content);
         JSONObject jo = arr.getJSONObject(n - 1);
         String id = jo.getString("id");
-        String url = getRedirectUrl("http://kloping.top/api/music/get-url-by-id?id=" + id);
-        String cover = getRedirectUrl("http://kloping.top/api/music/get-cover-by-id?id=" + id);
+        String url = getRedirectUrl("http://192.168.0.106/api/music/get-url-by-id?id=" + id);
+        String cover = getRedirectUrl("http://192.168.0.106/api/music/get-cover-by-id?id=" + id);
         MusicShare share = new MusicShare(
                 MusicKind.QQMusic, jo.getString("name"),
                 jo.getString("artist"), "https://music.163.com/#/song?id=" + id,
