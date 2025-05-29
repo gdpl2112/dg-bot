@@ -3,6 +3,7 @@ package io.github.gdpl2112.dg_bot.service.optionals;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.luciad.imageio.webp.WebPReadParam;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.url.UrlUtils;
 import net.mamoe.mirai.Bot;
@@ -16,7 +17,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -71,22 +78,24 @@ public class ShortVideoParse implements BaseOptional {
         byte[] bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("data.cover", String.class));
         Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
         builder.append(image)
-                .append(gt.gt("data.title").toString())
-                .append("作者").append(gt.gt("data.author"))
-                .append("\n💗 ").append(gt.gt("data.like"))
-                .append("\n\uD83D\uDD50\uFE0E ").append(gt.gt("data.time"));
+                .append(gt.gt("data.title")).append("\n")
+                .append(gt.gt("text.time")).append("\n")
+                .append(gt.gt("text.msg"));
         String u0 = gt.gt("data.url", String.class);
         var fbuilder = new ForwardMessageBuilder(bot.getAsFriend());
-        fbuilder.add(bot.getId(), "AI", new PlainText("音频直链:" + gt.gt("data.music.url")));
         if (Judge.isEmpty(u0)) {
-            out = TEMPLATE.getForObject("https://www.hhlqilongzhu.cn/api/sp_jx/tuji.php?url=" + url, String.class);
-            gt = new Gt(out);
+            fbuilder.add(bot.getId(), "AI", new PlainText("音频直链:" + gt.gt("data.music")));
             JSONArray array = gt.gt("data.images", JSONArray.class);
             builder.append("\n图集数量:").append(String.valueOf(array.size())).append("/正在发送请稍等..");
             event.getSubject().sendMessage(builder.build());
             for (Object o : array) {
-                bytes = UrlUtils.getBytesFromHttpUrl(o.toString());
-                image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
+                String url0 = o.toString();
+                bytes = UrlUtils.getBytesFromHttpUrl(url0);
+                if (url0.contains(".webp")) {
+                    bytes = webp2png(bytes);
+                }
+                if (bytes == null) continue;
+                image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "png");
                 fbuilder.add(bot.getId(), "AI", image);
             }
         } else {
@@ -257,5 +266,32 @@ public class ShortVideoParse implements BaseOptional {
                 return (T) o;
             }
         }
+    }
+
+
+    public static byte[] webp2png(byte[] webp) {
+        ByteArrayOutputStream baos = null;
+        try {
+            // Obtain a WebP ImageReader instance
+            ImageReader reader = ImageIO.getImageReadersByMIMEType("image/webp").next();
+
+            // Configure decoding parameters
+            WebPReadParam readParam = new WebPReadParam();
+            readParam.setBypassFiltering(true);
+
+            // Configure the input on the ImageReader
+            reader.setInput(new MemoryCacheImageInputStream(new ByteArrayInputStream(webp)));
+
+            // Decode the image
+            BufferedImage image = reader.read(0, readParam);
+
+            baos = new ByteArrayOutputStream();
+            // the `png` can use `jpg`
+            ImageIO.write(image, "png", baos);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return baos.toByteArray();
     }
 }
