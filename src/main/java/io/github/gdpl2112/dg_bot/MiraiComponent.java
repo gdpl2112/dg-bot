@@ -105,7 +105,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     SaveMapper saveMapper;
 
-    @Scheduled(cron = "0 0/120 * * * ?")
+    @Scheduled(cron = "0 1 0/2 * * ?")
     public void deleteMsg() {
         long less = System.currentTimeMillis() - 1000L * 60 * 120;
         QueryWrapper<AllMessage> qw = new QueryWrapper<>();

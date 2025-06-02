@@ -33,6 +33,7 @@ public class BaseComponent {
         l.info("================logger=create===================");
         return l;
     }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return NoOpPasswordEncoder.getInstance();

@@ -6,6 +6,22 @@
     <link rel="stylesheet" href="/css/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_css_bootstrap.css"
           crossorigin="anonymous">
     <link rel="stylesheet" href="/css/main.css">
+    <script src="/js/libs/axios.js"></script>
+    <script src="/js/libs/vue.js"></script>
+    <script src="/js/libs/jq3.6.js"></script>
+    <style>
+        .card-img-top {
+            border-radius: 5px 5px 0 0;
+        }
+
+        .card {
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
     <title>QQ代挂</title>
 </head>
 <body>
@@ -45,8 +61,15 @@
 <br>
 <div class="tm-1 jumbotron jumbotron-fluid">
     <div class="container">
-        <h1 class="display-4">暂不支持自定义登录</h1><br>
-        <p class="lead">联系申请开通后 获得登录链接</p>
+        <h3 class="display-6">已登录的 Bot 列表</h3>
+        <div id="bot-list" class="row">
+            <!-- 动态加载的 Bot 列表 -->
+            <div class="col-12 text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">加载中...</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -78,6 +101,37 @@
     </div>
 </div>
 
+<script>
+    window.onload = function () {
+        fetch('/pre/bot/list')
+            .then(response => response.json())
+            .then(bots => {
+                const container = document.getElementById('bot-list');
+                container.innerHTML = bots.map(bot => `
+                <div class="col-md-4 mb-3">
+                    <div class="card ${bot.online ? 'border-success' : 'border-secondary'}">
+                        <img src="${bot.avatar}"
+                             class="card-img-top"
+                             style="height: 200px; object-fit: cover"
+                             alt="Bot头像">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                ${bot.nick}
+                                <span class="badge ${bot.online ? 'bg-success' : 'bg-secondary'}">
+                                    ${bot.online ? '在线' : '离线'}
+                                </span>
+                            </h5>
+                            <p class="card-text text-muted">ID: ${bot.id}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            });
+    }
+</script>
+<br>
+<hr>
+<br>
 <script src="/js/libs/http_cdn.jsdelivr.net_npm_jquery@3.5.1_dist_jquery.slim.min.js" crossorigin="anonymous"></script>
 <script src="/js/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_js_bootstrap.bundle.js"
         crossorigin="anonymous"></script>
