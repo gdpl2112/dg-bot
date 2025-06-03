@@ -109,7 +109,7 @@
                 const container = document.getElementById('bot-list');
                 container.innerHTML = bots.map(bot => `
                 <div class="col-md-4 mb-3">
-                    <div class="card ${bot.online ? 'border-success' : 'border-secondary'}">
+                    <div class="card ${bot.online ? 'border-success' : 'border-secondary'}" onclick="handleBotClick(${bot.id}, '${bot.nick}', ${bot.online})">
                         <img src="${bot.avatar}"
                              class="card-img-top"
                              style="height: 200px; object-fit: cover"
@@ -127,6 +127,31 @@
                 </div>
             `).join('');
             });
+    }
+
+    function handleBotClick(botId, botName, isOnline) {
+        if (!isOnline) {
+            alert('该Bot暂时离线\n请通过[首页]->[现在开始]联系管理者询问');
+            return;
+        }
+        
+        const authCode = prompt(`请输入【${botName}】的授权码/密码：`, '');
+        if (authCode === null) return; // 用户点击取消
+        
+        axios.post('/bot/login', {
+            qid: botId,
+            p: authCode
+        })
+        .then(response => {
+            if (response.status === 200) {
+                alert('登录成功');
+                window.location.href = '/bot.html';
+            }
+        })
+        .catch(error => {
+            console.error('登录失败:', error);
+            alert(`登录失败: ${error.response?.data || '未知错误'}`);
+        });
     }
 </script>
 <br>

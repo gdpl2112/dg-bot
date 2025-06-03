@@ -45,7 +45,7 @@ public class DgAuthenticationProvider implements AuthenticationProvider {
             String u = authentication.getUsername();
             String p = authentication.getPassword();
             if (u.equals(token.getPrincipal()) && p.equals(token.getCredentials())) return;
-            else throw new CredentialsExpiredException("请使用正确的登录链接!");
+            else throw new CredentialsExpiredException("请使用正确的登录链接或授权码/密码!");
         }
     }
 
