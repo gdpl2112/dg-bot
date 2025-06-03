@@ -16,7 +16,6 @@ public class DgAuthenticationProcessingFilter extends AbstractAuthenticationProc
 
     private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/bot/login", "GET");
 
-
     public DgAuthenticationProcessingFilter() {
         super(DEFAULT_ANT_PATH_REQUEST_MATCHER);
     }

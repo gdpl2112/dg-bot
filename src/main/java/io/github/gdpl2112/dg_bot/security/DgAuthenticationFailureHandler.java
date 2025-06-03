@@ -13,6 +13,7 @@ public class DgAuthenticationFailureHandler implements AuthenticationFailureHand
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
         response.setContentType("text/plain;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.getWriter().write("认证失败\n" + exception.getMessage());
     }
 }
