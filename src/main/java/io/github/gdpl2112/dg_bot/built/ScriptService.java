@@ -83,7 +83,7 @@ public class ScriptService extends SimpleListenerHost {
         if (event instanceof MessagePreSendEvent) return;
         if (event instanceof MessagePostSendEvent) return;
         String tid = event instanceof GroupMessageEvent ? "g" + event.getSubject().getId() : event instanceof FriendMessageEvent ? "f" + event.getSender().getId() : null;
-        if (tid != null) if (configService.isNotOpenK2(event.getBot().getId(), tid)) return;
+        if (tid != null) if (configService.isNotOpenK0(event.getBot().getId(), tid)) return;
         final String code = getScriptCode(event.getBot().getId());
         if (code == null) return;
         Public.EXECUTOR_SERVICE.submit(() -> {

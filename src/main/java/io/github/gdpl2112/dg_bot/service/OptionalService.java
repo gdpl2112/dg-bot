@@ -7,10 +7,7 @@ import io.github.gdpl2112.dg_bot.mapper.OptionalMapper;
 import io.github.gdpl2112.dg_bot.service.optionals.BaseOptional;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.ListenerHost;
-import net.mamoe.mirai.event.events.FriendMessageEvent;
-import net.mamoe.mirai.event.events.FriendMessageSyncEvent;
-import net.mamoe.mirai.event.events.GroupMessageEvent;
-import net.mamoe.mirai.event.events.GroupMessageSyncEvent;
+import net.mamoe.mirai.event.events.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +21,15 @@ import java.util.Map;
  */
 @Service
 public class OptionalService implements ListenerHost {
+    private void touchEvent(MessageEvent event, String id, String tid) {
+        if (configService.isNotOpenK0(event.getBot().getId(), tid)) return;
+        getBos().forEach((k, v) -> {
+            if (isOpen(id, tid, k)) {
+                v.run(event);
+            }
+        });
+    }
+
     @Autowired
     OptionalMapper optionalMapper;
 
@@ -31,44 +37,28 @@ public class OptionalService implements ListenerHost {
     public void onEvent(GroupMessageEvent event) {
         String id = String.valueOf(event.getBot().getId());
         String tid = "g" + event.getSubject().getId();
-        getBos().forEach((k, v) -> {
-            if (isOpen(id, tid, k)) {
-                v.run(event);
-            }
-        });
+        touchEvent(event, id, tid);
     }
 
     @EventHandler
     public void onEvent(GroupMessageSyncEvent event) {
         String id = String.valueOf(event.getBot().getId());
         String tid = "g" + event.getSubject().getId();
-        getBos().forEach((k, v) -> {
-            if (isOpen(id, tid, k)) {
-                v.run(event);
-            }
-        });
+        touchEvent(event, id, tid);
     }
 
     @EventHandler
     public void onEvent(FriendMessageEvent event) {
         String id = String.valueOf(event.getBot().getId());
         String tid = "f" + event.getSubject().getId();
-        getBos().forEach((k, v) -> {
-            if (isOpen(id, tid, k)) {
-                v.run(event);
-            }
-        });
+        touchEvent(event, id, tid);
     }
 
     @EventHandler
     public void onEvent(FriendMessageSyncEvent event) {
         String id = String.valueOf(event.getBot().getId());
         String tid = "f" + event.getSubject().getId();
-        getBos().forEach((k, v) -> {
-            if (isOpen(id, tid, k)) {
-                v.run(event);
-            }
-        });
+        touchEvent(event, id, tid);
     }
 
     private synchronized Map<String, BaseOptional> getBos() {

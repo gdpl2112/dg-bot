@@ -12,7 +12,7 @@
     <link crossorigin="anonymous" href="/css/libs/http_cdn.jsdelivr.net_npm_bootstrap@4.6.2_dist_css_bootstrap.css"
           rel="stylesheet">
     <link href="/css/main.css" rel="stylesheet">
-    <title>QQ代挂-可选功能开关</title>
+    <title>QQ代挂-可选内置功能开关</title>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light tm-0">
@@ -54,26 +54,26 @@
 <div class="container bg-light">
     <div class="row">
         <div class="center-block" id="table_main">
-            <small class="form-text text-muted">此命令开关与被动回复开关一致</small>
+            <small class="form-text text-muted"> 与API调用 共用开关 </small>
             <div class="container">
                 <hr>
                 <div class="row ">
                     <div class="col-8">
                         <ul class="list-group">
-                            <li aria-disabled="true" class="list-group-item disabled">功能</li>
-                            <li aria-disabled="true" class="list-group-item disabled">名字</li>
+                            <li aria-disabled="true" class="list-group-item disabled">功能ID</li>
+                            <li aria-disabled="true" class="list-group-item disabled">功能名字</li>
                             <li aria-disabled="true" class="list-group-item disabled">描述</li>
                         </ul>
                     </div>
-                    <div class="col-4">操作 开关</div>
+                    <div class="col-4">操作 开关 (当前状态) </div>
                 </div>
                 <div :class="getTrClass()+' row'" style="margin-top: 15px;padding-bottom: 10px;padding-top: 10px"
                      v-for="(e) in data">
                     <div class="col-8">
                         <ul class="list-group">
-                            <li class="list-group-item" style="overflow:scroll;" v-text="e.opt">输出格式</li>
-                            <li class="list-group-item" v-text="e.name">输出参数</li>
-                            <li class="list-group-item" style="overflow:scroll;" v-text="e.desc">不输出条件</li>
+                            <li class="list-group-item" style="overflow:scroll;" v-text="e.opt">功能ID</li>
+                            <li class="list-group-item" v-text="e.name">功能名</li>
+                            <li class="list-group-item" style="overflow:scroll;" v-text="e.desc">描述</li>
                         </ul>
                     </div>
                     <div class="col-4">

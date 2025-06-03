@@ -43,9 +43,6 @@ public class SaveService extends SimpleListenerHost {
         saveMapper.insert(msg);
     }
 
-    public SaveService(String[] args) {
-    }
-
     @Override
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
 
