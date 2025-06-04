@@ -80,7 +80,7 @@ public class SongPoint implements BaseOptional {
 
         if (name != null && type != null) {
             String r = listSongs(event.getSender().getId(), type, 1, name);
-            if (r == null) event.getSubject().sendMessage("点歌时异常!");
+            if (r == null) event.getSubject().sendMessage("搜索时异常!");
             else event.getSubject().sendMessage(r);
         }
     }
@@ -181,6 +181,8 @@ public class SongPoint implements BaseOptional {
         public Long time;
     }
 
+    public static final String SERVER_HOST = "http://192.168.0.106:81/";
+
     /**
      * 列出歌曲列表
      *
@@ -208,7 +210,7 @@ public class SongPoint implements BaseOptional {
     }
 
     private static String listWySongs(Long qid, String type, Integer p, String name) throws Exception {
-        Document doc0 = getDocument("http://192.168.0.106/api/music/search?keyword=" + name);
+        Document doc0 = getDocument(SERVER_HOST + "api/music/search?keyword=" + name);
         String content = doc0.wholeText();
         StringBuilder sb = new StringBuilder();
         JSONArray arr = JSON.parseArray(content);
@@ -269,8 +271,8 @@ public class SongPoint implements BaseOptional {
         JSONArray arr = JSON.parseArray(content);
         JSONObject jo = arr.getJSONObject(n - 1);
         String id = jo.getString("id");
-        String url = getRedirectUrl("http://192.168.0.106/api/music/get-url-by-id?id=" + id);
-        String cover = getRedirectUrl("http://192.168.0.106/api/music/get-cover-by-id?id=" + id);
+        String url = getRedirectUrl(SERVER_HOST + "api/music/get-url-by-id?id=" + id);
+        String cover = getRedirectUrl(SERVER_HOST + "api/music/get-cover-by-id?id=" + id);
         MusicShare share = new MusicShare(
                 MusicKind.QQMusic, jo.getString("name"),
                 jo.getString("artist"), "https://music.163.com/#/song?id=" + id,
