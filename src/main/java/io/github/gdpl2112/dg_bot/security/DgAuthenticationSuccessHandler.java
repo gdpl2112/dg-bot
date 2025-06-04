@@ -14,6 +14,7 @@ public class DgAuthenticationSuccessHandler implements AuthenticationSuccessHand
                                         HttpServletResponse response, Authentication authentication)
             throws IOException, ServletException {
         response.setContentType("text/plain;charset=UTF-8");
-        response.sendRedirect("/bot.html");
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().write("授权码/密码 正确");
     }
 }

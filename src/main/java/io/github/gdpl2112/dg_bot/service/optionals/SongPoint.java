@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -48,15 +47,15 @@ public class SongPoint implements BaseOptional {
         String out = io.github.gdpl2112.dg_bot.Utils.getLineString(event);
         String name = null;
         String type = null;
-        if (out.startsWith("酷狗点歌") && out.length() > 4) {
+        if (out.startsWith("点歌") && out.length() > 2) {
+            name = out.substring(2);
+            type = TYPE_WY;
+        } else if (out.startsWith("酷狗点歌") && out.length() > 4) {
             name = out.substring(4);
             type = TYPE_KUGOU;
         } else if (out.startsWith("网易点歌") && out.length() > 4) {
             name = out.substring(4);
             type = TYPE_WY;
-        } else if (out.startsWith("点歌") && out.length() > 2) {
-            name = out.substring(2);
-            type = TYPE_QQ;
         } else if (out.startsWith("QQ点歌") && out.length() > 4) {
             name = out.substring(4);
             type = TYPE_QQ;
