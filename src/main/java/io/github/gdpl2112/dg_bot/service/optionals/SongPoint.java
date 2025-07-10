@@ -13,6 +13,7 @@ import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MusicKind;
 import net.mamoe.mirai.message.data.MusicShare;
 import org.jetbrains.annotations.NotNull;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Component;
@@ -142,19 +143,20 @@ public class SongPoint implements BaseOptional {
      * @throws Exception
      */
     public static String getRedirectUrl(String path) {
-        Document doc0 = null;
+        Connection.Response response;
         try {
-            doc0 = Jsoup.connect(path).ignoreHttpErrors(true)
+            response = Jsoup.connect(path).ignoreHttpErrors(true)
                     .followRedirects(false)
                     .ignoreContentType(true).header("Connection", "Keep-Alive")
                     .header("User-Agent", "Apache-HttpClient/4.5.14 (Java/17.0.8.1)")
-                    .header("Accept-Encoding", "br,deflate,gzip,x-gzip").get();
+                    .header("Accept-Encoding", "br,deflate,gzip,x-gzip").method(Connection.Method.HEAD).execute();
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
-        String url = doc0.connection().response().header("Location");
-        if (url == null) url = doc0.connection().response().header("location");
+        String url = response.header("Location");
+        if (url == null) url = response.header("location");
+        if (url == null) url = response.url().toString();
         System.out.println(path + " => redirect to " + url);
         return url;
     }
