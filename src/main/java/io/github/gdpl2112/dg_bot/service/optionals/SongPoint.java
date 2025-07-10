@@ -141,10 +141,11 @@ public class SongPoint implements BaseOptional {
      * @return
      * @throws Exception
      */
-    public static String getRedirectUrl(String path) throws Exception {
+    public static String getRedirectUrl(String path) {
         Document doc0 = null;
         try {
             doc0 = Jsoup.connect(path).ignoreHttpErrors(true)
+                    .followRedirects(false)
                     .ignoreContentType(true).header("Connection", "Keep-Alive")
                     .header("User-Agent", "Apache-HttpClient/4.5.14 (Java/17.0.8.1)")
                     .header("Accept-Encoding", "br,deflate,gzip,x-gzip").get();
@@ -152,7 +153,10 @@ public class SongPoint implements BaseOptional {
             e.printStackTrace();
             return null;
         }
-        return doc0.location();
+        String url = doc0.connection().response().header("Location");
+        if (url == null) url = doc0.connection().response().header("location");
+        System.out.println(path + " => redirect to " + url);
+        return url;
     }
 
     public static class SongData {
@@ -181,7 +185,7 @@ public class SongPoint implements BaseOptional {
         public Long time;
     }
 
-    public static final String SERVER_HOST = "http://192.168.0.106:81/";
+    public static final String SERVER_HOST = "https://kloping.top/";
 
     /**
      * 列出歌曲列表
