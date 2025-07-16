@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot;
 
+import cn.evolvefield.onebot.client.connection.IAdapter;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
@@ -14,6 +15,7 @@ import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
 import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.GlobalEventChannel;
+import net.mamoe.mirai.event.ListeningStatus;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +24,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import top.mrxiaom.overflow.contact.RemoteBot;
+import top.mrxiaom.overflow.event.UnsolvedOnebotEvent;
 
-import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * @author github-kloping
@@ -66,7 +69,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(callApiService);
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
-        GlobalEventChannel.INSTANCE.registerListenerHost(new AutoLikesService(this));
+//        GlobalEventChannel.INSTANCE.registerListenerHost(new AutoLikesService(this));
     }
 
     @EventHandler
@@ -100,6 +103,13 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             Boolean isVip = jdata.getBoolean("is_vip");
             VIP_INFO.put(bid, isVip);
         }
+        event.getBot().getEventChannel().subscribe(UnsolvedOnebotEvent.class, new Function<UnsolvedOnebotEvent, ListeningStatus>() {
+            @Override
+            public ListeningStatus apply(UnsolvedOnebotEvent event) {
+                System.out.println();
+                return null;
+            }
+        });
     }
 
     public Map<Long, Boolean> VIP_INFO = new java.util.HashMap<>();
