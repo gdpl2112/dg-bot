@@ -34,7 +34,7 @@ public class AutoLikesService extends SimpleListenerHost {
 
     private long upvid = -1L;
 
-    @Scheduled(cron = "0/20 * * * * ? ")
+    @Scheduled(cron = "0/40 * * * * ? ")
     public void run() {
         for (Bot bot : Bot.getInstances()) {
             if (bot != null) {
