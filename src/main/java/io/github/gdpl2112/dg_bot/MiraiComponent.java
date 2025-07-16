@@ -54,8 +54,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     OptionalService optionalService;
 
-    @PostConstruct
-    public void start() {
+    @Override
+    public void run(String... args) throws Exception {
         MiraiConsoleImplementationTerminal terminal = new MiraiConsoleImplementationTerminal();
         MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(terminal);
         GlobalEventChannel.INSTANCE.registerListenerHost(service0);
@@ -67,11 +67,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
         GlobalEventChannel.INSTANCE.registerListenerHost(new AutoLikesService(this));
-    }
-
-
-    @Override
-    public void run(String... args) throws Exception {
     }
 
     @EventHandler

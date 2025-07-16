@@ -5,8 +5,11 @@ import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.kloping.date.DateUtils;
 import net.mamoe.mirai.Bot;
+import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
-import org.springframework.scheduling.annotation.Scheduled;
+import net.mamoe.mirai.event.events.FriendMessageSyncEvent;
+import net.mamoe.mirai.message.data.PlainText;
+import net.mamoe.mirai.message.data.SingleMessage;
 import org.springframework.stereotype.Service;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
@@ -34,7 +37,24 @@ public class AutoLikesService extends SimpleListenerHost {
 
     private long upvid = -1L;
 
-    @Scheduled(cron = "0/40 * * * * ? ")
+    @EventHandler
+    public void onEvent(FriendMessageSyncEvent event) {
+        if (event.getSubject().getId() == event.getSender().getId()) {
+            StringBuilder sb = new StringBuilder();
+            for (SingleMessage singleMessage : event.getMessage()) {
+                if (singleMessage instanceof PlainText) {
+                    PlainText text = (PlainText) singleMessage;
+                    sb.append(text.getContent().trim());
+                }
+            }
+            if ("/自动回赞".equalsIgnoreCase(sb.toString())) {
+                this.run();
+            }
+        }
+
+    }
+
+    //    @Scheduled(cron = "0/40 * * * * ? ")
     public void run() {
         for (Bot bot : Bot.getInstances()) {
             if (bot != null) {
