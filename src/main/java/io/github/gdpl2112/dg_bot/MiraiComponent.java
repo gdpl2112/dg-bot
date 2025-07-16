@@ -1,11 +1,11 @@
 package io.github.gdpl2112.dg_bot;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
-import io.github.gdpl2112.dg_bot.dao.Msgs;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.*;
@@ -18,11 +18,13 @@ import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
+import top.mrxiaom.overflow.contact.RemoteBot;
 
+import javax.annotation.PostConstruct;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -49,15 +51,11 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     ScriptService scriptService;
     @Autowired
     CallApiService callApiService;
-
     @Autowired
     OptionalService optionalService;
 
-    @Autowired
-    MsgsService msgsService;
-
-    @Bean
-    public Object start() {
+    @PostConstruct
+    public void start() {
         MiraiConsoleImplementationTerminal terminal = new MiraiConsoleImplementationTerminal();
         MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(terminal);
         GlobalEventChannel.INSTANCE.registerListenerHost(service0);
@@ -68,8 +66,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(callApiService);
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
-        GlobalEventChannel.INSTANCE.registerListenerHost(msgsService);
-        return terminal;
+        GlobalEventChannel.INSTANCE.registerListenerHost(new AutoLikesService(this));
     }
 
 
@@ -100,7 +97,17 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
                 logger.info(String.format("%s登录成功,管理秘钥:%s", bid, auth.getAuth()));
             }
         }
+        if (event.getBot() instanceof RemoteBot) {
+            RemoteBot remoteBot = (RemoteBot) event.getBot();
+            String data = remoteBot.executeAction("get_stranger_info", "{\"user_id\": \"" + bid + "\"}");
+            JSONObject jsonObject = JSONObject.parseObject(data);
+            JSONObject jdata = jsonObject.getJSONObject("data");
+            Boolean isVip = jdata.getBoolean("is_vip");
+            VIP_INFO.put(bid, isVip);
+        }
     }
+
+    public Map<Long, Boolean> VIP_INFO = new java.util.HashMap<>();
 
     @Autowired
     SaveMapper saveMapper;
