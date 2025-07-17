@@ -3,6 +3,8 @@ package io.github.gdpl2112.dg_bot.service;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
+
 /**
  * @author github.kloping
  */
@@ -17,7 +19,7 @@ public class AutoLikesService extends SimpleListenerHost {
 //        this.component = component;
 //    }
 //
-//    private static final SimpleDateFormat SF_DD = new SimpleDateFormat("dd");
+    public static final SimpleDateFormat SF_DD = new SimpleDateFormat("dd");
 //
 //    private long upvid = -1L;
 //

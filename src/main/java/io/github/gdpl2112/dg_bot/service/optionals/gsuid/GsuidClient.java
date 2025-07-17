@@ -35,8 +35,11 @@ public class GsuidClient extends WebSocketClient implements BaseOptional {
     @Autowired
     Logger logger;
 
-    public GsuidClient(@Value("${gsuid.url}") String url) throws URISyntaxException {
-        super(new URI(url));
+    private String urla;
+
+    public GsuidClient(@Value("${gsuid.url:def}") String url) throws URISyntaxException {
+        super(new URI( url));
+        urla = url;
         Public.EXECUTOR_SERVICE.submit(this);
     }
 
@@ -136,6 +139,7 @@ public class GsuidClient extends WebSocketClient implements BaseOptional {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         logger.error(String.format("gsuid_coore close %s => %s", code, reason));
+        if ("def".equalsIgnoreCase(urla)) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
                 TimeUnit.SECONDS.sleep(10);
