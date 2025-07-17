@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
+import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.kloping.date.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
@@ -16,8 +17,6 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
 
-import static io.github.gdpl2112.dg_bot.service.AutoLikesService.FORMAT_SEND_LIKE;
-import static io.github.gdpl2112.dg_bot.service.AutoLikesService.SF_DD;
 
 /**
  * @author github kloping
@@ -43,35 +42,26 @@ public class RecController {
             Bot bot = Bot.getInstance(bid);
             if (bot instanceof RemoteBot) {
                 RemoteBot remoteBot = (RemoteBot) bot;
-                String data = remoteBot.executeAction("get_profile_like", "{}");
-                JSONObject jsonObject = JSONObject.parseObject(data);
-
-                jsonObject = jsonObject.getJSONObject("data");
+                JSONObject jsonObject = ProfileLike.getProfileLikeData(remoteBot);
                 JSONObject favoriteInfo = jsonObject.getJSONObject("favoriteInfo");
                 JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
                 int dayN = DateUtils.getDay();
                 int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
                 for (Object fUserInfo : fUserInfos) {
-                    JSONObject fUser = (JSONObject) fUserInfo;
-                    Long vid = fUser.getLong("uin");
-                    Integer count = fUser.getInteger("count");
-                    Long date = fUser.getLong("latestTime") * 1000L;
-                    int day = Integer.valueOf(SF_DD.format(new Date(date)).trim());
-                    if (day != dayN) {
+                    ProfileLike pl = new ProfileLike((JSONObject) fUserInfo);
+                    if (pl.getDay() != dayN) {
                         break;
                     } else {
-                        if (tid.equals(vid)) {
-                            if (count < max) {
-                                log.info("day{} 已给t{} 点赞{},将进行点赞", day, vid, count);
-                                remoteBot.executeAction("send_like", String.format(FORMAT_SEND_LIKE, tid, max));
+                        if (tid.equals(pl.getVid())) {
+                            if (pl.getCount() < max) {
+                                ProfileLike.sendProfileLike(remoteBot, tid, max);
                             }
                             return;
                         }
                     }
                 }
-                //第一次点赞
-                log.info("day{} 已给t{} 点赞{},将进行点赞", dayN, tid, 0);
-                remoteBot.executeAction("send_like", String.format(FORMAT_SEND_LIKE, tid, max));
+                //今日 第一次点赞
+                ProfileLike.sendProfileLike(remoteBot, tid, max);
             }
         }
     }
