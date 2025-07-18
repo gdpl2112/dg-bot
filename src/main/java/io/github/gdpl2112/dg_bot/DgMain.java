@@ -78,54 +78,6 @@ public class DgMain implements CommandLineRunner {
             System.out.println("conf添加字段");
             jdbcTemplate.update("ALTER TABLE 'conf' ADD 'code' VARCHAR(1048576) NOT NULL DEFAULT '';");
         }
-
-        k0 = false;
-        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
-            String name = e0.get("name").toString();
-            if ("rsid".equals(name)) {
-                k0 = true;
-            }
-        }
-        if (!k0) {
-            System.out.println("conf添加字段");
-            jdbcTemplate.update("ALTER TABLE 'conf' ADD 'rsid' VARCHAR(20) NOT NULL DEFAULT '';");
-        }
-
-        k0 = false;
-        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
-            String name = e0.get("name").toString();
-            if ("nu".equals(name)) {
-                k0 = true;
-            }
-        }
-        if (!k0) {
-            System.out.println("conf添加字段");
-            jdbcTemplate.update("ALTER TABLE 'conf' ADD 'nu' VARCHAR(255) NOT NULL DEFAULT '';");
-        }
-
-        k0 = false;
-        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('group_conf')")) {
-            String name = e0.get("name").toString();
-            if ("k0".equals(name)) {
-                k0 = true;
-            }
-        }
-        if (!k0) {
-            System.out.println("group_conf添加字段");
-            jdbcTemplate.update("ALTER TABLE 'group_conf' ADD 'k0' BLOB NOT NULL DEFAULT true;");
-        }
-
-        k0 = false;
-        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('call_template')")) {
-            String name = e0.get("name").toString();
-            if ("jude".equals(name)) {
-                k0 = true;
-            }
-        }
-        if (!k0) {
-            System.out.println("call_template添加字段");
-            jdbcTemplate.update("ALTER TABLE 'call_template' ADD 'jude' VARCHAR(30) NOT NULL DEFAULT '';");
-        }
     }
 
     /**

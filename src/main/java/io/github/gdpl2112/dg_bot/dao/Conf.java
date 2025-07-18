@@ -17,12 +17,15 @@ public class Conf {
     private String retell = "复述";
     private String open0 = "开启回复";
     private String close0 = "关闭回复";
-    private String open1 = "开启监听";
-    private String close1 = "关闭监听";
+    private String open1 = "开启调用";
+    private String close1 = "关闭调用";
     private String add0 = "添加";
     private String cancel0 = "取消";
     private String select0 = "查询";
-    private String code = "";
+    //监听发送id
     private String rsid = "";
+    //通知地址
     private String nu = "";
+    //脚本代码
+    private String code = "";
 }

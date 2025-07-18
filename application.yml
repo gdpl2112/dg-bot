@@ -15,8 +15,8 @@ server:
       timeout: 680400 #session超时时间
 super:
   qid: 3474006766
-gsuid:
-  url: ws://192.168.0.105:8765/ws/dgbot
+#gsuid:
+#  url: ws://192.168.0.105:8765/ws/dgbot
 
 opt:
   p1:

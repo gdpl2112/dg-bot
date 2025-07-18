@@ -202,14 +202,14 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             contact.sendMessage("已开启!");
             return;
         }
-        //开监听
+        //开调用
         if (content.startsWith(conf.getOpen1())) {
             QueryWrapper<GroupConf> qw = new QueryWrapper<>();
             qw.eq("qid", bid);
             qw.eq("tid", tid);
             GroupConf groupConf = groupConfMapper.selectOne(qw);
             if (groupConf != null) {
-                groupConf.setK1(true);
+                groupConf.setK0(true);
                 groupConfMapper.update(groupConf, qw);
             } else {
                 groupConf = new GroupConf();
@@ -239,14 +239,14 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             contact.sendMessage("已关闭!");
             return;
         }
-        //关监听
+        //关调用
         if (content.startsWith(conf.getClose1())) {
             QueryWrapper<GroupConf> qw = new QueryWrapper<>();
             qw.eq("qid", bid);
             qw.eq("tid", tid);
             GroupConf groupConf = groupConfMapper.selectOne(qw);
             if (groupConf != null) {
-                groupConf.setK1(false);
+                groupConf.setK0(false);
                 groupConfMapper.update(groupConf, qw);
             } else {
                 groupConf = new GroupConf();

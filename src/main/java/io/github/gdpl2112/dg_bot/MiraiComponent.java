@@ -1,14 +1,15 @@
 package io.github.gdpl2112.dg_bot;
 
-import cn.evolvefield.onebot.client.connection.IAdapter;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
+import io.github.gdpl2112.dg_bot.controllers.UserV11Controller;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
+import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.gdpl2112.dg_bot.service.*;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
@@ -37,17 +38,19 @@ import java.util.function.Function;
 @Component
 public class MiraiComponent extends SimpleListenerHost implements CommandLineRunner {
     @Autowired
+    public UserV11Controller userV11Controller;
+    @Autowired
+    AuthMapper authMapper;
+    @Autowired
+    Logger logger;
+    @Autowired
+    ThreadPoolTaskExecutor executor;
+    @Autowired
     CronService service0;
     @Autowired
     PassiveService service1;
     @Autowired
     DefaultService defaultService;
-    @Autowired
-    ThreadPoolTaskExecutor executor;
-    @Autowired
-    AuthMapper authMapper;
-    @Autowired
-    Logger logger;
     @Autowired
     SaveService saveService;
     @Autowired
