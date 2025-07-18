@@ -10,6 +10,7 @@ import io.github.kloping.judge.Judge;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.SimpleListenerHost;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import top.mrxiaom.overflow.contact.RemoteBot;
@@ -25,92 +26,115 @@ import java.util.Map;
 @Service
 public class V11AutoService extends SimpleListenerHost {
 
-    private MiraiComponent component;
+    @Autowired
+    MiraiComponent component;
 
-    public V11AutoService(MiraiComponent component) {
+    public V11AutoService() {
         super();
-        this.component = component;
     }
 
     //最后的处理
     @Scheduled(cron = "00 58 23 * * ? ")
-    public void run() {
+    public void autoLike() {
         log.info("最后点赞处理启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
-                    String bid = String.valueOf(bot.getId());
-                    V11Conf conf = component.userV11Controller.getV11Conf(bid);
-                    if (!conf.getAutoLike()) return;
-                    RemoteBot remoteBot = ((RemoteBot) bot);
-                    JSONObject jsonData = ProfileLike.getProfileLikeData(remoteBot);
+                    likeNow(String.valueOf(bot.getId()));
+                }
+            }
+        }
+    }
 
-                    JSONObject voteInfo = jsonData.getJSONObject("voteInfo");
-                    JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
+    public String likeNow(String id) {
+        StringBuilder sb = null;
+        Bot bot = Bot.getInstance(Long.valueOf(id));
+        if (bot instanceof RemoteBot) {
+            String bid = String.valueOf(bot.getId());
+            V11Conf conf = component.userV11Controller.getV11Conf(bid);
+            if (!conf.getAutoLike()) return null;
+            RemoteBot remoteBot = ((RemoteBot) bot);
+            JSONObject jsonData = ProfileLike.getProfileLikeData(remoteBot);
 
-                    JSONObject favoriteInfo = jsonData.getJSONObject("favoriteInfo");
-                    JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
+            JSONObject voteInfo = jsonData.getJSONObject("voteInfo");
+            JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
 
-                    int dayN = DateUtils.getDay();
-                    //已点
-                    Map<Long, Integer> f2c = new HashMap<>();
-                    for (Object fUserInfo : fUserInfos) {
-                        ProfileLike pl = new ProfileLike((JSONObject) fUserInfo);
-                        if (pl.getDay() != dayN) {
-                            break;
-                        } else {
-                            f2c.put(pl.getVid(), pl.getCount());
-                        }
+            JSONObject favoriteInfo = jsonData.getJSONObject("favoriteInfo");
+            JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
+
+            int dayN = DateUtils.getDay();
+            //已点
+            Map<Long, Integer> f2c = new HashMap<>();
+            for (Object fUserInfo : fUserInfos) {
+                ProfileLike pl = new ProfileLike((JSONObject) fUserInfo);
+                if (pl.getDay() != dayN) {
+                    break;
+                } else {
+                    f2c.put(pl.getVid(), pl.getCount());
+                }
+            }
+
+            //被点
+            for (Object vUserInfo : vUserInfos) {
+                ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
+                if (pl.getDay() != dayN) {
+                    return sb != null ? sb.toString() : null;
+                } else {
+                    int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
+                    if (f2c.containsKey(pl.getVid())) {
+                        if (f2c.get(pl.getVid()) >= max) continue;
                     }
-
-                    //被点
-                    for (Object vUserInfo : vUserInfos) {
-                        ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
-                        if (pl.getDay() != dayN) {
-                            return;
-                        } else {
-                            int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
-                            if (f2c.containsKey(pl.getVid())) {
-                                if (f2c.get(pl.getVid()) >= max) continue;
-                            }
-                            ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max);
-                        }
+                    if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
+                        if (sb == null) sb = new StringBuilder();
+                        sb.append("(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
                     }
                 }
             }
         }
+        return sb != null ? sb.toString() : null;
     }
 
     // 回赞昨日
     @Scheduled(cron = "00 01 00 * * ?")
     public void yesterday() {
         log.info("回赞昨日启动");
-        int yday = Integer.valueOf(ProfileLike.SF_DD.format(new Date(System.currentTimeMillis() - 1000 * 24 * 60 * 60L)));
-        int dayN = DateUtils.getDay();
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
-                if (bot instanceof RemoteBot) {
-                    String bid = String.valueOf(bot.getId());
-                    V11Conf conf = component.userV11Controller.getV11Conf(bid);
-                    if (!conf.getAutoLikeYesterday()) return;
-
-                    RemoteBot remoteBot = ((RemoteBot) bot);
-                    JSONObject jsonObject = ProfileLike.getProfileLikeData(remoteBot);
-
-                    JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
-                    JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
-
-                    Boolean isVip = getIsVip(bot.getId(), remoteBot);
-                    int max = isVip ? 20 : 10;
-                    for (Object vUserInfo : vUserInfos) {
-                        ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
-                        if (pl.getDay() == yday) ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max);
-                        else if (pl.getDay() == dayN) continue;
-                        else return;
-                    }
-                }
+               yesterdayLieNow(String.valueOf(bot.getId()));
             }
         }
+    }
+
+    public String yesterdayLieNow(String id) {
+        StringBuilder sb = null;
+        Bot bot = Bot.getInstance(Long.valueOf(id));
+        if (bot instanceof RemoteBot) {
+            int yday = Integer.valueOf(ProfileLike.SF_DD.format(new Date(System.currentTimeMillis() - 1000 * 24 * 60 * 60L)));
+            int dayN = DateUtils.getDay();
+            String bid = String.valueOf(bot.getId());
+            V11Conf conf = component.userV11Controller.getV11Conf(bid);
+            if (!conf.getAutoLikeYesterday()) return null;
+
+            RemoteBot remoteBot = ((RemoteBot) bot);
+            JSONObject jsonObject = ProfileLike.getProfileLikeData(remoteBot);
+
+            JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
+            JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
+
+            Boolean isVip = getIsVip(bot.getId(), remoteBot);
+            int max = isVip ? 20 : 10;
+            for (Object vUserInfo : vUserInfos) {
+                ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
+                if (pl.getDay() == yday) {
+                    if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
+                        if (sb == null) sb = new StringBuilder();
+                        sb.append("(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                    }
+                } else if (pl.getDay() == dayN) continue;
+                else   return sb != null ? sb.toString() : null;
+            }
+        }
+        return sb != null ? sb.toString() : null;
     }
 
     private Boolean getIsVip(long bid, RemoteBot remoteBot) {

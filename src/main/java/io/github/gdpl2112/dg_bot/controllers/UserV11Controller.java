@@ -2,8 +2,10 @@ package io.github.gdpl2112.dg_bot.controllers;
 
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
+import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserV11Controller {
     @Autowired
     V11ConfMapper mapper;
+    @Autowired
+    @Lazy
+    V11AutoService v11AutoService;
 
     @RequestMapping("/get-conf")
     public V11Conf getConf(@AuthenticationPrincipal UserDetails userDetails) {
@@ -70,5 +75,17 @@ public class UserV11Controller {
         }
         mapper.updateById(v11Conf);
         return getV11Conf(qid);
+    }
+
+    @RequestMapping("/autoLikeNow")
+    public String autoLikeNow(@AuthenticationPrincipal UserDetails userDetails) {
+        String qid = userDetails.getUsername();
+        return "已执行\n执行结果:" + v11AutoService.likeNow(qid);
+    }
+
+    @RequestMapping("/autoLikeYesterdayNow")
+    public String autoLikeYesterdayNow(@AuthenticationPrincipal UserDetails userDetails) {
+        String qid = userDetails.getUsername();
+        return "已执行\n执行结果:" + v11AutoService.yesterdayLieNow(qid);
     }
 }
