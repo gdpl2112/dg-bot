@@ -8,6 +8,8 @@ import net.mamoe.mirai.event.events.MessageEvent;
  */
 public interface BaseOptional extends ListenerHost {
     String getDesc();
+
     String getName();
+
     void run(MessageEvent event);
 }

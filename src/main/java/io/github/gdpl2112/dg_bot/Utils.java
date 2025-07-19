@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import io.github.gdpl2112.dg_bot.built.callapi.Converter;
 import io.github.kloping.clasz.ClassUtils;
 import io.github.kloping.judge.Judge;
+import lombok.Setter;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.SingleMessage;
@@ -115,6 +116,7 @@ public class Utils {
         return line.toString().trim();
     }
 
+    @Setter
     public static class Logic {
         public static final String LIMITER_AND = "and";
         public static final String LIMITER_OR = "or";
@@ -179,21 +181,6 @@ public class Utils {
             this.exp = exp;
         }
 
-        public void setLimiter(String limiter) {
-            this.limiter = limiter;
-        }
-
-        public void setV(Boolean v) {
-            this.v = v;
-        }
-
-        public void setLogic(Logic logic) {
-            this.logic = logic;
-        }
-
-        public void setExp(String exp) {
-            this.exp = exp;
-        }
     }
 
     /**

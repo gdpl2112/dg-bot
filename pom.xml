@@ -40,6 +40,11 @@
             <version>0.6.2-R1</version>
         </dependency>
         <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
+        <dependency>
             <groupId>io.github.Kloping</groupId>
             <artifactId>JvUtils</artifactId>
             <version>0.4.9-R3</version>
@@ -80,12 +85,6 @@
             <groupId>org.sejda.imageio</groupId>
             <artifactId>webp-imageio</artifactId>
             <version>0.1.6</version>
-        </dependency>
-        <!--wss-->
-        <dependency>
-            <groupId>org.java-websocket</groupId>
-            <artifactId>Java-WebSocket</artifactId>
-            <version>1.5.3</version>
         </dependency>
         <!--sqlite-->
         <dependency>
@@ -129,7 +128,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
-        <!--kotlin支持-->
+<!--        &lt;!&ndash;kotlin支持&ndash;&gt;
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
@@ -139,7 +138,7 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <version>0.9.11</version>
-        </dependency>
+        </dependency>-->
         <!--fastjson-->
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -151,12 +150,12 @@
             <artifactId>maven-resolver-spi</artifactId>
             <version>1.7.3</version>
         </dependency>
-        <!--netty-->
+<!--        &lt;!&ndash;netty&ndash;&gt;
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.1.68.Final</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

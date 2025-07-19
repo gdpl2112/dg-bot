@@ -105,11 +105,9 @@ public class ShortVideoParse implements BaseOptional {
         event.getSubject().sendMessage(fbuilder.build());
     }
 
-    @Value("${opt.p1.host:localhost}")
-    String host;
 
     public void parseKs(String url, MessageEvent event) {
-        String out = TEMPLATE.getForObject("http://" + host + "/api/cre/jxvv?url=" + url, String.class);
+        String out = TEMPLATE.getForObject("https://kloping.top/api/cre/jxvv?url=" + url, String.class);
         JSONObject result = JSON.parseObject(out);
         if (!result.containsKey("result")) {
             sendToAsVideo(event, result);

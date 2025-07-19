@@ -293,10 +293,7 @@ public class SongPoint implements BaseOptional {
         JSONArray arr0 = jo.getJSONArray("list");
         jo = arr0.getJSONObject(n - 1);
         String url = getRedirectUrl(jo.getString("url"));
-        MusicShare share = new MusicShare(
-                MusicKind.QQMusic, jo.getString("name"),
-                jo.getString("singer"), url,
-                jo.getString("cover"), url);
+        MusicShare share = new MusicShare(MusicKind.QQMusic, jo.getString("name"), jo.getString("singer"), url, jo.getString("cover"), url);
         return share;
     }
 }
