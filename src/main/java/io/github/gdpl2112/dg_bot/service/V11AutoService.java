@@ -16,8 +16,6 @@ import org.springframework.stereotype.Service;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author github.kloping
@@ -63,16 +61,6 @@ public class V11AutoService extends SimpleListenerHost {
             JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
 
             int dayN = DateUtils.getDay();
-            //已点
-            Map<Long, Integer> f2c = new HashMap<>();
-            for (Object fUserInfo : fUserInfos) {
-                ProfileLike pl = new ProfileLike((JSONObject) fUserInfo);
-                if (pl.getDay() != dayN) {
-                    break;
-                } else {
-                    f2c.put(pl.getVid(), pl.getCount());
-                }
-            }
 
             //被点
             for (Object vUserInfo : vUserInfos) {
@@ -81,12 +69,10 @@ public class V11AutoService extends SimpleListenerHost {
                     return sb != null ? sb.toString() : null;
                 } else {
                     int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
-                    if (f2c.containsKey(pl.getVid())) {
-                        if (f2c.get(pl.getVid()) >= max) continue;
-                    }
+                    if (pl.getBTodayVotedCnt() >= max) continue;
                     if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
                         if (sb == null) sb = new StringBuilder();
-                        sb.append("(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                        sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
                     }
                 }
             }
@@ -100,7 +86,7 @@ public class V11AutoService extends SimpleListenerHost {
         log.info("回赞昨日启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
-               yesterdayLieNow(String.valueOf(bot.getId()));
+                yesterdayLieNow(String.valueOf(bot.getId()));
             }
         }
     }
@@ -111,27 +97,43 @@ public class V11AutoService extends SimpleListenerHost {
         if (bot instanceof RemoteBot) {
             int yday = Integer.valueOf(ProfileLike.SF_DD.format(new Date(System.currentTimeMillis() - 1000 * 24 * 60 * 60L)));
             int dayN = DateUtils.getDay();
+
             String bid = String.valueOf(bot.getId());
             V11Conf conf = component.userV11Controller.getV11Conf(bid);
             if (!conf.getAutoLikeYesterday()) return null;
-
             RemoteBot remoteBot = ((RemoteBot) bot);
-            JSONObject jsonObject = ProfileLike.getProfileLikeData(remoteBot);
-
-            JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
-            JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
-
             Boolean isVip = getIsVip(bot.getId(), remoteBot);
             int max = isVip ? 20 : 10;
+
+            JSONObject jsonObject = ProfileLike.getProfileLikeData(remoteBot);
+            //被赞回复
+            JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
+            JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
             for (Object vUserInfo : vUserInfos) {
                 ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
                 if (pl.getDay() == yday) {
+                    if (pl.getBTodayVotedCnt() >= max) continue;
                     if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
                         if (sb == null) sb = new StringBuilder();
                         sb.append("(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
                     }
                 } else if (pl.getDay() == dayN) continue;
-                else   return sb != null ? sb.toString() : null;
+                else break;
+            }
+            //已赞回复
+            JSONObject fInfo = jsonObject.getJSONObject("favoriteInfo");
+            JSONArray fUserInfos = fInfo.getJSONArray("userInfos");
+
+            for (Object vUserInfo : fUserInfos) {
+                ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
+                if (pl.getDay() == yday) {
+                    if (pl.getBTodayVotedCnt() >= max) continue;
+                    if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
+                        if (sb == null) sb = new StringBuilder();
+                        sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                    }
+                } else if (pl.getDay() == dayN) continue;
+                else return sb != null ? sb.toString() : null;
             }
         }
         return sb != null ? sb.toString() : null;

@@ -25,12 +25,17 @@ public class ProfileLike {
     private long vid, date;
     private int count;
     private int day;
+    private int bTodayVotedCnt;
+
+    private JSONObject odata;
 
     public ProfileLike(JSONObject fUser) {
+        this.odata = fUser;
         vid = fUser.getLong("uin");
         count = fUser.getInteger("count");
         date = fUser.getLong("latestTime") * 1000L;
         day = Integer.valueOf(SF_DD.format(new Date(date)).trim());
+        bTodayVotedCnt = fUser.getInteger("bTodayVotedCnt");
     }
 
 
