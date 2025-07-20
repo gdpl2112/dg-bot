@@ -3,8 +3,10 @@ package io.github.gdpl2112.dg_bot.service;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
+import io.github.gdpl2112.dg_bot.dao.LikeReco;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
+import io.github.gdpl2112.dg_bot.mapper.LikeRecoMapper;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Service;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author github.kloping
@@ -31,6 +35,9 @@ public class V11AutoService extends SimpleListenerHost {
 
     @Autowired
     MiraiComponent component;
+
+    @Autowired
+    private LikeRecoMapper likeRecoMapper;
 
     public V11AutoService() {
         super();
@@ -109,6 +116,7 @@ public class V11AutoService extends SimpleListenerHost {
                 yesterdayLieNow(String.valueOf(bot.getId()));
             }
         }
+        log.info("回赞结束 删除全部记录: {}", likeRecoMapper.delete(null));
     }
 
     public String yesterdayLieNow(String id) {
@@ -129,31 +137,29 @@ public class V11AutoService extends SimpleListenerHost {
             //被赞回复
             JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
             JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
+            List<Long> vls = new LinkedList<>();
             for (Object vUserInfo : vUserInfos) {
                 ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
                 if (pl.getDay() == yday) {
                     if (pl.getBTodayVotedCnt() >= max) continue;
-                    if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
-                        if (sb == null) sb = new StringBuilder();
-                        sb.append("(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
-                    }
-                } else if (pl.getDay() == dayN) continue;
-                else break;
-            }
-            //已赞回复
-            JSONObject fInfo = jsonObject.getJSONObject("favoriteInfo");
-            JSONArray fUserInfos = fInfo.getJSONArray("userInfos");
-
-            for (Object vUserInfo : fUserInfos) {
-                ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
-                if (pl.getDay() == yday) {
-                    if (pl.getBTodayVotedCnt() >= max) continue;
+                    vls.add(pl.getVid());
                     if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
                         if (sb == null) sb = new StringBuilder();
                         sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
                     }
                 } else if (pl.getDay() == dayN) continue;
-                else return sb != null ? sb.toString() : null;
+                else break;
+            }
+            //==== 根据记录查询
+            String date = ProfileLike.SF_MM_DD.format(new Date());
+            List<LikeReco> list = likeRecoMapper.selectListByDateAndBid(bid, date);
+            log.info("昨日记录: {}-> {}", bid, list);
+            for (LikeReco likeReco : list) {
+                if (vls.contains(likeReco.getTid())) continue;
+                if (ProfileLike.sendProfileLike(remoteBot, Long.valueOf(likeReco.getTid()), max)) {
+                    if (sb == null) sb = new StringBuilder();
+                    sb.append("\n(成功)").append("给").append(likeReco.getTid()).append("点赞").append(max).append("个");
+                }
             }
         }
         return sb != null ? sb.toString() : null;
@@ -183,7 +189,7 @@ public class V11AutoService extends SimpleListenerHost {
                     RemoteBot remoteBot = ((RemoteBot) bot);
                     for (String group : split) {
                         if (Judge.isEmpty(group)) continue;
-                        String data0 =  "{\"group_id\": \"" + group + "\"}";
+                        String data0 = "{\"group_id\": \"" + group + "\"}";
                         String data = remoteBot.executeAction("send_group_sign", data0);
                         JSONObject jsonObject = JSONObject.parseObject(data);
                         if (jsonObject.getInteger("retcode") != 0) {

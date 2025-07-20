@@ -20,6 +20,7 @@ import java.util.Date;
 public class ProfileLike {
 
     public static final SimpleDateFormat SF_DD = new SimpleDateFormat("dd");
+    public static final SimpleDateFormat SF_MM_DD = new SimpleDateFormat("MM-dd");
     public static final String FORMAT_SEND_LIKE = "{\"user_id\": \"%s\",\"times\": %s}";
 
     private long vid, date;

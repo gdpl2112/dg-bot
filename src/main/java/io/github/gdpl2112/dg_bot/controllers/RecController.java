@@ -4,15 +4,16 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
+import io.github.gdpl2112.dg_bot.dao.LikeReco;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
+import io.github.gdpl2112.dg_bot.mapper.LikeRecoMapper;
+import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import io.github.kloping.date.DateUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
@@ -28,6 +29,9 @@ import java.util.Date;
 public class RecController {
 
     @Autowired
+    LikeRecoMapper likeRecoMapper;
+
+    @Autowired
     MiraiComponent component;
 
     @PostMapping
@@ -39,13 +43,22 @@ public class RecController {
             Long bid = jo.getLong("self_id");
             Integer times = jo.getInteger("times");
             log.info("收到点赞: b{} t{} n{}", bid, tid, times);
+            int dayN = DateUtils.getDay();
+            String date = ProfileLike.SF_MM_DD.format(new Date());
+            LikeReco likeReco = likeRecoMapper.getByDateAndBidAndTid(bid, date, tid.toString());
+            if (likeReco == null) {
+                likeReco = new LikeReco();
+                likeReco.setBid(bid.toString());
+                likeReco.setTid(tid.toString());
+                likeReco.setDate(date);
+                likeRecoMapper.insert(likeReco);
+            }
             Bot bot = Bot.getInstance(bid);
             if (bot instanceof RemoteBot) {
                 RemoteBot remoteBot = (RemoteBot) bot;
                 JSONObject jsonObject = ProfileLike.getProfileLikeData(remoteBot);
                 JSONObject favoriteInfo = jsonObject.getJSONObject("favoriteInfo");
                 JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
-                int dayN = DateUtils.getDay();
                 int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
                 for (Object fUserInfo : fUserInfos) {
                     ProfileLike pl = new ProfileLike((JSONObject) fUserInfo);
@@ -64,5 +77,12 @@ public class RecController {
                 ProfileLike.sendProfileLike(remoteBot, tid, max);
             }
         }
+    }
+
+    @Autowired
+    V11AutoService v11AutoService;
+    @GetMapping("/test")
+    public String test() {
+        return v11AutoService.yesterdayLieNow("3474006766");
     }
 }
