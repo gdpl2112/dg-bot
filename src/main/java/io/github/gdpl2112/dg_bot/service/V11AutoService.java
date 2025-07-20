@@ -169,7 +169,7 @@ public class V11AutoService extends SimpleListenerHost {
     }
 
     //自动打卡启动
-    @Scheduled(cron = "00 39 10 * * ?")
+    @Scheduled(cron = "00 00 00 * * ?")
     public void autoSign() {
         log.info("自动打卡启动");
         for (Bot bot : Bot.getInstances()) {
