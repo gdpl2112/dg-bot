@@ -5,11 +5,13 @@ import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
+import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.SimpleListenerHost;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -25,10 +27,28 @@ import java.util.Date;
 public class V11AutoService extends SimpleListenerHost {
 
     @Autowired
+    public V11ConfMapper mapper;
+
+    @Autowired
     MiraiComponent component;
 
     public V11AutoService() {
         super();
+    }
+
+    public @NotNull V11Conf getV11Conf(String id) {
+        V11Conf v11Conf = mapper.selectById(id);
+        if (v11Conf == null) {
+            v11Conf = new V11Conf();
+            v11Conf.setQid(id);
+            v11Conf.setAutoLike(true);
+            v11Conf.setAutoZoneLike(true);
+            v11Conf.setAutoLikeYesterday(true);
+            v11Conf.setSignGroups("");
+            v11Conf.setZoneComment("");
+            mapper.insert(v11Conf);
+        }
+        return v11Conf;
     }
 
     //最后的处理
@@ -49,7 +69,7 @@ public class V11AutoService extends SimpleListenerHost {
         Bot bot = Bot.getInstance(Long.valueOf(id));
         if (bot instanceof RemoteBot) {
             String bid = String.valueOf(bot.getId());
-            V11Conf conf = component.userV11Controller.getV11Conf(bid);
+            V11Conf conf = getV11Conf(bid);
             if (!conf.getAutoLike()) return null;
             RemoteBot remoteBot = ((RemoteBot) bot);
             JSONObject jsonData = ProfileLike.getProfileLikeData(remoteBot);
@@ -99,7 +119,7 @@ public class V11AutoService extends SimpleListenerHost {
             int dayN = DateUtils.getDay();
 
             String bid = String.valueOf(bot.getId());
-            V11Conf conf = component.userV11Controller.getV11Conf(bid);
+            V11Conf conf = getV11Conf(bid);
             if (!conf.getAutoLikeYesterday()) return null;
             RemoteBot remoteBot = ((RemoteBot) bot);
             Boolean isVip = getIsVip(bot.getId(), remoteBot);
@@ -149,20 +169,22 @@ public class V11AutoService extends SimpleListenerHost {
     }
 
     //自动打卡启动
-    @Scheduled(cron = "00 00 00 * * ?")
+    @Scheduled(cron = "00 39 10 * * ?")
     public void autoSign() {
         log.info("自动打卡启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
                     String bid = String.valueOf(bot.getId());
-                    V11Conf conf = component.userV11Controller.getV11Conf(bid);
+                    V11Conf conf = getV11Conf(bid);
                     if (Judge.isEmpty(conf.getSignGroups())) return;
                     String groups = conf.getSignGroups();
                     String[] split = groups.split(",|;|\\s");
                     RemoteBot remoteBot = ((RemoteBot) bot);
                     for (String group : split) {
-                        String data = remoteBot.executeAction("send_group_sign", String.format(FORMAT_SIGN_DATA, group));
+                        if (Judge.isEmpty(group)) continue;
+                        String data0 =  "{\"group_id\": \"" + group + "\"}";
+                        String data = remoteBot.executeAction("send_group_sign", data0);
                         JSONObject jsonObject = JSONObject.parseObject(data);
                         if (jsonObject.getInteger("retcode") != 0) {
                             log.error("sign group Failed {} -> b{} g{} o{}", jsonObject, bid, group, groups);

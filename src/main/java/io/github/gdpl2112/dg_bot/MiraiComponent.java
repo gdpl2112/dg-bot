@@ -38,8 +38,6 @@ import java.util.function.Function;
 @Component
 public class MiraiComponent extends SimpleListenerHost implements CommandLineRunner {
     @Autowired
-    public UserV11Controller userV11Controller;
-    @Autowired
     AuthMapper authMapper;
     @Autowired
     Logger logger;

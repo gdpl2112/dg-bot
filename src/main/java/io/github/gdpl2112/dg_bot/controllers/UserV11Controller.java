@@ -1,7 +1,6 @@
 package io.github.gdpl2112.dg_bot.controllers;
 
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
-import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,30 +21,13 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasAuthority('user')")
 public class UserV11Controller {
     @Autowired
-    V11ConfMapper mapper;
-    @Autowired
     @Lazy
-    V11AutoService v11AutoService;
+    V11AutoService v11;
 
     @RequestMapping("/get-conf")
     public V11Conf getConf(@AuthenticationPrincipal UserDetails userDetails) {
         String id = userDetails.getUsername();
-        return getV11Conf(id);
-    }
-
-    public @NotNull V11Conf getV11Conf(String id) {
-        V11Conf v11Conf = mapper.selectById(id);
-        if (v11Conf == null) {
-            v11Conf = new V11Conf();
-            v11Conf.setQid(id);
-            v11Conf.setAutoLike(true);
-            v11Conf.setAutoZoneLike(true);
-            v11Conf.setAutoLikeYesterday(true);
-            v11Conf.setSignGroups("");
-            v11Conf.setZoneComment("");
-            mapper.insert(v11Conf);
-        }
-        return v11Conf;
+        return v11.getV11Conf(id);
     }
 
     @RequestMapping("/modify-conf")
@@ -53,7 +35,7 @@ public class UserV11Controller {
                                        @RequestParam(name = "key") String key,
                                        @RequestParam(name = "value") String value) {
         String qid = userDetails.getUsername();
-        V11Conf v11Conf = getV11Conf(qid);
+        V11Conf v11Conf = v11.getV11Conf(qid);
         switch (key) {
             case "autoLike":
                 v11Conf.setAutoLike(Boolean.parseBoolean(value));
@@ -73,19 +55,19 @@ public class UserV11Controller {
             default:
                 return null;
         }
-        mapper.updateById(v11Conf);
-        return getV11Conf(qid);
+        v11. mapper.updateById(v11Conf);
+        return v11.getV11Conf(qid);
     }
 
     @RequestMapping("/autoLikeNow")
     public String autoLikeNow(@AuthenticationPrincipal UserDetails userDetails) {
         String qid = userDetails.getUsername();
-        return "已执行\n执行结果:" + v11AutoService.likeNow(qid);
+        return "已执行\n执行结果:" + v11.likeNow(qid);
     }
 
     @RequestMapping("/autoLikeYesterdayNow")
     public String autoLikeYesterdayNow(@AuthenticationPrincipal UserDetails userDetails) {
         String qid = userDetails.getUsername();
-        return "已执行\n执行结果:" + v11AutoService.yesterdayLieNow(qid);
+        return "已执行\n执行结果:" + v11.yesterdayLieNow(qid);
     }
 }
