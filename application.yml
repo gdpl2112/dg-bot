@@ -11,24 +11,3 @@ server:
 
 wzry:
   api: http://117.72.74.145:8080
-
-logging:
-  pattern:
-    console: "%clr([%thread]){blue} %clr(%-32.32logger{32}){magenta} %clr(%d{yyyy-MM-dd HH:mm:ss}){red} %clr(%-5p): %msg%n"
-    file: "[%thread] %-32.32logger{32} %d{yyyy-MM-dd HH:mm:ss} %-5p: %msg%n"
-  file:
-    # 输出的log文件名
-    name: ./logs/slf4j.log
-    # 输出的文件的路径
-    path: logs
-    # 限制日志文件的大小
-    max-size: 10MB
-    # 日志的保存天数
-    max-history: 7
-  level:
-    # 输出级别
-    root: info
-log4j:
-  appender:
-      console:
-        encoding: UTF-8

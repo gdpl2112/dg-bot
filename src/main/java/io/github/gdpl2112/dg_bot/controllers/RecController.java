@@ -10,7 +10,6 @@ import io.github.gdpl2112.dg_bot.mapper.LikeRecoMapper;
 import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import io.github.kloping.date.DateUtils;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +22,6 @@ import java.util.Date;
  * @author github kloping
  * @date 2025/7/17-00:34
  */
-@Slf4j
 @RestController
 @RequestMapping("/api/rec")
 public class RecController {
@@ -42,7 +40,7 @@ public class RecController {
             Long tid = jo.getLong("operator_id");
             Long bid = jo.getLong("self_id");
             Integer times = jo.getInteger("times");
-            log.info("收到点赞: b{} t{} n{}", bid, tid, times);
+            component.log.info(String.format("收到点赞: b%s t%s n%s", bid, tid, times));
             int dayN = DateUtils.getDay();
             String date = ProfileLike.SF_MM_DD.format(new Date());
             LikeReco likeReco = likeRecoMapper.getByDateAndBidAndTid(bid, date, tid.toString());

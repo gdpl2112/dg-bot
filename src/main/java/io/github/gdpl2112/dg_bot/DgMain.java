@@ -3,7 +3,6 @@ package io.github.gdpl2112.dg_bot;
 import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.MySpringTool.interfaces.component.PackageScanner;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -28,7 +27,6 @@ import java.util.Map;
  * @author github-kloping
  * @date 2023-07-17
  */
-@Slf4j
 @SpringBootApplication
 @EnableAsync
 @CrossOrigin
@@ -42,7 +40,7 @@ public class DgMain implements CommandLineRunner {
     public static void main(String[] args) throws Exception {
         HttpsUtils.trustAllHttpsCertificates();
         applicationContext = SpringApplication.run(DgMain.class, args);
-        log.info("Q云代挂启动成功 compile at 2025/7/21");
+        System.out.println("Q云代挂启动成功 compile at 2025/7/21");
     }
 
     @Autowired
@@ -55,8 +53,7 @@ public class DgMain implements CommandLineRunner {
     public void run(String... args) throws Exception {
         logger.info("start auto create need tables;");
         PackageScanner scanner = new PackageScannerImpl(true);
-        for (Class<?> dclass :
-                scanner.scan(DgMain.class, DgMain.class.getClassLoader(), "io.github.gdpl2112.dg_bot.dao")) {
+        for (Class<?> dclass : scanner.scan(DgMain.class, DgMain.class.getClassLoader(), "io.github.gdpl2112.dg_bot.dao")) {
             String sql = Utils.CreateTable.createTable(dclass);
             try {
                 int state = jdbcTemplate.update(sql);

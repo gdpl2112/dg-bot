@@ -10,7 +10,6 @@ import io.github.gdpl2112.dg_bot.mapper.LikeRecoMapper;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
-import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +25,6 @@ import java.util.List;
 /**
  * @author github.kloping
  */
-@Slf4j
 @Service
 public class V11AutoService extends SimpleListenerHost {
 
@@ -61,7 +59,7 @@ public class V11AutoService extends SimpleListenerHost {
     //最后的处理
     @Scheduled(cron = "00 58 23 * * ? ")
     public void autoLike() {
-        log.info("最后点赞处理启动");
+        component.log.info("最后点赞处理启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
@@ -110,13 +108,13 @@ public class V11AutoService extends SimpleListenerHost {
     // 回赞昨日
     @Scheduled(cron = "00 01 00 * * ?")
     public void yesterday() {
-        log.info("回赞昨日启动");
+        component.log.info("回赞昨日启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 yesterdayLieNow(String.valueOf(bot.getId()));
             }
         }
-        log.info("回赞结束 删除全部记录: {}", likeRecoMapper.delete(null));
+        component.log.info("回赞结束 删除全部记录: " + likeRecoMapper.delete(null));
     }
 
     public String yesterdayLieNow(String id) {
@@ -153,7 +151,7 @@ public class V11AutoService extends SimpleListenerHost {
             //==== 根据记录查询
             String date = ProfileLike.SF_MM_DD.format(new Date());
             List<LikeReco> list = likeRecoMapper.selectListByDateAndBid(bid, date);
-            log.info("昨日记录: {}-> {}", bid, list);
+            component.log.info("昨日记录: " + bid + "-> " + list);
             for (LikeReco likeReco : list) {
                 if (vls.contains(likeReco.getTid())) continue;
                 if (ProfileLike.sendProfileLike(remoteBot, Long.valueOf(likeReco.getTid()), max)) {
@@ -177,7 +175,7 @@ public class V11AutoService extends SimpleListenerHost {
     //自动打卡启动
     @Scheduled(cron = "01 00 00 * * ?")
     public void autoSign() {
-        log.info("自动打卡启动");
+        component.log.info("自动打卡启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
@@ -193,8 +191,8 @@ public class V11AutoService extends SimpleListenerHost {
                         String data = remoteBot.executeAction("send_group_sign", data0);
                         JSONObject jsonObject = JSONObject.parseObject(data);
                         if (jsonObject.getInteger("retcode") != 0) {
-                            log.error("sign group Failed {} -> b{} g{} o{}", jsonObject, bid, group, groups);
-                        } else log.info("自动打卡成功：b{} g{}", bid, group);
+                            component.log.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, group, groups));
+                        } else component.log.info("自动打卡成功：b" + bid + " g" + group);
                     }
                 }
             }

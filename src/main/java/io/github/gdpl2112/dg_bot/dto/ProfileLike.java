@@ -3,7 +3,6 @@ package io.github.gdpl2112.dg_bot.dto;
 import com.alibaba.fastjson.JSONObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
@@ -16,7 +15,6 @@ import java.util.Date;
  */
 @Data
 @Accessors(chain = true)
-@Slf4j
 public class ProfileLike {
 
     public static final SimpleDateFormat SF_DD = new SimpleDateFormat("dd");
@@ -49,7 +47,7 @@ public class ProfileLike {
 
     public static boolean sendProfileLike(RemoteBot remoteBot, long uin, int times) {
         Bot bot = (Bot) remoteBot;
-        log.info("b{}即将给t{}点赞n{}次", bot.getId(), uin, times);
+        System.out.println(String.format("b%s即将给t%s点赞n%s次\n", bot.getId(), uin, times));
         String data = remoteBot.executeAction("send_like", String.format(FORMAT_SEND_LIKE, uin, times));
         return "ok".equalsIgnoreCase(JSONObject.parseObject(data).getString("status"));
     }
