@@ -55,7 +55,7 @@ public class UserV11Controller {
             default:
                 return null;
         }
-        v11. mapper.updateById(v11Conf);
+        v11.updateById(v11Conf);
         return v11.getV11Conf(qid);
     }
 

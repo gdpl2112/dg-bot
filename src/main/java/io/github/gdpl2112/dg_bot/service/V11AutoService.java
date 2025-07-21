@@ -29,7 +29,7 @@ import java.util.List;
 public class V11AutoService extends SimpleListenerHost {
 
     @Autowired
-    public V11ConfMapper mapper;
+    V11ConfMapper mapper;
 
     @Autowired
     MiraiComponent component;
@@ -56,7 +56,11 @@ public class V11AutoService extends SimpleListenerHost {
         return v11Conf;
     }
 
+    public int updateById(V11Conf v11Conf) {
+        return mapper.updateById(v11Conf);
+    }
     //最后的处理
+
     @Scheduled(cron = "00 58 23 * * ? ")
     public void autoLike() {
         component.log.info("最后点赞处理启动");
@@ -104,8 +108,8 @@ public class V11AutoService extends SimpleListenerHost {
         }
         return sb != null ? sb.toString() : null;
     }
-
     // 回赞昨日
+
     @Scheduled(cron = "00 01 00 * * ?")
     public void yesterday() {
         component.log.info("回赞昨日启动");
@@ -171,8 +175,8 @@ public class V11AutoService extends SimpleListenerHost {
         component.VIP_INFO.put(bid, isVip);
         return isVip;
     }
-
     //自动打卡启动
+
     @Scheduled(cron = "01 00 00 * * ?")
     public void autoSign() {
         component.log.info("自动打卡启动");
@@ -181,6 +185,7 @@ public class V11AutoService extends SimpleListenerHost {
                 if (bot instanceof RemoteBot) {
                     String bid = String.valueOf(bot.getId());
                     V11Conf conf = getV11Conf(bid);
+                    component.log.info("自动打卡: " + bid + " conf-sign: " + conf.getSignGroups());
                     if (Judge.isEmpty(conf.getSignGroups())) continue;
                     String groups = conf.getSignGroups();
                     String[] split = groups.split(",|;|\\s");
