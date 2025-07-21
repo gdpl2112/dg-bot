@@ -175,7 +175,7 @@ public class V11AutoService extends SimpleListenerHost {
     }
 
     //自动打卡启动
-    @Scheduled(cron = "00 00 00 * * ?")
+    @Scheduled(cron = "01 00 00 * * ?")
     public void autoSign() {
         log.info("自动打卡启动");
         for (Bot bot : Bot.getInstances()) {
@@ -183,7 +183,7 @@ public class V11AutoService extends SimpleListenerHost {
                 if (bot instanceof RemoteBot) {
                     String bid = String.valueOf(bot.getId());
                     V11Conf conf = getV11Conf(bid);
-                    if (Judge.isEmpty(conf.getSignGroups())) return;
+                    if (Judge.isEmpty(conf.getSignGroups())) continue;
                     String groups = conf.getSignGroups();
                     String[] split = groups.split(",|;|\\s");
                     RemoteBot remoteBot = ((RemoteBot) bot);
