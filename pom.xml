@@ -15,8 +15,8 @@
     </parent>
     <repositories>
         <repository>
-            <id>s01_snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+            <id>snapshots01</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </repository>
         <repository>
             <id>ali-m</id>
@@ -57,7 +57,7 @@
         <dependency>
             <groupId>top.mrxiaom.mirai</groupId>
             <artifactId>overflow-core-all</artifactId>
-            <version>1.0.6</version>
+            <version>1.0.6.651-b091271-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>net.mamoe</groupId>
@@ -80,11 +80,6 @@
                     <artifactId>mirai-core-jvm</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.sejda.imageio</groupId>
-            <artifactId>webp-imageio</artifactId>
-            <version>0.1.6</version>
         </dependency>
         <!--sqlite-->
         <dependency>

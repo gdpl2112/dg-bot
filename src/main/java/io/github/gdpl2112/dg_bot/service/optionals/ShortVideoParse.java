@@ -13,9 +13,9 @@ import net.mamoe.mirai.message.data.ForwardMessageBuilder;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import net.mamoe.mirai.message.data.PlainText;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import top.mrxiaom.overflow.contact.RemoteBot;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -64,9 +64,11 @@ public class ShortVideoParse implements BaseOptional {
     public static final RestTemplate TEMPLATE = new RestTemplate();
 
     private void parseDy(final String url, MessageEvent event) {
-        String out = TEMPLATE.getForObject("https://www.hhlqilongzhu.cn/api/sp_jx/sp.php?url=" + url, String.class);
+        System.out.println("开始解析: " + url);
+        String out = TEMPLATE.getForObject("https://api.xingzhige.com/API/douyin/?url=" + url, String.class);
         JSONObject result = JSON.parseObject(out);
-        if (result.getInteger("code") < 0) {
+        Integer code = result.getInteger("code");
+        if (result == null || code == null || code < 0) {
             event.getSubject().sendMessage("解析异常!\n若链接无误请反馈.");
             return;
         }
@@ -75,38 +77,35 @@ public class ShortVideoParse implements BaseOptional {
         Bot bot = event.getBot();
 
         var builder = new MessageChainBuilder();
-        byte[] bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("data.cover", String.class));
+        byte[] bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("data.item.cover", String.class));
         Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
         builder.append(image)
-                .append(gt.gt("data.title")).append("\n")
-                .append(gt.gt("text.time")).append("\n")
-                .append(gt.gt("text.msg"));
-        String u0 = gt.gt("data.url", String.class);
-        var fbuilder = new ForwardMessageBuilder(bot.getAsFriend());
+                .append(gt.gt("data.item.title")).append("\n")
+                .append(gt.gt("msg"));
+        String u0 = gt.gt("data.item.url", String.class);
+        var fbuilder = new ForwardMessageBuilder(event.getSubject());
         if (Judge.isEmpty(u0)) {
-            fbuilder.add(bot.getId(), "AI", new PlainText("音频直链:" + gt.gt("data.music")));
-            JSONArray array = gt.gt("data.images", JSONArray.class);
+            fbuilder.add(bot , new PlainText("音频直链:" + gt.gt("data.item.muisic")));
+            JSONArray array = gt.gt("data.item.images", JSONArray.class);
             builder.append("\n图集数量:").append(String.valueOf(array.size())).append("/正在发送请稍等..");
             event.getSubject().sendMessage(builder.build());
             for (Object o : array) {
                 String url0 = o.toString();
                 bytes = UrlUtils.getBytesFromHttpUrl(url0);
-                if (url0.contains(".webp")) {
-                    bytes = webp2png(bytes);
-                }
                 if (bytes == null) continue;
-                image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "png");
-                fbuilder.add(bot.getId(), "AI", image);
+                image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
+                fbuilder.add(bot, image);
             }
         } else {
             event.getSubject().sendMessage(builder.build());
-            fbuilder.add(bot.getId(), "AI", new PlainText("视频直链: " + gt.gt("data.url")));
+            fbuilder.add(bot, new PlainText("视频直链: " + u0));
         }
         event.getSubject().sendMessage(fbuilder.build());
     }
 
 
     public void parseKs(String url, MessageEvent event) {
+        System.out.println("开始解析: " + url);
         String out = TEMPLATE.getForObject("https://kloping.top/api/cre/jxvv?url=" + url, String.class);
         JSONObject result = JSON.parseObject(out);
         if (!result.containsKey("result")) {
@@ -136,11 +135,11 @@ public class ShortVideoParse implements BaseOptional {
         JSONArray array = gt.gt("shareUserPhotos", JSONArray.class);
 
         if (array != null && !array.isEmpty()) {
-            author = new ForwardMessageBuilder(bot.getAsFriend());
+            author = new ForwardMessageBuilder(event.getSubject());
             bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("shareUserPhotos[0].headUrl", String.class));
             image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
-            author.add(bot.getId(), "AI", image);
-            author.add(bot.getId(), "AI", new PlainText("sharer," + gt.gt("shareUserPhotos[0].userName")
+            author.add(bot, image);
+            author.add(bot, new PlainText("sharer," + gt.gt("shareUserPhotos[0].userName")
                     + "/" + gt.gt("shareUserPhotos[0].userSex")));
         }
 
@@ -150,17 +149,17 @@ public class ShortVideoParse implements BaseOptional {
             builder.append("\n视频时长:" + (gt.gt("photo.duration", Integer.class) / 1000) + "s");
             event.getSubject().sendMessage(builder.build());
 
-            var de0 = new ForwardMessageBuilder(bot.getAsFriend());
-            de0.add(bot.getId(), "AI", new PlainText("视频直链: " + gt.gt("photo.mainMvUrls[0].url")));
-            de0.add(bot.getId(), "AI", new PlainText("音频直链: " + gt.gt("photo.soundTrack.audioUrls[0].url")));
+            var de0 = new ForwardMessageBuilder(event.getSubject());
+            de0.add(bot, new PlainText("视频直链: " + gt.gt("photo.mainMvUrls[0].url")));
+            de0.add(bot, new PlainText("音频直链: " + gt.gt("photo.soundTrack.audioUrls[0].url")));
             event.getSubject().sendMessage(de0.build());
         } else {
             builder.append("\n图集数量:" + gt.gt("atlas.list", JSONArray.class).size() + "/正在发送,请稍等...");
             event.getSubject().sendMessage(builder.build());
 
-            var fbuilder = new ForwardMessageBuilder(bot.getAsFriend());
-            if (author != null) fbuilder.add(bot.getId(), "AI", author.build());
-            fbuilder.add(bot.getId(), "AI", new PlainText("音频直链: https://" + gt.gt("atlas.musicCdnList[0].cdn")
+            var fbuilder = new ForwardMessageBuilder(event.getSubject());
+            if (author != null) fbuilder.add(bot, author.build());
+            fbuilder.add(bot, new PlainText("音频直链: https://" + gt.gt("atlas.musicCdnList[0].cdn")
                     + gt.gt("atlas.music")));
             var arr = gt.gt("atlas.list", JSONArray.class);
             var host = "https://" + gt.gt("atlas.cdn[0]");
@@ -169,9 +168,9 @@ public class ShortVideoParse implements BaseOptional {
                 try {
                     bytes = UrlUtils.getBytesFromHttpUrl(host + e);
                     image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
-                    fbuilder.add(bot.getId(), "AI", image);
+                    fbuilder.add(bot, image);
                 } catch (Exception ex) {
-                    fbuilder.add(bot.getId(), "AI", new PlainText("[图片加载失败;" + host + e + "]"));
+                    fbuilder.add(bot, new PlainText("[图片加载失败;" + host + e + "]"));
                 }
             }
             event.getSubject().sendMessage(fbuilder.build());
@@ -189,8 +188,8 @@ public class ShortVideoParse implements BaseOptional {
         builder.append("\n视频时长:" + (result.getInteger("duration") / 1000) + "s");
         event.getSubject().sendMessage(builder.build());
 
-        var de0 = new ForwardMessageBuilder(bot.getAsFriend());
-        de0.add(bot.getId(), "AI", new PlainText("视频直链: " + result.getString("photoUrl")));
+        var de0 = new ForwardMessageBuilder(event.getSubject());
+        de0.add(bot, new PlainText("视频直链: " + result.getString("photoUrl")));
         event.getSubject().sendMessage(de0.build());
     }
 
@@ -266,30 +265,4 @@ public class ShortVideoParse implements BaseOptional {
         }
     }
 
-
-    public static byte[] webp2png(byte[] webp) {
-        ByteArrayOutputStream baos = null;
-        try {
-            // Obtain a WebP ImageReader instance
-            ImageReader reader = ImageIO.getImageReadersByMIMEType("image/webp").next();
-
-            // Configure decoding parameters
-            WebPReadParam readParam = new WebPReadParam();
-            readParam.setBypassFiltering(true);
-
-            // Configure the input on the ImageReader
-            reader.setInput(new MemoryCacheImageInputStream(new ByteArrayInputStream(webp)));
-
-            // Decode the image
-            BufferedImage image = reader.read(0, readParam);
-
-            baos = new ByteArrayOutputStream();
-            // the `png` can use `jpg`
-            ImageIO.write(image, "png", baos);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return baos.toByteArray();
-    }
 }
