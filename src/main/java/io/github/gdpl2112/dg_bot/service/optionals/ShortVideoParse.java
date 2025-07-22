@@ -3,7 +3,6 @@ package io.github.gdpl2112.dg_bot.service.optionals;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.luciad.imageio.webp.WebPReadParam;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.url.UrlUtils;
 import net.mamoe.mirai.Bot;
@@ -15,15 +14,8 @@ import net.mamoe.mirai.message.data.MessageChainBuilder;
 import net.mamoe.mirai.message.data.PlainText;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import top.mrxiaom.overflow.contact.RemoteBot;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.MemoryCacheImageInputStream;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,7 +77,7 @@ public class ShortVideoParse implements BaseOptional {
         String u0 = gt.gt("data.item.url", String.class);
         var fbuilder = new ForwardMessageBuilder(event.getSubject());
         if (Judge.isEmpty(u0)) {
-            fbuilder.add(bot , new PlainText("音频直链:" + gt.gt("data.item.muisic")));
+            fbuilder.add(bot, new PlainText("音频直链:" + gt.gt("data.item.muisic")));
             JSONArray array = gt.gt("data.item.images", JSONArray.class);
             builder.append("\n图集数量:").append(String.valueOf(array.size())).append("/正在发送请稍等..");
             event.getSubject().sendMessage(builder.build());
