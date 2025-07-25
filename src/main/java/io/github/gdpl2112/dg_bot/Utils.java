@@ -3,7 +3,6 @@ package io.github.gdpl2112.dg_bot;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import io.github.gdpl2112.dg_bot.built.callapi.Converter;
-import io.github.kloping.clasz.ClassUtils;
 import io.github.kloping.judge.Judge;
 import lombok.Setter;
 import net.mamoe.mirai.event.events.MessageEvent;
@@ -15,6 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -233,7 +233,7 @@ public class Utils {
             boolean firstId = true;
             File file = null;
             for (Field f : fields) {
-                if (ClassUtils.isStatic(f)) continue;
+                if (Modifier.isStatic(f.getModifiers())) continue;
                 f.setAccessible(true);
                 column = f.getName();
                 column = filterName(column);
