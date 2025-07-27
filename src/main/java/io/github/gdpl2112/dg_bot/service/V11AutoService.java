@@ -91,17 +91,32 @@ public class V11AutoService extends SimpleListenerHost {
 
             int dayN = DateUtils.getDay();
 
+            String date = ProfileLike.SF_MM_DD.format(new Date());
+            List<LikeReco> list = likeRecoMapper.selectListByDateAndBid(bid, date);
+            component.log.info("今日记录: " + bid + "-> " + list);
+            int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
             //被点
             for (Object vUserInfo : vUserInfos) {
                 ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
                 if (pl.getDay() != dayN) {
-                    return sb != null ? sb.toString() : null;
+                    break;
                 } else {
-                    int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
-                    if (pl.getBTodayVotedCnt() >= max) continue;
+                    if (pl.getBTodayVotedCnt() >= max) {
+                        list.removeIf(l -> l.getTid().equals(pl.getVid()));
+                        continue;
+                    }
                     if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
                         if (sb == null) sb = new StringBuilder();
                         sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                        list.removeIf(l -> l.getTid().equals(pl.getVid()));
+                    }
+                }
+            }
+            if (!list.isEmpty()){
+                for (LikeReco pl : list) {
+                    if (ProfileLike.sendProfileLike(remoteBot, Long.parseLong(pl.getTid()), max)) {
+                        if (sb == null) sb = new StringBuilder();
+                        sb.append("\n'遗漏'(成功)").append("给").append(pl.getTid()).append("点赞").append(max).append("个");
                     }
                 }
             }
@@ -153,7 +168,7 @@ public class V11AutoService extends SimpleListenerHost {
                 else break;
             }
             //==== 根据记录查询
-            String date = ProfileLike.SF_MM_DD.format(new Date());
+            String date = ProfileLike.SF_MM_DD.format(new Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24));
             List<LikeReco> list = likeRecoMapper.selectListByDateAndBid(bid, date);
             component.log.info("昨日记录: " + bid + "-> " + list);
             for (LikeReco likeReco : list) {
