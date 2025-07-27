@@ -19,6 +19,7 @@ import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -116,11 +117,15 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     SaveMapper saveMapper;
 
-    @Scheduled(cron = "0 1 0/2 * * ?")
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Scheduled(cron = "0 */5 * * * ?")
     public void deleteMsg() {
-        long less = System.currentTimeMillis() - 1000L * 60 * 120;
+        long less = System.currentTimeMillis() - 1000L * 30 * 120;
         QueryWrapper<AllMessage> qw = new QueryWrapper<>();
         qw.le("time", less);
-        saveMapper.delete(qw);
+        jdbcTemplate.execute("VACUUM;");
+        log.info("释放db存储并删除消息记录: " + saveMapper.delete(qw));
     }
 }

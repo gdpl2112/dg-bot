@@ -184,7 +184,7 @@ public class SaveService extends SimpleListenerHost {
         wrapper.eq("internal_id", iid);
         wrapper.eq("bot_id", bid);
         List<AllMessage> msg = saveMapper.selectList(wrapper);
-        if (msg != null && msg.size() > 0) return msg.get(0);
+        if (msg != null && !msg.isEmpty()) return msg.get(0);
         else return null;
     }
 }
