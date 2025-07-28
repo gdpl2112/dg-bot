@@ -1,21 +1,19 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import io.github.kloping.judge.Judge;
 import io.github.kloping.url.UrlUtils;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.events.MessageEvent;
-import net.mamoe.mirai.message.data.ForwardMessageBuilder;
-import net.mamoe.mirai.message.data.Image;
-import net.mamoe.mirai.message.data.MessageChainBuilder;
-import net.mamoe.mirai.message.data.PlainText;
+import net.mamoe.mirai.message.data.*;
+import net.mamoe.mirai.utils.ExternalResource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
+import java.util.HashMap;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,11 +37,28 @@ public class ShortVideoParse implements BaseOptional {
         String out = io.github.gdpl2112.dg_bot.Utils.getLineString(event);
         if (out.contains(KS_LINK)) {
             Matcher matcher = pattern.matcher(out);
-            if (matcher.find()) parseKs(matcher.group(), event);
+            if (matcher.find()) parseNow(matcher.group(), event);
         } else if (out.contains(DY_LINK)) {
             Matcher matcher = pattern.matcher(out);
-            if (matcher.find()) parseDy(matcher.group(), event);
+            if (matcher.find()) parseNow(matcher.group(), event);
         }
+    }
+
+    @Data
+    @Accessors(chain = true)
+    public static class JxData {
+        private Integer code;
+        private String msg;
+        //douyin 或 kuaishou
+        private String type;
+        //image / video
+        private String format;
+
+        private String cover;
+        private String title;
+        private String author;
+
+        private Object data;
     }
 
     public static final String regx = "(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]";
@@ -55,206 +70,77 @@ public class ShortVideoParse implements BaseOptional {
 
     public static final RestTemplate TEMPLATE = new RestTemplate();
 
-    private void parseDy(final String url, MessageEvent event) {
+    public void parseNow(String url, MessageEvent event) {
         System.out.println("开始解析: " + url);
-        String out = TEMPLATE.getForObject("https://api.xingzhige.com/API/douyin/?url=" + url, String.class);
-        JSONObject result = JSON.parseObject(out);
-        Integer code = result.getInteger("code");
-        if (result == null || code == null || code < 0) {
+        JxData jxData = TEMPLATE.getForObject("https://kloping.top/api/cre/jxvv?url=" + url, JxData.class);
+        if (jxData == null || jxData.getCode() == null || jxData.getCode() != 200) {
             event.getSubject().sendMessage("解析异常!\n若链接无误请反馈.");
+            System.err.println(jxData);
             return;
         }
-        Gt gt = new Gt(out);
 
         Bot bot = event.getBot();
 
         var builder = new MessageChainBuilder();
-        byte[] bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("data.item.cover", String.class));
-        Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
-        builder.append(image)
-                .append(gt.gt("data.item.title")).append("\n")
-                .append(gt.gt("msg"));
-        String u0 = gt.gt("data.item.url", String.class);
-        var fbuilder = new ForwardMessageBuilder(event.getSubject());
-        if (Judge.isEmpty(u0)) {
-            fbuilder.add(bot, new PlainText("音频直链:" + gt.gt("data.item.muisic")));
-            JSONArray array = gt.gt("data.item.images", JSONArray.class);
-            builder.append("\n图集数量:").append(String.valueOf(array.size())).append("/正在发送请稍等..");
-            event.getSubject().sendMessage(builder.build());
-            for (Object o : array) {
-                String url0 = o.toString();
-                bytes = UrlUtils.getBytesFromHttpUrl(url0);
-                if (bytes == null) continue;
-                image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
-                fbuilder.add(bot, image);
-            }
-        } else {
-            event.getSubject().sendMessage(builder.build());
-            fbuilder.add(bot, new PlainText("视频直链: " + u0));
-        }
-        event.getSubject().sendMessage(fbuilder.build());
-    }
 
+        byte[] coverBytes = UrlUtils.getBytesFromHttpUrl(jxData.getCover());
+        Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(coverBytes), "jpg");
 
-    public void parseKs(String url, MessageEvent event) {
-        System.out.println("开始解析: " + url);
-        String out = TEMPLATE.getForObject("https://kloping.top/api/cre/jxvv?url=" + url, String.class);
-        JSONObject result = JSON.parseObject(out);
-        if (!result.containsKey("result")) {
-            sendToAsVideo(event, result);
-            return;
-        }
-        if (result.getInteger("result") < 0) {
-            event.getSubject().sendMessage("解析异常!\n若链接无误请反馈.");
-            return;
-        }
-        Gt gt = new Gt(out);
+        builder.append(image);
+        builder.append("解析成功! 平台: ").append(jxData.getType()).append("\n");
+        builder.append(jxData.getTitle()).append(" \\ ").append(jxData.getAuthor());
 
-        Bot bot = event.getBot();
+        HashMap<String, Object> dataMap = (HashMap<String, Object>) jxData.getData();
 
-        var builder = new MessageChainBuilder();
-        byte[] bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("photo.coverUrls[0].url", String.class));
-        Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
-        builder.append(image)
-                .append(gt.gt("photo.caption").toString())
-                .append("作者").append(gt.gt("photo.userName")).append("/").append(gt.gt("photo.userSex"))
-                .append("\n粉丝:").append(gt.gt("counts.fanCount"))
-                .append("\n💗 ").append(gt.gt("photo.likeCount"))
-                .append("\n👁︎︎ ").append(gt.gt("photo.viewCount"))
-                .append("\n✉️ ").append(gt.gt("photo.commentCount"));
-
-        ForwardMessageBuilder author = null;
-        JSONArray array = gt.gt("shareUserPhotos", JSONArray.class);
-
-        if (array != null && !array.isEmpty()) {
-            author = new ForwardMessageBuilder(event.getSubject());
-            bytes = UrlUtils.getBytesFromHttpUrl(gt.gt("shareUserPhotos[0].headUrl", String.class));
-            image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
-            author.add(bot, image);
-            author.add(bot, new PlainText("sharer," + gt.gt("shareUserPhotos[0].userName")
-                    + "/" + gt.gt("shareUserPhotos[0].userSex")));
-        }
-
-        JSONObject atlas = gt.gt("atlas", JSONObject.class);
-
-        if (atlas == null) {
-            builder.append("\n视频时长:" + (gt.gt("photo.duration", Integer.class) / 1000) + "s");
-            event.getSubject().sendMessage(builder.build());
-
-            var de0 = new ForwardMessageBuilder(event.getSubject());
-            de0.add(bot, new PlainText("视频直链: " + gt.gt("photo.mainMvUrls[0].url")));
-            de0.add(bot, new PlainText("音频直链: " + gt.gt("photo.soundTrack.audioUrls[0].url")));
-            event.getSubject().sendMessage(de0.build());
-        } else {
-            builder.append("\n图集数量:" + gt.gt("atlas.list", JSONArray.class).size() + "/正在发送,请稍等...");
+        if (jxData.getFormat().equals("image")) {
+            List<String> images = (List<String>) dataMap.get("images");
+            builder.append("\n图片数量:" + images.size() + "/正在发送,请稍等...");
             event.getSubject().sendMessage(builder.build());
 
             var fbuilder = new ForwardMessageBuilder(event.getSubject());
-            if (author != null) fbuilder.add(bot, author.build());
-            fbuilder.add(bot, new PlainText("音频直链: https://" + gt.gt("atlas.musicCdnList[0].cdn")
-                    + gt.gt("atlas.music")));
-            var arr = gt.gt("atlas.list", JSONArray.class);
-            var host = "https://" + gt.gt("atlas.cdn[0]");
-            for (var i = 0; i < arr.size(); i++) {
-                var e = arr.get(i);
+            fbuilder.add(bot, new PlainText("音频直链:" + dataMap.get("music")));
+            for (String s : images) {
                 try {
-                    bytes = UrlUtils.getBytesFromHttpUrl(host + e);
+                    byte[] bytes = UrlUtils.getBytesFromHttpUrl(s);
                     image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
                     fbuilder.add(bot, image);
                 } catch (Exception ex) {
-                    fbuilder.add(bot, new PlainText("[图片加载失败;" + host + e + "]"));
+                    fbuilder.add(bot, new PlainText("[图片加载失败;" + s + "]"));
                 }
             }
+
+            event.getSubject().sendMessage(fbuilder.build());
+        } else {
+            String u0 = dataMap.get("url").toString();
+            byte[] bytes = UrlUtils.getBytesFromHttpUrl(u0);
+            builder.append("\n视频大小:" + toView(bytes.length) + "\n正在发送,请稍等...: ");
+            event.getSubject().sendMessage(builder.build());
+
+            var fbuilder = new ForwardMessageBuilder(event.getSubject());
+            ShortVideo shortVideo = event.getSubject().uploadShortVideo(ExternalResource.create(coverBytes), ExternalResource.create(bytes),
+                    jxData.getTitle() + ".mp4");
+            fbuilder.add(bot, shortVideo);
+
+            fbuilder.add(bot, new PlainText("视频直链: " + u0));
             event.getSubject().sendMessage(fbuilder.build());
         }
     }
 
-
-    private void sendToAsVideo(MessageEvent event, JSONObject result) {
-        Bot bot = event.getBot();
-
-        var builder = new MessageChainBuilder();
-        byte[] bytes = UrlUtils.getBytesFromHttpUrl(result.getString("coverUrl"));
-        Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
-        builder.append(image).append(result.getString("caption").toString()).append("\n💗 ").append(result.getString("likeCount")).append("\n👁︎︎ ").append(result.getString("viewCount"));
-        builder.append("\n视频时长:" + (result.getInteger("duration") / 1000) + "s");
-        event.getSubject().sendMessage(builder.build());
-
-        var de0 = new ForwardMessageBuilder(event.getSubject());
-        de0.add(bot, new PlainText("视频直链: " + result.getString("photoUrl")));
-        event.getSubject().sendMessage(de0.build());
+    private String toView(final int length) {
+        int kb = 0;
+        int mb = 0;
+        int b = length;
+        if (b >= 1024) {
+            kb = b / 1024;
+            b = b % 1024;
+        }
+        if (kb >= 1024) {
+            mb = kb / 1024;
+            kb = kb % 1024;
+        }
+        if (mb > 0)
+            return mb + "." + (kb / 1024.0) + "MB";
+        else
+            return kb + "." + (b / 1024.0) + "KB";
     }
-
-
-    public static class Gt {
-        private String json;
-
-        public Gt(String json) {
-            this.json = json;
-        }
-
-        public String gt(String p) {
-            return gt(json, p, Object.class).toString();
-        }
-
-        public <T> T gt(String p, Class<T> t) {
-            return gt(json, p, t);
-        }
-
-        /**
-         * get from json
-         *
-         * @param t1 json
-         * @param t0 表达式
-         * @return
-         * @throws Exception
-         */
-        public static <T> T gt(String t1, String t0, Class<T> cla) {
-            JSON j0 = (JSON) JSON.parse(t1);
-            t0 = t0.trim();
-            String s0 = null;
-            for (String s : t0.trim().split("\\.")) {
-                if (!s.isEmpty()) {
-                    s0 = s;
-                    break;
-                }
-            }
-            Object o = null;
-            if (s0.matches("\\[\\d*]")) {
-                JSONArray arr = (JSONArray) j0;
-                String sts = s0.substring(1, s0.length() - 1);
-                if (sts.isEmpty()) {
-                    o = arr;
-                    t0 = t0.replaceFirst("\\[]", "");
-                } else {
-                    Integer st = Integer.parseInt(sts);
-                    o = arr.get(st);
-                    int len = 4;
-                    if (t0.length() >= len) t0 = t0.substring(len);
-                    else t0 = t0.substring(len - 1);
-                }
-            } else if (s0.matches(".*?\\[\\d+]")) {
-                int i = s0.indexOf("[");
-                int i1 = s0.indexOf("]");
-                String st0 = s0.substring(0, i);
-                Integer st = Integer.parseInt(s0.substring(i + 1, s0.length() - 1));
-                JSONObject jo = (JSONObject) j0;
-                o = jo.getJSONArray(st0).get(st);
-                if (t0.length() > s0.length()) t0 = t0.substring(s0.length());
-                else t0 = null;
-            } else {
-                JSONObject jo = (JSONObject) j0;
-                o = jo.get(s0);
-                int len = s0.length() + 1;
-                if (t0.length() >= len) t0 = t0.substring(len);
-                else t0 = t0.substring(len - 1);
-            }
-            if (t0 != null && t0.length() > 0) {
-                return (T) gt(JSON.toJSONString(o), t0, cla);
-            } else {
-                return (T) o;
-            }
-        }
-    }
-
 }
