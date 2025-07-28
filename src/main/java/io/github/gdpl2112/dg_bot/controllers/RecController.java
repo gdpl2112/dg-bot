@@ -9,7 +9,6 @@ import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.mapper.LikeRecoMapper;
 import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import io.github.kloping.date.DateUtils;
-import lombok.Getter;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -79,8 +78,17 @@ public class RecController {
 
     @Autowired
     V11AutoService v11AutoService;
-    @GetMapping("/test")
-    public String test() {
-        return v11AutoService.yesterdayLieNow("3474006766");
+
+    @RequestMapping("/test")
+    public String test(@RequestParam(name = "id") String bid) {
+        try {
+            Bot bot = Bot.getInstance(Long.parseLong(bid));
+            if (bot instanceof RemoteBot) {
+                RemoteBot remoteBot = (RemoteBot) bot;
+                return remoteBot.executeAction("get_status", "{}");
+            } else return "LOCAL_BOT:" + bot.isOnline();
+        } catch (Exception e) {
+            return e.getMessage();
+        }
     }
 }
