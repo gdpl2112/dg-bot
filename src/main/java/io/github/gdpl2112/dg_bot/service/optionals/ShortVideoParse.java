@@ -138,9 +138,12 @@ public class ShortVideoParse implements BaseOptional {
             mb = kb / 1024;
             kb = kb % 1024;
         }
-        if (mb > 0)
-            return mb + "." + (kb / 1024.0) + "MB";
-        else
-            return kb + "." + (b / 1024.0) + "KB";
+        if (mb > 0) {
+            double mb0 = mb + (kb / 1024.0);
+            return String.format("%.2f MB", mb0);
+        } else {
+            double kb0 = kb + (b / 1024.0);
+            return String.format("%.2f KB", kb0);
+        }
     }
 }
