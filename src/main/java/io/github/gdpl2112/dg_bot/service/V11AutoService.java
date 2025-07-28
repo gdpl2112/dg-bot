@@ -123,8 +123,8 @@ public class V11AutoService extends SimpleListenerHost {
         }
         return sb != null ? sb.toString() : null;
     }
-    // 回赞昨日
 
+    // 回赞昨日
     @Scheduled(cron = "00 01 00 * * ?")
     public void yesterday() {
         component.log.info("回赞昨日启动");

@@ -85,7 +85,7 @@ public class ScriptService extends SimpleListenerHost {
         String tid = event instanceof GroupMessageEvent ? "g" + event.getSubject().getId() : event instanceof FriendMessageEvent ? "f" + event.getSender().getId() : null;
         if (tid != null) if (configService.isNotOpenK0(event.getBot().getId(), tid)) return;
         final String code = getScriptCode(event.getBot().getId());
-        if (code == null) return;
+        if (Judge.isEmpty(code)) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
@@ -113,7 +113,7 @@ public class ScriptService extends SimpleListenerHost {
         if (event instanceof BotOnlineEvent) return;
         if (event instanceof BotOfflineEvent) return;
         final String code = getScriptCode(event.getBot().getId());
-        if (code == null) return;
+        if (Judge.isEmpty(code)) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
@@ -160,12 +160,17 @@ public class ScriptService extends SimpleListenerHost {
 
         @Override
         public void send(String str) {
-
+            if (event instanceof MessageEvent) {
+                send(deSerialize(str));
+            }
         }
 
         @Override
         public void send(Message message) {
-
+            if (event instanceof MessageEvent){
+                MessageEvent messageEvent = (MessageEvent) event;
+                messageEvent.getSubject().sendMessage(message);
+            }
         }
 
         @Override

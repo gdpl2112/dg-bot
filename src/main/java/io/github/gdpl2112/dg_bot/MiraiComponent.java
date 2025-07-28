@@ -10,6 +10,7 @@ import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.*;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
 import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
 import net.mamoe.mirai.event.EventHandler;

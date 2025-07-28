@@ -79,6 +79,8 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                         logger.waring(String.format("%s 用户实例获取失败! 可能掉线或未登录", bid));
                     } else {
                         try {
+                            final String code = getScriptCode(bid);
+                            if (Judge.isEmpty(code)) return;
                             ScriptEngine javaScript = ScriptService.SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
                             javaScript.put("context", new ScriptContext() {
                                 @Override
@@ -129,8 +131,6 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                             javaScript.put("utils", new BaseScriptUtils(bid, template));
                             javaScript.put("bot", bot);
                             javaScript.put("msg", "");
-                            final String code = getScriptCode(bid);
-                            if (code == null) return;
                             javaScript.eval(code);
                             javaScript.eval(msg.getMsg());
                         } catch (Exception e) {

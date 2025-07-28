@@ -2,6 +2,18 @@ spring:
   datasource:
     url: jdbc:sqlite:data.db
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 5
+  jpa:
+    properties:
+      hibernate:
+        cache:
+          use-second-level-cache: false
+mybatis:
+  configuration:
+    cache-enabled: false
+    local-cache-scope: STATEMENT
+
 
 server:
   port: 34740
