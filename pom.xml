@@ -52,11 +52,11 @@
         <dependency>
             <groupId>top.mrxiaom.mirai</groupId>
             <artifactId>overflow-core-all</artifactId>
-            <version>1.0.6.651-b091271-SNAPSHOT</version>
+            <version>1.0.6</version>
         </dependency>
         <dependency>
             <groupId>net.mamoe</groupId>
-            <artifactId>mirai-core-jvm</artifactId>
+            <artifactId>mirai-core-all</artifactId>
             <version>${mirai-version}</version>
             <exclusions>
                 <exclusion>
@@ -64,6 +64,11 @@
                     <artifactId>mirai-core-jvm</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.mamoe</groupId>
+            <artifactId>mirai-console</artifactId>
+            <version>2.16.0</version>
         </dependency>
         <dependency>
             <groupId>net.mamoe</groupId>

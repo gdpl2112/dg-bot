@@ -3,6 +3,8 @@ package io.github.gdpl2112.dg_bot;
 import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.MySpringTool.interfaces.component.PackageScanner;
+import io.github.kloping.file.FileUtils;
+import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
 import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -40,7 +42,6 @@ public class DgMain implements CommandLineRunner {
     public static void main(String[] args) throws Exception {
         HttpsUtils.trustAllHttpsCertificates();
         applicationContext = SpringApplication.run(DgMain.class, args);
-        System.out.println("Q云代挂启动成功 compile at 2025/7/21");
     }
 
     @Autowired

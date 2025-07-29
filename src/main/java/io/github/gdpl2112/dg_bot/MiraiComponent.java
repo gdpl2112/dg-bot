@@ -10,14 +10,18 @@ import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.*;
 import io.github.kloping.MySpringTool.interfaces.Logger;
-import net.mamoe.mirai.Bot;
+import io.github.kloping.common.Public;
+import io.github.kloping.file.FileUtils;
+import net.mamoe.mirai.console.command.CommandExecuteResult;
+import net.mamoe.mirai.console.command.CommandManager;
+import net.mamoe.mirai.console.command.ConsoleCommandSender;
 import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
 import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.GlobalEventChannel;
-import net.mamoe.mirai.event.ListeningStatus;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
+import net.mamoe.mirai.message.data.PlainText;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,11 +29,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import top.mrxiaom.overflow.contact.RemoteBot;
-import top.mrxiaom.overflow.event.UnsolvedOnebotEvent;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author github-kloping
@@ -44,9 +47,9 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     ThreadPoolTaskExecutor executor;
     @Autowired
-    CronService service0;
+    CronService cronService;
     @Autowired
-    PassiveService service1;
+    PassiveService passiveService;
     @Autowired
     DefaultService defaultService;
     @Autowired
@@ -58,19 +61,20 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     OptionalService optionalService;
 
+    private MiraiConsoleImplementationTerminal terminal = new MiraiConsoleImplementationTerminal();
+
     @Override
     public void run(String... args) throws Exception {
-        MiraiConsoleImplementationTerminal terminal = new MiraiConsoleImplementationTerminal();
+        System.setProperty("overflow.timeout", "20000");
         MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(terminal);
-        GlobalEventChannel.INSTANCE.registerListenerHost(service0);
-        GlobalEventChannel.INSTANCE.registerListenerHost(service1);
+        GlobalEventChannel.INSTANCE.registerListenerHost(cronService);
+        GlobalEventChannel.INSTANCE.registerListenerHost(passiveService);
         GlobalEventChannel.INSTANCE.registerListenerHost(defaultService);
         GlobalEventChannel.INSTANCE.registerListenerHost(saveService);
         GlobalEventChannel.INSTANCE.registerListenerHost(scriptService);
         GlobalEventChannel.INSTANCE.registerListenerHost(callApiService);
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
-//        GlobalEventChannel.INSTANCE.registerListenerHost(new AutoLikesService(this));
     }
 
     @EventHandler
@@ -104,13 +108,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             Boolean isVip = jdata.getBoolean("is_vip");
             VIP_INFO.put(bid, isVip);
         }
-        event.getBot().getEventChannel().subscribe(UnsolvedOnebotEvent.class, new Function<UnsolvedOnebotEvent, ListeningStatus>() {
-            @Override
-            public ListeningStatus apply(UnsolvedOnebotEvent event) {
-                System.out.println();
-                return null;
-            }
-        });
     }
 
     public Map<Long, Boolean> VIP_INFO = new java.util.HashMap<>();
@@ -128,5 +125,28 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         qw.le("time", less);
         jdbcTemplate.execute("VACUUM;");
         log.info("释放db存储并删除消息记录: " + saveMapper.delete(qw));
+    }
+
+    @EventHandler
+    public void onStartupEvent(net.mamoe.mirai.console.events.StartupEvent event) {
+        System.out.println("Q云代挂启动成功 compile at 2025/7/29");
+        Public.EXECUTOR_SERVICE1.submit(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+                String[] lines = FileUtils.getStringsFromFile("./after.line");
+                if (lines != null) {
+                    for (String line : lines) {
+                        CommandExecuteResult result = CommandManager.INSTANCE.executeCommand(ConsoleCommandSender.INSTANCE,
+                                new PlainText(line), false);
+                        if (result instanceof CommandExecuteResult.Success) {
+                            System.out.println("执行成功:" + line);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        });
     }
 }

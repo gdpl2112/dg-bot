@@ -127,9 +127,6 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
     }
 
-    @Autowired
-    RestTemplate template;
-
     @EventHandler
     public void onEvent(BotOnlineEvent event) {
         Public.EXECUTOR_SERVICE.submit(() -> {

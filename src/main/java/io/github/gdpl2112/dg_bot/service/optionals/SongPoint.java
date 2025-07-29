@@ -5,10 +5,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.kloping.date.FrameUtils;
 import net.mamoe.mirai.event.events.MessageEvent;
-import net.mamoe.mirai.internal.deps.okhttp3.Call;
-import net.mamoe.mirai.internal.deps.okhttp3.OkHttpClient;
-import net.mamoe.mirai.internal.deps.okhttp3.Request;
-import net.mamoe.mirai.internal.deps.okhttp3.Response;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MusicKind;
 import net.mamoe.mirai.message.data.MusicShare;
@@ -16,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -87,8 +84,6 @@ public class SongPoint implements BaseOptional {
     }
 
 
-    public static final RestTemplate TEMPLATE = new RestTemplate();
-
     public static final String TYPE_KUGOU = "KG";
     public static final String TYPE_QQ = "qq";
     public static final String TYPE_WY = "wy";
@@ -111,25 +106,16 @@ public class SongPoint implements BaseOptional {
         }, 20, 30, TimeUnit.MINUTES);
     }
 
-    private static OkHttpClient okHttpClient;
 
-    static {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        okHttpClient = builder.build();
-    }
+    public static final RestTemplate TEMPLATE = new RestTemplate();
 
     @NotNull
     public static Document getDocument(String url) {
-        Request.Builder builder = new Request.Builder();
         try {
-            Call call = okHttpClient.newCall(builder.get()
-                    .header("Connection", "keep-alive")
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.67")
-                    .url(url).build());
-            Response response = call.execute();
-            Document doc0 = Jsoup.parse(response.body().string());
+            ResponseEntity<String> response = TEMPLATE.getForEntity(url, String.class);
+            Document doc0 = Jsoup.parse(response.getBody());
             return doc0;
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
