@@ -72,7 +72,7 @@ public class V11AutoService extends SimpleListenerHost {
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
-                    likeNow(String.valueOf(bot.getId()));
+                    component.log.info(likeNow(String.valueOf(bot.getId())));
                 }
             }
         }
@@ -85,48 +85,55 @@ public class V11AutoService extends SimpleListenerHost {
             String bid = String.valueOf(bot.getId());
             V11Conf conf = getV11Conf(bid);
             if (!conf.getAutoLike()) return null;
-            RemoteBot remoteBot = ((RemoteBot) bot);
-            JSONObject jsonData = ProfileLike.getProfileLikeData(remoteBot);
-
-            JSONObject voteInfo = jsonData.getJSONObject("voteInfo");
-            JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
-
-            JSONObject favoriteInfo = jsonData.getJSONObject("favoriteInfo");
-            JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
-
-            int dayN = DateUtils.getDay();
 
             String date = ProfileLike.SF_MM_DD.format(new Date());
             List<LikeReco> list = likeRecoMapper.selectListByDateAndBid(bid, date);
             component.log.info("今日记录: " + bid + "-> " + list);
             int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
-            //被点
-            for (Object vUserInfo : vUserInfos) {
-                ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
-                if (pl.getDay() != dayN) {
-                    break;
-                } else {
-                    if (pl.getBTodayVotedCnt() >= max) {
-                        list.removeIf(l -> l.getTid().equals(pl.getVid()));
-                        continue;
-                    }
-                    Long vid = pl.getVid();
-                    if (ProfileLike.sendProfileLike(remoteBot, vid, max)) {
-                        applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), vid, max, true));
-                        if (sb == null) sb = new StringBuilder();
-                        sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
-                        list.removeIf(l -> l.getTid().equals(pl.getVid()));
+
+            List<String> vls = list.stream().map(LikeReco::getTid).collect(java.util.stream.Collectors.toList());
+
+            RemoteBot remoteBot = null;
+            try {
+                remoteBot = ((RemoteBot) bot);
+                JSONObject jsonData = ProfileLike.getProfileLikeData0(remoteBot);
+
+                JSONObject voteInfo = jsonData.getJSONObject("voteInfo");
+                JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
+
+                int dayN = DateUtils.getDay();
+
+                //被点
+                for (Object vUserInfo : vUserInfos) {
+                    ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
+                    if (pl.getDay() != dayN) {
+                        break;
+                    } else {
+                        if (pl.getBTodayVotedCnt() >= max) {
+                            vls.remove(String.valueOf(pl.getVid()));
+                            continue;
+                        } else {
+                            Long vid = pl.getVid();
+                            if (ProfileLike.sendProfileLike(remoteBot, vid, max)) {
+                                applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), vid, max, true));
+                                if (sb == null) sb = new StringBuilder();
+                                sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                                vls.remove(vid.toString());
+                            }
+                        }
                     }
                 }
+            } catch (Exception e) {
+                component.log.info("day通过ws获得点赞记录失败");
+                System.err.println(e.getMessage());
             }
-            if (!list.isEmpty()){
-                for (LikeReco pl : list) {
-                    Long tid = Long.parseLong(pl.getTid());
-                    if (ProfileLike.sendProfileLike(remoteBot, tid, max)) {
-                        applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), tid, max, true));
-                        if (sb == null) sb = new StringBuilder();
-                        sb.append("\n'遗漏'(成功)").append("给").append(pl.getTid()).append("点赞").append(max).append("个");
-                    }
+            //启动记录
+            for (String vl : vls) {
+                Long tid = Long.parseLong(vl);
+                if (ProfileLike.sendProfileLike(remoteBot, tid, max)) {
+                    applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), tid, max, true));
+                    if (sb == null) sb = new StringBuilder();
+                    sb.append("\n'遗漏'(成功)").append("给").append(vl).append("点赞").append(max).append("个");
                 }
             }
         }
@@ -142,7 +149,7 @@ public class V11AutoService extends SimpleListenerHost {
                 yesterdayLieNow(String.valueOf(bot.getId()));
             }
         }
-        component.log.info("回赞结束 删除全部记录: " + likeRecoMapper.delete(null));
+        component.log.info("所有回赞结束 删除全部记录: " + likeRecoMapper.delete(null));
     }
 
     public String yesterdayLieNow(String id) {
@@ -159,35 +166,43 @@ public class V11AutoService extends SimpleListenerHost {
             Boolean isVip = getIsVip(bot.getId(), remoteBot);
             int max = isVip ? 20 : 10;
 
-            JSONObject jsonObject = ProfileLike.getProfileLikeData(remoteBot);
-            //被赞回复
-            JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
-            JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
-            List<Long> vls = new LinkedList<>();
-            for (Object vUserInfo : vUserInfos) {
-                ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
-                if (pl.getDay() == yday) {
-                    if (pl.getBTodayVotedCnt() >= max) continue;
-                    vls.add(pl.getVid());
-                    if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
-                        applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), pl.getVid(), max, true));
-                        if (sb == null) sb = new StringBuilder();
-                        sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
-                    }
-                } else if (pl.getDay() == dayN) continue;
-                else break;
-            }
+
             //==== 根据记录查询
             String date = ProfileLike.SF_MM_DD.format(new Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24));
             List<LikeReco> list = likeRecoMapper.selectListByDateAndBid(bid, date);
             component.log.info("昨日记录: " + bid + "-> " + list);
-            for (LikeReco likeReco : list) {
-                if (vls.contains(likeReco.getTid())) continue;
-                Long tid = Long.parseLong(likeReco.getTid());
+
+            List<String> vls = list.stream().map(LikeReco::getTid).collect(java.util.stream.Collectors.toList());
+            try {
+                JSONObject jsonObject = ProfileLike.getProfileLikeData0(remoteBot);
+                //被赞回复
+                JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
+                JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
+                //记录
+                vls = new LinkedList<>();
+                for (Object vUserInfo : vUserInfos) {
+                    ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
+                    if (pl.getDay() == yday) {
+                        if (pl.getBTodayVotedCnt() >= max) continue;
+                        vls.remove(String.valueOf(pl.getVid()));
+                        if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
+                            applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), pl.getVid(), max, true));
+                            if (sb == null) sb = new StringBuilder();
+                            sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                        }
+                    } else if (pl.getDay() == dayN) continue;
+                    else break;
+                }
+            } catch (Exception e) {
+                component.log.info("通过ws获得点赞记录失败");
+                System.err.println(e.getMessage());
+            }
+            for (String vl : vls) {
+                Long tid = Long.parseLong(vl);
                 if (ProfileLike.sendProfileLike(remoteBot, tid, max)) {
                     applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), tid, max, true));
                     if (sb == null) sb = new StringBuilder();
-                    sb.append("\n(成功)").append("给").append(likeReco.getTid()).append("点赞").append(max).append("个");
+                    sb.append("\n(成功)").append("给").append(vl).append("点赞").append(max).append("个");
                 }
             }
         }
@@ -227,7 +242,7 @@ public class V11AutoService extends SimpleListenerHost {
                             component.log.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, group, groups));
                         } else {
                             component.log.info("自动打卡成功：b" + bid + " g" + group);
-                            applicationEventPublisher.publishEvent(new GroupSignEvent(gid,bot.getId() , true));
+                            applicationEventPublisher.publishEvent(new GroupSignEvent(gid, bot.getId(), true));
                         }
                     }
                 }

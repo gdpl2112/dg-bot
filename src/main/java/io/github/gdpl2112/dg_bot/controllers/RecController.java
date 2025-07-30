@@ -59,25 +59,26 @@ public class RecController {
             }
             Bot bot = Bot.getInstance(bid);
             if (bot instanceof RemoteBot) {
+                //不在判断直接 点赞
                 RemoteBot remoteBot = (RemoteBot) bot;
-                JSONObject jsonObject = ProfileLike.getProfileLikeData(remoteBot);
-                JSONObject favoriteInfo = jsonObject.getJSONObject("favoriteInfo");
-                JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
+//                JSONObject jsonObject = ProfileLike.getProfileLikeData1(remoteBot);
+//                JSONObject favoriteInfo = jsonObject.getJSONObject("favoriteInfo");
+//                JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
                 int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
-                for (Object fUserInfo : fUserInfos) {
-                    ProfileLike pl = new ProfileLike((JSONObject) fUserInfo);
-                    if (pl.getDay() != dayN) {
-                        break;
-                    } else {
-                        if (tid.equals(pl.getVid())) {
-                            if (pl.getCount() < max) {
-                                Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
-                                eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
-                            }
-                            return;
-                        }
-                    }
-                }
+//                for (Object fUserInfo : fUserInfos) {
+//                    ProfileLike pl = new ProfileLike((JSONObject) fUserInfo);
+//                    if (pl.getDay() != dayN) {
+//                        break;
+//                    } else {
+//                        if (tid.equals(pl.getVid())) {
+//                            if (pl.getCount() < max) {
+//                                Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
+//                                eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
+//                            }
+//                            return;
+//                        }
+//                    }
+//                }
                 //今日 第一次点赞
                 Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
                 eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));

@@ -38,8 +38,16 @@ public class ProfileLike {
     }
 
 
-    public static JSONObject getProfileLikeData(RemoteBot remoteBot) {
+    public static JSONObject getProfileLikeData1(RemoteBot remoteBot) {
         String data = remoteBot.executeAction("get_profile_like", "{}");
+        JSONObject jsonObject = JSONObject.parseObject(data);
+        jsonObject = jsonObject.getJSONObject("data");
+        return jsonObject;
+    }
+
+    public static JSONObject getProfileLikeData0(RemoteBot remoteBot) {
+        String data = remoteBot.executeAction("get_profile_like",
+                String.format("{\"user_id\": %s}", ((Bot) remoteBot).getId()));
         JSONObject jsonObject = JSONObject.parseObject(data);
         jsonObject = jsonObject.getJSONObject("data");
         return jsonObject;
