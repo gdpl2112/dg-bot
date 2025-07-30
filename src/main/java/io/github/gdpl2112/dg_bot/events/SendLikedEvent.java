@@ -16,5 +16,6 @@ public class SendLikedEvent {
     private Long selfId;
     private Long operatorId;
     private Integer times;
+    //是否成功 失败时原因 可能 不是好友 请求失败 或 点赞上限
     private Boolean ok;
 }
