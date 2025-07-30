@@ -7,7 +7,7 @@
   - send_liked   #发送名片点赞
   - group_sign   #群打卡
 
-可用变量: event  bot
+可用变量: event  bot utils
 > 事件触发 详细可见 [JAVA源码](https://github.com/gdpl2112/dg-bot/blob/master/src/main/java/io/github/gdpl2112/dg_bot/built/ScriptService.java#L258-L306)
 
 > 事件字段 [events包下类](https://github.com/gdpl2112/dg-bot/tree/master/src/main/java/io/github/gdpl2112/dg_bot/events)
