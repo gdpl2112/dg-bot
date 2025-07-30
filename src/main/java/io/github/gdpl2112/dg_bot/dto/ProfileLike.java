@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.mamoe.mirai.Bot;
+import top.mrxiaom.overflow.action.ActionContext;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.text.SimpleDateFormat;
@@ -39,14 +40,14 @@ public class ProfileLike {
 
 
     public static JSONObject getProfileLikeData1(RemoteBot remoteBot) {
-        String data = remoteBot.executeAction("get_profile_like", "{}");
+        String data = remoteBot.executeAction(ActionContext.build("get_profile_like", b -> b.throwExceptions(true)), "{}");
         JSONObject jsonObject = JSONObject.parseObject(data);
         jsonObject = jsonObject.getJSONObject("data");
         return jsonObject;
     }
 
     public static JSONObject getProfileLikeData0(RemoteBot remoteBot) {
-        String data = remoteBot.executeAction("get_profile_like",
+        String data = remoteBot.executeAction(ActionContext.build("get_profile_like", b -> b.throwExceptions(true)),
                 String.format("{\"user_id\": %s}", ((Bot) remoteBot).getId()));
         JSONObject jsonObject = JSONObject.parseObject(data);
         jsonObject = jsonObject.getJSONObject("data");
