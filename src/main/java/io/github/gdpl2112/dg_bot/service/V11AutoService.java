@@ -6,6 +6,8 @@ import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.LikeReco;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
+import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
+import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.LikeRecoMapper;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.kloping.date.DateUtils;
@@ -14,6 +16,7 @@ import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import top.mrxiaom.overflow.contact.RemoteBot;
@@ -36,6 +39,8 @@ public class V11AutoService extends SimpleListenerHost {
 
     @Autowired
     private LikeRecoMapper likeRecoMapper;
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     public V11AutoService() {
         super();
@@ -105,7 +110,9 @@ public class V11AutoService extends SimpleListenerHost {
                         list.removeIf(l -> l.getTid().equals(pl.getVid()));
                         continue;
                     }
-                    if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
+                    Long vid = pl.getVid();
+                    if (ProfileLike.sendProfileLike(remoteBot, vid, max)) {
+                        applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), vid, max, true));
                         if (sb == null) sb = new StringBuilder();
                         sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
                         list.removeIf(l -> l.getTid().equals(pl.getVid()));
@@ -114,7 +121,9 @@ public class V11AutoService extends SimpleListenerHost {
             }
             if (!list.isEmpty()){
                 for (LikeReco pl : list) {
-                    if (ProfileLike.sendProfileLike(remoteBot, Long.parseLong(pl.getTid()), max)) {
+                    Long tid = Long.parseLong(pl.getTid());
+                    if (ProfileLike.sendProfileLike(remoteBot, tid, max)) {
+                        applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), tid, max, true));
                         if (sb == null) sb = new StringBuilder();
                         sb.append("\n'遗漏'(成功)").append("给").append(pl.getTid()).append("点赞").append(max).append("个");
                     }
@@ -161,6 +170,7 @@ public class V11AutoService extends SimpleListenerHost {
                     if (pl.getBTodayVotedCnt() >= max) continue;
                     vls.add(pl.getVid());
                     if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
+                        applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), pl.getVid(), max, true));
                         if (sb == null) sb = new StringBuilder();
                         sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
                     }
@@ -173,7 +183,9 @@ public class V11AutoService extends SimpleListenerHost {
             component.log.info("昨日记录: " + bid + "-> " + list);
             for (LikeReco likeReco : list) {
                 if (vls.contains(likeReco.getTid())) continue;
-                if (ProfileLike.sendProfileLike(remoteBot, Long.valueOf(likeReco.getTid()), max)) {
+                Long tid = Long.parseLong(likeReco.getTid());
+                if (ProfileLike.sendProfileLike(remoteBot, tid, max)) {
+                    applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), tid, max, true));
                     if (sb == null) sb = new StringBuilder();
                     sb.append("\n(成功)").append("给").append(likeReco.getTid()).append("点赞").append(max).append("个");
                 }
@@ -207,12 +219,16 @@ public class V11AutoService extends SimpleListenerHost {
                     RemoteBot remoteBot = ((RemoteBot) bot);
                     for (String group : split) {
                         if (Judge.isEmpty(group)) continue;
-                        String data0 = "{\"group_id\": \"" + group + "\"}";
+                        Long gid = Long.parseLong(group);
+                        String data0 = "{\"group_id\": \"" + gid + "\"}";
                         String data = remoteBot.executeAction("send_group_sign", data0);
                         JSONObject jsonObject = JSONObject.parseObject(data);
                         if (jsonObject.getInteger("retcode") != 0) {
                             component.log.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, group, groups));
-                        } else component.log.info("自动打卡成功：b" + bid + " g" + group);
+                        } else {
+                            component.log.info("自动打卡成功：b" + bid + " g" + group);
+                            applicationEventPublisher.publishEvent(new GroupSignEvent(gid,bot.getId() , true));
+                        }
                     }
                 }
             }

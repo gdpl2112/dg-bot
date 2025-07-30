@@ -6,11 +6,14 @@ import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.LikeReco;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
+import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
+import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.LikeRecoMapper;
 import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import io.github.kloping.date.DateUtils;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
@@ -31,6 +34,9 @@ public class RecController {
     @Autowired
     MiraiComponent component;
 
+    @Autowired
+    ApplicationEventPublisher eventPublisher;
+
     @PostMapping
     public void rec(@RequestBody String rdata) {
         JSONObject jo = JSON.parseObject(rdata);
@@ -40,6 +46,7 @@ public class RecController {
             Long bid = jo.getLong("self_id");
             Integer times = jo.getInteger("times");
             component.log.info(String.format("收到点赞: b%s t%s n%s", bid, tid, times));
+            eventPublisher.publishEvent(new ProfileLikeEvent(bid, tid, times));
             int dayN = DateUtils.getDay();
             String date = ProfileLike.SF_MM_DD.format(new Date());
             LikeReco likeReco = likeRecoMapper.getByDateAndBidAndTid(bid, date, tid.toString());
@@ -64,14 +71,16 @@ public class RecController {
                     } else {
                         if (tid.equals(pl.getVid())) {
                             if (pl.getCount() < max) {
-                                ProfileLike.sendProfileLike(remoteBot, tid, max);
+                                Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
+                                eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
                             }
                             return;
                         }
                     }
                 }
                 //今日 第一次点赞
-                ProfileLike.sendProfileLike(remoteBot, tid, max);
+                Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
+                eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
             }
         }
     }

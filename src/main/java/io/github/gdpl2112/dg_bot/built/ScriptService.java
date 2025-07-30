@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.Conf;
+import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
+import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
+import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.ConfigService;
@@ -14,6 +17,7 @@ import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.url.UrlUtils;
 import kotlin.coroutines.CoroutineContext;
+import lombok.Getter;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.User;
@@ -27,6 +31,7 @@ import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -129,6 +134,10 @@ public class ScriptService extends SimpleListenerHost {
     }
 
     public static void onException(Bot bot, Throwable e) {
+        onException(bot.getId(), e);
+    }
+
+    public static void onException(long bid, Throwable e) {
         if (e instanceof javax.script.ScriptException) {
             String e1 = e.getMessage();
             for (String e0 : NOT_PRINTS) {
@@ -138,10 +147,9 @@ public class ScriptService extends SimpleListenerHost {
         e.printStackTrace();
         String err = Utils.getExceptionLine(e);
         err = e + err;
-        Long bid = bot.getId();
         ScriptException se = new ScriptException(err, System.currentTimeMillis(), bid);
-        exceptionMap.put(bid.toString(), se);
-        System.err.println(String.format("%s Bot 脚本 执行失败", bot.getId()));
+        exceptionMap.put(String.valueOf(bid), se);
+        System.err.println(String.format("%s Bot 脚本 执行失败", bid));
     }
 
     public static class BasebBotEventScriptContext implements ScriptContext {
@@ -167,7 +175,7 @@ public class ScriptService extends SimpleListenerHost {
 
         @Override
         public void send(Message message) {
-            if (event instanceof MessageEvent){
+            if (event instanceof MessageEvent) {
                 MessageEvent messageEvent = (MessageEvent) event;
                 messageEvent.getSubject().sendMessage(message);
             }
@@ -233,6 +241,7 @@ public class ScriptService extends SimpleListenerHost {
         return null;
     }
 
+    @Getter
     public static class ScriptException {
         private String msg;
         private Long time;
@@ -243,17 +252,58 @@ public class ScriptService extends SimpleListenerHost {
             this.time = time;
             this.qid = qid;
         }
-
-        public String getMsg() {
-            return msg;
-        }
-
-        public Long getTime() {
-            return time;
-        }
-
-        public Long getQid() {
-            return qid;
-        }
     }
+
+    @EventListener
+    public void onEvent(ProfileLikeEvent event) {
+        final String code = getScriptCode(event.getSelfId());
+        if (Judge.isEmpty(code)) return;
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            try {
+                ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
+                javaScript.put("subType", "profile_like");
+                javaScript.put("event", event);
+                javaScript.put("bot", Bot.getInstance(event.getSelfId()));
+                javaScript.eval(code);
+            } catch (Throwable e) {
+                onException(event.getSelfId(), e);
+            }
+        });
+    }
+
+    @EventListener
+    public void onEvent(SendLikedEvent  event) {
+        final String code = getScriptCode(event.getSelfId());
+        if (Judge.isEmpty(code)) return;
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            try {
+                ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
+                javaScript.put("subType", "send_liked");
+                javaScript.put("event", event);
+                javaScript.put("bot", Bot.getInstance(event.getSelfId()));
+                javaScript.eval(code);
+            } catch (Throwable e) {
+                onException(event.getSelfId(), e);
+            }
+        });
+    }
+
+    @EventListener
+    public void onEvent(GroupSignEvent event) {
+        final String code = getScriptCode(event.getSelfId());
+        if (Judge.isEmpty(code)) return;
+        Public.EXECUTOR_SERVICE.submit(() -> {
+            try {
+                ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
+                javaScript.put("subType", "group_sign");
+                javaScript.put("event", event);
+                javaScript.put("bot", Bot.getInstance(event.getSelfId()));
+                javaScript.eval(code);
+            } catch (Throwable e) {
+                onException(event.getSelfId(), e);
+            }
+        });
+    }
+
+
 }
