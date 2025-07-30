@@ -10,23 +10,17 @@ import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.ConfigService;
-import io.github.gdpl2112.dg_bot.service.script.BaseMessageScriptContext;
-import io.github.gdpl2112.dg_bot.service.script.BaseScriptUtils;
-import io.github.gdpl2112.dg_bot.service.script.ScriptContext;
+import io.github.gdpl2112.dg_bot.service.script.impl.BaseMessageScriptContext;
+import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
+import io.github.gdpl2112.dg_bot.service.script.impl.BasebBotEventScriptContext;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
-import io.github.kloping.url.UrlUtils;
 import kotlin.coroutines.CoroutineContext;
 import lombok.Getter;
 import net.mamoe.mirai.Bot;
-import net.mamoe.mirai.contact.Contact;
-import net.mamoe.mirai.contact.User;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.*;
-import net.mamoe.mirai.message.data.ForwardMessageBuilder;
-import net.mamoe.mirai.message.data.Image;
-import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,7 +31,6 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,82 +145,6 @@ public class ScriptService extends SimpleListenerHost {
         System.err.println(String.format("%s Bot 脚本 执行失败", bid));
     }
 
-    public static class BasebBotEventScriptContext implements ScriptContext {
-        private BotEvent event;
-        private SaveMapper saveMapper;
-
-        public BasebBotEventScriptContext(BotEvent userEvent, SaveMapper saveMapper) {
-            this.event = userEvent;
-            this.saveMapper = saveMapper;
-        }
-
-        @Override
-        public MessageChain getRaw() {
-            return null;
-        }
-
-        @Override
-        public void send(String str) {
-            if (event instanceof MessageEvent) {
-                send(deSerialize(str));
-            }
-        }
-
-        @Override
-        public void send(Message message) {
-            if (event instanceof MessageEvent) {
-                MessageEvent messageEvent = (MessageEvent) event;
-                messageEvent.getSubject().sendMessage(message);
-            }
-        }
-
-        @Override
-        public Bot getBot() {
-            return event.getBot();
-        }
-
-        @Override
-        public User getSender() {
-            return null;
-        }
-
-        @Override
-        public Contact getSubject() {
-            return null;
-        }
-
-        @Override
-        public ForwardMessageBuilder forwardBuilder() {
-            return new ForwardMessageBuilder(event.getBot().getAsFriend());
-        }
-
-        @Override
-        public Message deSerialize(String msg) {
-            return DgSerializer.stringDeserializeToMessageChain(msg, event.getBot(), event.getBot().getAsFriend());
-        }
-
-        @Override
-        public MessageChain getMessageChainById(int id) {
-            return getSingleMessages(id, event, saveMapper);
-        }
-
-        @Override
-        public Image uploadImage(String url) {
-            try {
-                byte[] bytes = UrlUtils.getBytesFromHttpUrl(url);
-                Image image = Contact.uploadImage(event.getBot().getAsFriend(), new ByteArrayInputStream(bytes));
-                return image;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-
-        @Override
-        public String getType() {
-            return event.getClass().getSimpleName();
-        }
-    }
 
     @Nullable
     public static MessageChain getSingleMessages(int id, BotEvent event, SaveMapper saveMapper) {
@@ -262,6 +179,7 @@ public class ScriptService extends SimpleListenerHost {
             try {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
                 javaScript.put("subType", "profile_like");
+                javaScript.put("utils", new BaseScriptUtils(event.getSelfId(), template));
                 javaScript.put("event", event);
                 javaScript.put("bot", Bot.getInstance(event.getSelfId()));
                 javaScript.eval(code);
@@ -279,6 +197,7 @@ public class ScriptService extends SimpleListenerHost {
             try {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
                 javaScript.put("subType", "send_liked");
+                javaScript.put("utils", new BaseScriptUtils(event.getSelfId(), template));
                 javaScript.put("event", event);
                 javaScript.put("bot", Bot.getInstance(event.getSelfId()));
                 javaScript.eval(code);
@@ -296,6 +215,7 @@ public class ScriptService extends SimpleListenerHost {
             try {
                 ScriptEngine javaScript = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
                 javaScript.put("subType", "group_sign");
+                javaScript.put("utils", new BaseScriptUtils(event.getSelfId(), template));
                 javaScript.put("event", event);
                 javaScript.put("bot", Bot.getInstance(event.getSelfId()));
                 javaScript.eval(code);
