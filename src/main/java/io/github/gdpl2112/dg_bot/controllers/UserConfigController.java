@@ -63,6 +63,7 @@ public class UserConfigController {
             conf.setQid(userDetails.getUsername());
         }
         conf.setCode(code);
+        ScriptService.JS_ENGINE = ScriptService.SCRIPT_ENGINE_MANAGER.getEngineByName("javaScript");
         return confMapper.updateById(conf) > 0 ? "成功" : "失败";
     }
 

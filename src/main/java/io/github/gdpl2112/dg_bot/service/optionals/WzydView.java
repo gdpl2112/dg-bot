@@ -128,6 +128,7 @@ public class WzydView implements BaseOptional {
 
     public Object doRequest(String url, Map<String, Object> args) {
         try {
+            if (api == null || "null".equals(api)) return "未配置api";
             url = api + url + "?";
             for (String key0 : args.keySet()) {
                 Object value = args.get(key0);
@@ -138,7 +139,7 @@ public class WzydView implements BaseOptional {
             }
             if (url.endsWith("&")) url = url.substring(0, url.length() - 1);
             Connection.Response response = Jsoup.connect(url).ignoreHttpErrors(true)
-                    .ignoreContentType(true).method(Connection.Method.GET).timeout(30000).execute();
+                    .ignoreContentType(true).method(Connection.Method.GET).timeout(90 * 1000).execute();
             if (response.statusCode() == 200) {
                 if (response.contentType().equalsIgnoreCase("image/png")) {
                     return response.bodyAsBytes();

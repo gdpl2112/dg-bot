@@ -37,10 +37,10 @@ public class RecController {
     @Autowired
     ApplicationEventPublisher eventPublisher;
 
+    //{"time":1752683938,"self_id":3474006766,"post_type":"notice","notice_type":"notify","sub_type":"profile_like","operator_id":291841860,"operator_nick":"skid","times":1}
     @PostMapping
     public void rec(@RequestBody String rdata) {
         JSONObject jo = JSON.parseObject(rdata);
-        //{"time":1752683938,"self_id":3474006766,"post_type":"notice","notice_type":"notify","sub_type":"profile_like","operator_id":291841860,"operator_nick":"skid","times":1}
         if ("profile_like".equalsIgnoreCase(jo.getString("sub_type"))) {
             Long tid = jo.getLong("operator_id");
             Long bid = jo.getLong("self_id");
@@ -57,8 +57,8 @@ public class RecController {
                 likeReco.setDate(date);
                 likeRecoMapper.insert(likeReco);
             }
-            Bot bot = Bot.getInstance(bid);
-            if (bot instanceof RemoteBot) {
+            Bot bot = Bot.getInstanceOrNull(bid);
+            if (bot != null && bot instanceof RemoteBot) {
                 //不在判断直接 点赞
                 RemoteBot remoteBot = null;
                 int max = 0;
