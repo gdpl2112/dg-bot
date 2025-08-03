@@ -86,6 +86,7 @@ public class ScriptService extends SimpleListenerHost {
         if (Judge.isEmpty(code)) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
+                ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
                 JS_ENGINE.put("context", new BaseMessageScriptContext(event, saveMapper));
                 JS_ENGINE.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
                 String msg = toMsg(event.getMessage());
@@ -97,7 +98,14 @@ public class ScriptService extends SimpleListenerHost {
         });
     }
 
-    public static ScriptEngine JS_ENGINE = SCRIPT_ENGINE_MANAGER.getEngineByName("javaScript");
+    public static Map<Long, ScriptEngine> BID2ENGINE = new HashMap<>();
+
+    public synchronized static ScriptEngine getJsEngine(long bid) {
+        if (!BID2ENGINE.containsKey(bid)) {
+            BID2ENGINE.put(bid, SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript"));
+        }
+        return BID2ENGINE.get(bid);
+    }
 
     private String toMsg(MessageChain chain) {
         String msg = DgSerializer.messageChainSerializeToString(chain);
@@ -115,6 +123,7 @@ public class ScriptService extends SimpleListenerHost {
         if (Judge.isEmpty(code)) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
+                ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
                 JS_ENGINE.put("context", new BasebBotEventScriptContext(event, saveMapper));
                 JS_ENGINE.put("event", event);
                 JS_ENGINE.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
@@ -177,7 +186,7 @@ public class ScriptService extends SimpleListenerHost {
         if (Judge.isEmpty(code)) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                ScriptEngine JS_ENGINE = SCRIPT_ENGINE_MANAGER.getEngineByName("JS_ENGINE ");
+                ScriptEngine JS_ENGINE = getJsEngine(event.getSelfId());
                 JS_ENGINE.put("subType", "profile_like");
                 JS_ENGINE.put("utils", new BaseScriptUtils(event.getSelfId(), template));
                 JS_ENGINE.put("event", event);
@@ -195,7 +204,7 @@ public class ScriptService extends SimpleListenerHost {
         if (Judge.isEmpty(code)) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                ScriptEngine JS_ENGINE = SCRIPT_ENGINE_MANAGER.getEngineByName("JS_ENGINE ");
+                ScriptEngine JS_ENGINE = getJsEngine(event.getSelfId());
                 JS_ENGINE.put("subType", "send_liked");
                 JS_ENGINE.put("utils", new BaseScriptUtils(event.getSelfId(), template));
                 JS_ENGINE.put("event", event);
@@ -213,7 +222,7 @@ public class ScriptService extends SimpleListenerHost {
         if (Judge.isEmpty(code)) return;
         Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                ScriptEngine JS_ENGINE = SCRIPT_ENGINE_MANAGER.getEngineByName("JS_ENGINE ");
+                ScriptEngine JS_ENGINE = getJsEngine(event.getSelfId());
                 JS_ENGINE.put("subType", "group_sign");
                 JS_ENGINE.put("utils", new BaseScriptUtils(event.getSelfId(), template));
                 JS_ENGINE.put("event", event);

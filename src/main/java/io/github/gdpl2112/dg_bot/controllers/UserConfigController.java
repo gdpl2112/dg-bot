@@ -63,7 +63,8 @@ public class UserConfigController {
             conf.setQid(userDetails.getUsername());
         }
         conf.setCode(code);
-        ScriptService.JS_ENGINE = ScriptService.SCRIPT_ENGINE_MANAGER.getEngineByName("javaScript");
+        Long bid = Long.valueOf(conf.getQid());
+        ScriptService.BID2ENGINE.remove(bid);
         return confMapper.updateById(conf) > 0 ? "成功" : "失败";
     }
 

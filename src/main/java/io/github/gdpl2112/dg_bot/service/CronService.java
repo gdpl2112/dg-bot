@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.github.gdpl2112.dg_bot.built.ScriptService.getJsEngine;
+
 /**
  * @author github.kloping
  */
@@ -76,13 +78,13 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                         try {
                             final String code = getScriptCode(bid);
                             if (Judge.isEmpty(code)) return;
-                            ScriptEngine javaScript = ScriptService.SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
-                            javaScript.put("context", new BaseCornScriptContext(bot));
-                            javaScript.put("utils", new BaseScriptUtils(bid, template));
-                            javaScript.put("bot", bot);
-                            javaScript.put("msg", "");
-                            javaScript.eval(code);
-                            javaScript.eval(msg.getMsg());
+                            ScriptEngine JS_ENGINE = getJsEngine(Long.parseLong(msg.getQid()));
+                            JS_ENGINE.put("context", new BaseCornScriptContext(bot));
+                            JS_ENGINE.put("utils", new BaseScriptUtils(bid, template));
+                            JS_ENGINE.put("bot", bot);
+                            JS_ENGINE.put("msg", "");
+                            JS_ENGINE.eval(code);
+                            JS_ENGINE.eval(msg.getMsg());
                         } catch (Exception e) {
                             ScriptService.onException(bot, e);
                         }
