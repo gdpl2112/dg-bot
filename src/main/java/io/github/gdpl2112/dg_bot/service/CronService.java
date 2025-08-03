@@ -9,14 +9,13 @@ import io.github.gdpl2112.dg_bot.mapper.CronMapper;
 import io.github.gdpl2112.dg_bot.service.script.impl.BaseCornScriptContext;
 import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import io.github.kloping.date.CronJob;
 import io.github.kloping.date.CronUtils;
 import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
 import org.jetbrains.annotations.NotNull;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -26,6 +25,7 @@ import javax.script.ScriptEngine;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static io.github.gdpl2112.dg_bot.built.ScriptService.getJsEngine;
 
@@ -65,7 +65,7 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
     RestTemplate template;
 
     public int appendTask(CronMessage msg) {
-        Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
+        Integer id = addCronJob(msg.getCron(), new Job() {
             @Override
             public void execute(JobExecutionContext context) throws JobExecutionException {
                 logger.log(String.format("开始执行%s => %s cron任务", msg.getQid(), msg.getTargetId()));
@@ -94,7 +94,7 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                 }
                 logger.log(String.format("执行%s => %s cron任务结束", msg.getQid(), msg.getTargetId()));
             }
-        });
+        }, msg.getQid());
         bid2cm.put(msg.getQid(), msg);
         cm2cron.put(msg.getId(), id);
         return id;
@@ -102,7 +102,6 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
 
     @Autowired
     ConfMapper confMapper;
-
 
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
@@ -114,9 +113,66 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
     public void del(String id) {
         try {
             int cid = cm2cron.get(Integer.parseInt(id));
-            CronUtils.INSTANCE.stop(cid);
+            stop(cid);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+
+    static JobBuilder jobBuilder;
+    static Scheduler scheduler;
+
+    static {
+        try {
+            Properties props = new Properties();
+            props.put("org.quartz.scheduler.instanceName", "kloping-cron-all");
+            props.put("org.quartz.threadPool.threadCount", "3");
+            CronUtils.SCHEDULER_FACTORY.initialize(props);
+            scheduler = CronUtils.SCHEDULER_FACTORY.getScheduler();
+            jobBuilder = JobBuilder.newJob(CronJob.class);
+        } catch (SchedulerException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized Integer addCronJob(String cron, Job job, String name) {
+        try {
+            int id = getId();
+            jobBuilder.withIdentity(name + "-cron-" + id, "default-group-all");
+            JobDataMap map = new JobDataMap();
+            map.put("job", job);
+            jobBuilder.setJobData(map);
+            JobDetail jobDetail = jobBuilder.build();
+            CronTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity("default-name-" + id, "default-group-all").startNow().withSchedule(CronScheduleBuilder.cronSchedule(cron)).build();
+            scheduler.scheduleJob(jobDetail, cronTrigger);
+            scheduler.start();
+            id2Scheduler.put(id, scheduler);
+            return id;
+        } catch (SchedulerException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public Scheduler stop(Integer id) {
+        if (id2Scheduler.containsKey(id)) {
+            Scheduler scheduler = id2Scheduler.get(id);
+            try {
+                scheduler.shutdown(false);
+            } catch (SchedulerException e) {
+                e.printStackTrace();
+            }
+            return scheduler;
+        }
+        return null;
+    }
+
+    private static int id = 0;
+
+    public static synchronized Integer getId() {
+        return ++id;
+    }
+
+    public Map<Integer, Scheduler> id2Scheduler = new HashMap<>();
 }
