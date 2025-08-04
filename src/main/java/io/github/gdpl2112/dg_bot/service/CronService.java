@@ -82,7 +82,7 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                             try {
                                 if (JS_ENGINE instanceof Invocable) {
                                     Invocable inv = (Invocable) JS_ENGINE;
-                                    inv.invokeFunction(msg.getMsg(), Bot.getInstanceOrNull(bid));
+                                    inv.invokeFunction(msg.getMsg(), Bot.getInstanceOrNull(bid), ScriptService.getScriptUtils(bid));
                                 }
                             } catch (Throwable e) {
                                 ScriptService.onException(bid, e);
