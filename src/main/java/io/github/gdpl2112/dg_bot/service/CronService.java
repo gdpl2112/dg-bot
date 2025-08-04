@@ -6,9 +6,8 @@ import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
-import io.github.gdpl2112.dg_bot.service.script.impl.BaseCornScriptContext;
-import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import io.github.kloping.common.Public;
 import io.github.kloping.date.CronJob;
 import io.github.kloping.date.CronUtils;
 import io.github.kloping.judge.Judge;
@@ -21,13 +20,13 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static io.github.gdpl2112.dg_bot.built.ScriptService.getJsEngine;
 
 /**
  * @author github.kloping
@@ -64,6 +63,9 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
     @Autowired
     RestTemplate template;
 
+    @Autowired
+    ScriptService scriptService;
+
     public int appendTask(CronMessage msg) {
         Integer id = addCronJob(msg.getCron(), new Job() {
             @Override
@@ -75,19 +77,17 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                     if (bot == null) {
                         logger.waring(String.format("%s 用户实例获取失败! 可能掉线或未登录", bid));
                     } else {
-                        try {
-                            final String code = getScriptCode(bid);
-                            if (Judge.isEmpty(code)) return;
-                            ScriptEngine JS_ENGINE = getJsEngine(Long.parseLong(msg.getQid()));
-                            JS_ENGINE.put("context", new BaseCornScriptContext(bot));
-                            JS_ENGINE.put("utils", new BaseScriptUtils(bid, template));
-                            JS_ENGINE.put("bot", bot);
-                            JS_ENGINE.put("msg", "");
-                            JS_ENGINE.eval(code);
-                            JS_ENGINE.eval(msg.getMsg());
-                        } catch (Exception e) {
-                            ScriptService.onException(bot, e);
-                        }
+                        ScriptEngine JS_ENGINE = scriptService.getJsEngine(bid);
+                        if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
+                            try {
+                                if (JS_ENGINE instanceof Invocable) {
+                                    Invocable inv = (Invocable) JS_ENGINE;
+                                    inv.invokeFunction(msg.getMsg(), Bot.getInstanceOrNull(bid));
+                                }
+                            } catch (Throwable e) {
+                                ScriptService.onException(bid, e);
+                            }
+                        });
                     }
                 } else {
                     service.send(msg.getQid(), msg.getTargetId(), msg.getMsg());

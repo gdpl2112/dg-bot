@@ -26,20 +26,22 @@ import java.util.regex.Pattern;
  * @author github.kloping
  */
 public class DgSerializer {
-    private static final Pattern PATTER_FACE = Pattern.compile("<face:\\d+>");
-    private static final Pattern PATTER_PIC = Pattern.compile("<pic:[^>^]+?>");
-    private static final Pattern PATTER_URL = Pattern.compile("<url:[^>^]+>");
-    private static final Pattern PATTER_AT = Pattern.compile("<at:[\\d+|?]+>");
-    private static final Pattern PATTER_MUSIC = Pattern.compile("<music:\\d+>");
-    private static final Pattern PATTER_VOICE = Pattern.compile("<audio:.+>");
-    private static final Pattern PATTER_MIRAI_FACE = Pattern.compile("\\[mirai:face:.*?]");
-    private static final Pattern PATTER_MIRAI_IMAGE = Pattern.compile("\\[mirai:image:.*?]");
-
-    public static final Pattern[] PATTERNS = {PATTER_FACE, PATTER_PIC, PATTER_URL, PATTER_AT, PATTER_VOICE, PATTER_MUSIC, PATTER_MIRAI_FACE, PATTER_MIRAI_IMAGE};
+    private static final Pattern PATTER_FACE = Pattern.compile("<face:.*?>");
+    private static final Pattern PATTER_PIC = Pattern.compile("<pic:.*?>");
+    private static final Pattern PATTER_AT = Pattern.compile("<at:\\d+>");
+    private static final Pattern PATTER_MUSIC = Pattern.compile("<music:.*?>");
+    private static final Pattern PATTER_VOICE = Pattern.compile("<audio:.*?>");
+    private static final Pattern PATTER_MIRAI_FACE = Pattern.compile("\\[mirai:face:\\d+]");
+    private static final Pattern PATTER_MIRAI_IMAGE = Pattern.compile("\\[mirai:image:[a-zA-Z0-9\\-]+]");
+    public static final Pattern[] PATTERNS = {PATTER_FACE, PATTER_PIC, PATTER_AT, PATTER_VOICE, PATTER_MUSIC, PATTER_MIRAI_FACE, PATTER_MIRAI_IMAGE};
 
     private static final String BASE64 = "base64,";
 
     public static final Map<Integer, MarketFace> MARKET_FACE_MAP = new HashMap<>();
+
+    public static MessageChain stringDeserializeToMessageChain(String str, Bot bot) {
+        return stringDeserializeToMessageChain(str, bot, bot.getAsFriend());
+    }
 
     public static MessageChain stringDeserializeToMessageChain(String str, Bot bot, Contact contact) {
         if (str == null || str.isEmpty() || bot == null) return null;
@@ -62,7 +64,7 @@ public class DgSerializer {
                 String s2 = ss.substring(i1 + 1);
                 switch (s1.toLowerCase()) {
                     case "pic":
-                        msg = createImage(contact, bot, s2);
+                        msg = createImage(bot.getAsFriend(), bot, s2);
                         break;
                     case "face":
                         msg = new Face(Integer.parseInt(s2));
@@ -75,7 +77,7 @@ public class DgSerializer {
                         break;
                     case "voice":
                     case "audio":
-                        msg = createVoiceMessageInGroup(s2, bot.getId(), contact);
+                        msg = createVoiceMessageInGroup(s2, bot.getId(), bot.getAsFriend());
                         break;
                     case "music":
                         msg = createMusic(bot, s2);
@@ -106,6 +108,7 @@ public class DgSerializer {
     public static List<Object> getAllElements(String line) {
         List<String> list = new ArrayList<>();
         List<Object> olist = new ArrayList<>();
+        line = line.toLowerCase();
         algorithmFill(list, line);
         for (String s : list) {
             int i = line.indexOf(s);

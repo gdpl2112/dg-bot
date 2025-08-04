@@ -6,6 +6,7 @@ import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.built.ScriptService;
 import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.kloping.map.MapUtils;
+import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -42,6 +43,11 @@ public class BaseScriptUtils implements ScriptUtils {
     @Override
     public String serialize(MessageChain chain) {
         return DgSerializer.messageChainSerializeToString(chain);
+    }
+
+    @Override
+    public MessageChain deSerialize(String msg) {
+        return DgSerializer.stringDeserializeToMessageChain(msg, Bot.getInstanceOrNull(bid));
     }
 
     @Override

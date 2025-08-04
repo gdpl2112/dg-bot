@@ -1,8 +1,6 @@
 package io.github.gdpl2112.dg_bot.built;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
-import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
@@ -10,9 +8,8 @@ import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.ConfigService;
-import io.github.gdpl2112.dg_bot.service.script.impl.BaseMessageScriptContext;
+import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
-import io.github.gdpl2112.dg_bot.service.script.impl.BasebBotEventScriptContext;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
@@ -23,16 +20,15 @@ import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.*;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -52,7 +48,6 @@ public class ScriptService extends SimpleListenerHost {
     public static final Map<Long, Map<String, Object>> BID_2_VARIABLES = new HashMap<>();
 
     public static final ScriptEngineManager SCRIPT_ENGINE_MANAGER = new ScriptEngineManager();
-    public static final String[] NOT_PRINTS = {"未开启", "NOT OPEN", "not open", "exit", "end", "stop"};
 
     @Autowired
     ConfMapper confMapper;
@@ -66,8 +61,35 @@ public class ScriptService extends SimpleListenerHost {
     @Autowired
     ConfigService configService;
 
-    public static Map<String, ScriptException> exceptionMap = new HashMap<>();
+    public static Map<Long, ScriptEngine> BID2ENGINE = new HashMap<>();
 
+    public synchronized ScriptEngine getJsEngine(long bid) {
+        if (BID2ENGINE.containsKey(bid)) return BID2ENGINE.get(bid);
+        else {
+            String code = getScriptCode(bid);
+            if (code == null) {
+                BID2ENGINE.put(bid, null);
+                return null;
+            } else {
+                ScriptEngine engine = null;
+                try {
+                    engine = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
+                    engine.eval(code);
+                } catch (Exception e) {
+                    onException(bid, e, "初始化JS脚本时报错");
+                }
+                BID2ENGINE.put(bid, engine);
+                return engine;
+            }
+        }
+    }
+
+    private String toMsg(MessageChain chain) {
+        String msg = DgSerializer.messageChainSerializeToString(chain);
+        return msg;
+    }
+
+    public static Map<String, ScriptException> exceptionMap = new HashMap<>();
 
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
@@ -76,63 +98,25 @@ public class ScriptService extends SimpleListenerHost {
         return conf.getCode();
     }
 
-    @EventHandler
-    public void onMessage(@NotNull MessageEvent event) {
-        if (event instanceof MessagePreSendEvent) return;
-        if (event instanceof MessagePostSendEvent) return;
-        String tid = event instanceof GroupMessageEvent ? "g" + event.getSubject().getId() : event instanceof FriendMessageEvent ? "f" + event.getSender().getId() : null;
-        if (tid != null) if (configService.isNotOpenK0(event.getBot().getId(), tid)) return;
-        final String code = getScriptCode(event.getBot().getId());
-        if (Judge.isEmpty(code)) return;
-        Public.EXECUTOR_SERVICE.submit(() -> {
-            try {
-                ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
-                JS_ENGINE.put("context", new BaseMessageScriptContext(event, saveMapper));
-                JS_ENGINE.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
-                String msg = toMsg(event.getMessage());
-                JS_ENGINE.put("msg", msg);
-                JS_ENGINE.eval(code);
-            } catch (Throwable e) {
-                onException(event.getBot(), e);
-            }
-        });
-    }
+    private static final Map<Long, ScriptUtils> BID2UTILS = new HashMap<>();
+    private static final RestTemplate TEMPLATE = new RestTemplate();
 
-    public static Map<Long, ScriptEngine> BID2ENGINE = new HashMap<>();
-
-    public synchronized static ScriptEngine getJsEngine(long bid) {
-        if (!BID2ENGINE.containsKey(bid)) {
-            BID2ENGINE.put(bid, SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript"));
+    public static ScriptUtils getScriptUtils(long bid) {
+        if (BID2UTILS.containsKey(bid)) return BID2UTILS.get(bid);
+        else {
+            ScriptUtils utils = new BaseScriptUtils(bid, TEMPLATE);
+            BID2UTILS.put(bid, utils);
+            return utils;
         }
-        return BID2ENGINE.get(bid);
     }
 
-    private String toMsg(MessageChain chain) {
-        String msg = DgSerializer.messageChainSerializeToString(chain);
-        return msg;
-    }
-
-    @EventHandler
-    public void onEvent(BotEvent event) {
-        if (event instanceof MessageEvent) return;
-        if (event instanceof MessagePreSendEvent) return;
-        if (event instanceof MessagePostSendEvent) return;
-        if (event instanceof BotOnlineEvent) return;
-        if (event instanceof BotOfflineEvent) return;
-        final String code = getScriptCode(event.getBot().getId());
-        if (Judge.isEmpty(code)) return;
-        Public.EXECUTOR_SERVICE.submit(() -> {
-            try {
-                ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
-                JS_ENGINE.put("context", new BasebBotEventScriptContext(event, saveMapper));
-                JS_ENGINE.put("event", event);
-                JS_ENGINE.put("utils", new BaseScriptUtils(event.getBot().getId(), template));
-                JS_ENGINE.put("msg", event.toString());
-                JS_ENGINE.eval(code);
-            } catch (Throwable e) {
-                onException(event.getBot(), e);
-            }
-        });
+    public static boolean isDefine(ScriptEngine engine, String funName) {
+        try {
+            Object k = engine.eval("typeof " + funName + " === 'function'");
+            return Boolean.valueOf(k.toString());
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public static void onException(Bot bot, Throwable e) {
@@ -140,31 +124,16 @@ public class ScriptService extends SimpleListenerHost {
     }
 
     public static void onException(long bid, Throwable e) {
-        if (e instanceof javax.script.ScriptException) {
-            String e1 = e.getMessage();
-            for (String e0 : NOT_PRINTS) {
-                if (e1.contains(e0)) return;
-            }
-        }
+        onException(bid, e, "");
+    }
+
+    public static void onException(long bid, Throwable e, String msg) {
         e.printStackTrace();
         String err = Utils.getExceptionLine(e);
         err = e + err;
-        ScriptException se = new ScriptException(err, System.currentTimeMillis(), bid);
+        ScriptException se = new ScriptException(msg + "\n" + err, System.currentTimeMillis(), bid);
         exceptionMap.put(String.valueOf(bid), se);
         System.err.println(String.format("%s Bot 脚本 执行失败", bid));
-    }
-
-
-    @Nullable
-    public static MessageChain getSingleMessages(int id, BotEvent event, SaveMapper saveMapper) {
-        QueryWrapper<AllMessage> wrapper = new QueryWrapper<>();
-        wrapper.eq("internal_id", id);
-        wrapper.eq("bot_id", event.getBot().getId());
-        List<AllMessage> msg = saveMapper.selectList(wrapper);
-        if (msg != null && !msg.isEmpty()) {
-            return MessageChain.deserializeFromJsonString(msg.get(0).getContent());
-        }
-        return null;
     }
 
     @Getter
@@ -180,56 +149,111 @@ public class ScriptService extends SimpleListenerHost {
         }
     }
 
+    //===================================
+    // MessageEvent 事件入口 方法名
+    private static final String ON_MSG_EVENT_FUNCTION = "onMsgEvent";
+    // BotEvent 事件入口 方法名
+    private static final String ON_BOT_EVENT_FUNCTION = "onBotEvent";
+    // ProfileLikeEvent 事件入口 方法名
+    private static final String ON_PROFILE_LIKE_FUNCTION = "onProfileLike";
+    // SendLikedEvent 事件入口 方法名
+    private static final String ON_SEND_LIKED_FUNCTION = "onSendLiked";
+    // GroupSignEvent 事件入口 方法名
+    private static final String ON_GROUP_SIGN_FUNCTION = "onGroupSign";
+
+    @EventHandler
+    public void onMessage(@NotNull MessageEvent event) {
+        if (event instanceof MessagePreSendEvent) return;
+        if (event instanceof MessagePostSendEvent) return;
+        String tid = event instanceof GroupMessageEvent ? "g" + event.getSubject().getId() : event instanceof FriendMessageEvent ? "f" + event.getSender().getId() : null;
+        if (tid != null) if (configService.isNotOpenK0(event.getBot().getId(), tid)) return;
+        ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
+        if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
+            try {
+                if (isDefine(JS_ENGINE, ON_MSG_EVENT_FUNCTION)) {
+                    if (JS_ENGINE instanceof Invocable) {
+                        Invocable inv = (Invocable) JS_ENGINE;
+                        inv.invokeFunction(ON_MSG_EVENT_FUNCTION, toMsg(event.getMessage()), event, getScriptUtils(event.getBot().getId()));
+                    }
+                }
+            } catch (Throwable e) {
+                onException(event.getBot(), e);
+            }
+        });
+    }
+
+    @EventHandler
+    public void onEvent(BotEvent event) {
+        if (event instanceof MessageEvent) return;
+        if (event instanceof MessagePreSendEvent) return;
+        if (event instanceof MessagePostSendEvent) return;
+        if (event instanceof BotOnlineEvent) return;
+        if (event instanceof BotOfflineEvent) return;
+        ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
+        if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
+            try {
+                if (isDefine(JS_ENGINE, ON_BOT_EVENT_FUNCTION)) {
+                    if (JS_ENGINE instanceof Invocable) {
+                        Invocable inv = (Invocable) JS_ENGINE;
+                        inv.invokeFunction(ON_BOT_EVENT_FUNCTION, event, getScriptUtils(event.getBot().getId()));
+                    }
+                }
+            } catch (Throwable e) {
+                onException(event.getBot(), e);
+            }
+        });
+    }
+
     @EventListener
     public void onEvent(ProfileLikeEvent event) {
-        final String code = getScriptCode(event.getSelfId());
-        if (Judge.isEmpty(code)) return;
-        Public.EXECUTOR_SERVICE.submit(() -> {
+        long bid = event.getSelfId();
+        ScriptEngine JS_ENGINE = getJsEngine(bid);
+        if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                ScriptEngine JS_ENGINE = getJsEngine(event.getSelfId());
-                JS_ENGINE.put("subType", "profile_like");
-                JS_ENGINE.put("utils", new BaseScriptUtils(event.getSelfId(), template));
-                JS_ENGINE.put("event", event);
-                JS_ENGINE.put("bot", Bot.getInstance(event.getSelfId()));
-                JS_ENGINE.eval(code);
+                if (isDefine(JS_ENGINE, ON_PROFILE_LIKE_FUNCTION)) {
+                    if (JS_ENGINE instanceof Invocable) {
+                        Invocable inv = (Invocable) JS_ENGINE;
+                        inv.invokeFunction(ON_PROFILE_LIKE_FUNCTION, event,getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                    }
+                }
             } catch (Throwable e) {
-                onException(event.getSelfId(), e);
+                onException(bid, e);
             }
         });
     }
 
     @EventListener
     public void onEvent(SendLikedEvent event) {
-        final String code = getScriptCode(event.getSelfId());
-        if (Judge.isEmpty(code)) return;
-        Public.EXECUTOR_SERVICE.submit(() -> {
+        long bid = event.getSelfId();
+        ScriptEngine JS_ENGINE = getJsEngine(bid);
+        if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                ScriptEngine JS_ENGINE = getJsEngine(event.getSelfId());
-                JS_ENGINE.put("subType", "send_liked");
-                JS_ENGINE.put("utils", new BaseScriptUtils(event.getSelfId(), template));
-                JS_ENGINE.put("event", event);
-                JS_ENGINE.put("bot", Bot.getInstance(event.getSelfId()));
-                JS_ENGINE.eval(code);
+                if (isDefine(JS_ENGINE, ON_SEND_LIKED_FUNCTION)) {
+                    if (JS_ENGINE instanceof Invocable) {
+                        Invocable inv = (Invocable) JS_ENGINE;
+                        inv.invokeFunction(ON_SEND_LIKED_FUNCTION, event,getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                    }
+                }
             } catch (Throwable e) {
-                onException(event.getSelfId(), e);
+                onException(bid, e);
             }
         });
     }
 
     @EventListener
     public void onEvent(GroupSignEvent event) {
-        final String code = getScriptCode(event.getSelfId());
-        if (Judge.isEmpty(code)) return;
-        Public.EXECUTOR_SERVICE.submit(() -> {
+        long bid = event.getSelfId();
+        ScriptEngine JS_ENGINE = getJsEngine(bid);
+        if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                ScriptEngine JS_ENGINE = getJsEngine(event.getSelfId());
-                JS_ENGINE.put("subType", "group_sign");
-                JS_ENGINE.put("utils", new BaseScriptUtils(event.getSelfId(), template));
-                JS_ENGINE.put("event", event);
-                JS_ENGINE.put("bot", Bot.getInstance(event.getSelfId()));
-                JS_ENGINE.eval(code);
+                if (isDefine(JS_ENGINE, ON_GROUP_SIGN_FUNCTION)) {
+                    if (JS_ENGINE instanceof Invocable) {
+                        Invocable inv = (Invocable) JS_ENGINE;
+                        inv.invokeFunction(ON_GROUP_SIGN_FUNCTION, event,getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                    }
+                }
             } catch (Throwable e) {
-                onException(event.getSelfId(), e);
+                onException(bid, e);
             }
         });
     }

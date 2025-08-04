@@ -50,6 +50,14 @@ public interface ScriptUtils {
      */
     String serialize(MessageChain chain);
 
+    /**
+     * 反向解析msg为MessageChain
+     *
+     * @param msg
+     * @return
+     */
+    MessageChain deSerialize(String msg);
+
 
     /**
      * 获取变量
