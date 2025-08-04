@@ -173,17 +173,17 @@ var FriendMessageEvent = Java.type("net.mamoe.mirai.event.events.FriendMessageEv
 
 
 function onMsgEvent(msg, event, utils) {
-    if (msg === "test") {
-        if (event instanceof GroupMessageEvent) {
-            var strCls = Java.type("java.lang.String")
-            var sMsg = strCls.format("群消息 测试成功 <at:%s>", event.getSender().getId());
-            var m0 = utils.deSerialize(sMsg)
-            event.getSubject().sendMessage(m0)
-        } else if (event instanceof FriendMessageEvent) {
-            event.getSubject().sendMessage("好友消息 测试成功")
-        } else {
-            event.getSubject().sendMessage(event.class.name + ".消息测试成功")
-        }
+  if (msg === "test") {
+    if (event instanceof GroupMessageEvent) {
+      var strCls = Java.type("java.lang.String")
+      var sMsg = strCls.format("群消息 测试成功 <at:%s>", event.getSender().getId());
+      var m0 = utils.deSerialize(sMsg)
+      event.getSubject().sendMessage(m0)
+    } else if (event instanceof FriendMessageEvent) {
+      event.getSubject().sendMessage("好友消息 测试成功")
+    } else {
+      event.getSubject().sendMessage(event.class.getSimpleName() + ".消息测试成功")
     }
+  }
 }
 ```

@@ -61,8 +61,6 @@ public class ScriptService extends SimpleListenerHost {
     @Autowired
     ConfigService configService;
 
-    public static Map<Long, ScriptEngine> BID2ENGINE = new HashMap<>();
-
     public synchronized ScriptEngine getJsEngine(long bid) {
         if (BID2ENGINE.containsKey(bid)) return BID2ENGINE.get(bid);
         else {
@@ -89,14 +87,24 @@ public class ScriptService extends SimpleListenerHost {
         return msg;
     }
 
-    public static Map<String, ScriptException> exceptionMap = new HashMap<>();
-
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
         if (conf == null) return null;
         if (Judge.isEmpty(conf.getCode())) return null;
         return conf.getCode();
     }
+
+
+    public static void clearBidCache(long bid) {
+        BID2ENGINE.remove(bid);
+        Map map = BID2F2K.remove(bid);
+        if (map != null) map.clear();
+    }
+
+    public static Map<Long, ScriptEngine> BID2ENGINE = new HashMap<>();
+
+    public static Map<Long, Map<String, Boolean>> BID2F2K = new HashMap<>();
+    public static Map<String, ScriptException> exceptionMap = new HashMap<>();
 
     private static final Map<Long, ScriptUtils> BID2UTILS = new HashMap<>();
     private static final RestTemplate TEMPLATE = new RestTemplate();
@@ -116,6 +124,19 @@ public class ScriptService extends SimpleListenerHost {
             return Boolean.valueOf(k.toString());
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    public synchronized static boolean isDefined(long bid, ScriptEngine engine, String funName) {
+        Map<String, Boolean> map = BID2F2K.get(bid);
+        if (map == null) {
+            BID2F2K.put(bid, map = new HashMap<>());
+        }
+        if (map.containsKey(funName)) return map.get(funName);
+        else {
+            boolean b = isDefine(engine, funName);
+            map.put(funName, b);
+            return b;
         }
     }
 
@@ -170,7 +191,7 @@ public class ScriptService extends SimpleListenerHost {
         ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
         if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                if (isDefine(JS_ENGINE, ON_MSG_EVENT_FUNCTION)) {
+                if (isDefined(event.getBot().getId(), JS_ENGINE, ON_MSG_EVENT_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
                         inv.invokeFunction(ON_MSG_EVENT_FUNCTION, toMsg(event.getMessage()), event, getScriptUtils(event.getBot().getId()));
@@ -192,7 +213,7 @@ public class ScriptService extends SimpleListenerHost {
         ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
         if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                if (isDefine(JS_ENGINE, ON_BOT_EVENT_FUNCTION)) {
+                if (isDefined(event.getBot().getId(), JS_ENGINE, ON_BOT_EVENT_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
                         inv.invokeFunction(ON_BOT_EVENT_FUNCTION, event, getScriptUtils(event.getBot().getId()));
@@ -210,10 +231,10 @@ public class ScriptService extends SimpleListenerHost {
         ScriptEngine JS_ENGINE = getJsEngine(bid);
         if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                if (isDefine(JS_ENGINE, ON_PROFILE_LIKE_FUNCTION)) {
+                if (isDefined(bid, JS_ENGINE, ON_PROFILE_LIKE_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
-                        inv.invokeFunction(ON_PROFILE_LIKE_FUNCTION, event,getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                        inv.invokeFunction(ON_PROFILE_LIKE_FUNCTION, event, getScriptUtils(bid), Bot.getInstanceOrNull(bid));
                     }
                 }
             } catch (Throwable e) {
@@ -228,10 +249,10 @@ public class ScriptService extends SimpleListenerHost {
         ScriptEngine JS_ENGINE = getJsEngine(bid);
         if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                if (isDefine(JS_ENGINE, ON_SEND_LIKED_FUNCTION)) {
+                if (isDefined(bid, JS_ENGINE, ON_SEND_LIKED_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
-                        inv.invokeFunction(ON_SEND_LIKED_FUNCTION, event,getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                        inv.invokeFunction(ON_SEND_LIKED_FUNCTION, event, getScriptUtils(bid), Bot.getInstanceOrNull(bid));
                     }
                 }
             } catch (Throwable e) {
@@ -246,10 +267,10 @@ public class ScriptService extends SimpleListenerHost {
         ScriptEngine JS_ENGINE = getJsEngine(bid);
         if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                if (isDefine(JS_ENGINE, ON_GROUP_SIGN_FUNCTION)) {
+                if (isDefined(bid, JS_ENGINE, ON_GROUP_SIGN_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
-                        inv.invokeFunction(ON_GROUP_SIGN_FUNCTION, event,getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                        inv.invokeFunction(ON_GROUP_SIGN_FUNCTION, event, getScriptUtils(bid), Bot.getInstanceOrNull(bid));
                     }
                 }
             } catch (Throwable e) {
@@ -257,6 +278,4 @@ public class ScriptService extends SimpleListenerHost {
             }
         });
     }
-
-
 }

@@ -64,7 +64,7 @@ public class UserConfigController {
         }
         conf.setCode(code);
         Long bid = Long.valueOf(conf.getQid());
-        ScriptService.BID2ENGINE.remove(bid);
+        ScriptService.clearBidCache(bid);
         return confMapper.updateById(conf) > 0 ? "成功" : "失败";
     }
 
