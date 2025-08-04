@@ -3,12 +3,21 @@ package io.github.gdpl2112.dg_bot;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import io.github.gdpl2112.dg_bot.built.callapi.Converter;
+import io.github.gdpl2112.dg_bot.dao.AuthM;
+import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.kloping.judge.Judge;
 import lombok.Setter;
+import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.SingleMessage;
 import org.jetbrains.annotations.NotNull;
+import oshi.SystemInfo;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
+import oshi.util.Util;
+import top.mrxiaom.overflow.contact.RemoteBot;
+import top.mrxiaom.overflow.internal.contact.BotWrapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +36,46 @@ import java.util.regex.Pattern;
  * @date 2023-07-20
  */
 public class Utils {
+
+    public static String getAllStatus(long bid, AuthMapper authMapper) {
+        AuthM authM = authMapper.selectById(String.valueOf(bid));
+        StringBuilder sb = new StringBuilder();
+        Bot bot = Bot.getInstance(bid);
+        if (bot instanceof RemoteBot) {
+            RemoteBot remoteBot = ((RemoteBot) bot);
+            sb.append("ID: ").append(bot.getBot().getNick()).append("(").append(bid).append(")");
+            sb.append("\n协议: ").append(remoteBot.getAppName()).append(" v.").append(remoteBot.getAppVersion());
+            sb.append("\n过期: ").append(BaseComponent.SIMPLE_DATE_FORMAT.format(authM.getExp()));
+        }
+        Runtime runtime = Runtime.getRuntime();
+        long totalMemory = runtime.totalMemory();
+        long freeMemory = runtime.freeMemory();
+        long usedMemory = totalMemory - freeMemory;
+
+        sb.append("\n程序占用内存: " + usedMemory / (1024 * 1024) + "MB");
+
+        SystemInfo systemInfo = new SystemInfo();
+        GlobalMemory memory = systemInfo.getHardware().getMemory();
+
+        long totalPhysical = memory.getTotal();
+        long availablePhysical = memory.getAvailable();
+        long usedPhysical = totalPhysical - availablePhysical;
+
+        sb.append("\n物理已占内存: " + (usedPhysical * 100 / totalPhysical) + "%");
+
+        sb.append("\n物理已用内存: " +
+                (usedPhysical / (1024 * 1024) + "MB" + "/" + (totalPhysical / (1024 * 1024) + "MB"))
+        );
+
+        CentralProcessor processor = systemInfo.getHardware().getProcessor();
+        long[] prevTicks = processor.getSystemCpuLoadTicks();
+        Util.sleep(1000);
+        double usage = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
+        sb.append("\n" + String.format("CPU使用率: %.2f%%", usage));
+        return sb.toString();
+    }
+
+
     public static final Random RANDOM = new Random();
 
     public static final <T, K1, K2> T getValueOrDefault(Map<K1, Map<K2, T>> map, K1 k1, K2 k2, T def) {

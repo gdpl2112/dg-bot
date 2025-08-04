@@ -19,13 +19,18 @@ public class Conf {
     private String close0 = "关闭回复";
     private String open1 = "开启调用";
     private String close1 = "关闭调用";
+
     private String add0 = "添加";
     private String cancel0 = "取消";
     private String select0 = "查询";
+    private String del0 = "删词";
+
     //监听发送id
     private String rsid = "";
     //通知地址
     private String nu = "";
     //脚本代码
     private String code = "";
+    //状态触发
+    private String status0;
 }

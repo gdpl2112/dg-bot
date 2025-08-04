@@ -69,17 +69,36 @@ public class DgMain implements CommandLineRunner {
 
         logger.info("tables update");
 
+        //alter table conf
+        //    add del0 VARCHAR(120) default '删词';
+        //
+        //alter table conf
+        //    add status0 VARCHAR(120) default '/状态';
         boolean k0 = false;
         for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
             String name = e0.get("name").toString();
-            if ("code".equals(name)) {
+            if ("del0".equals(name)) {
                 k0 = true;
             }
         }
         if (!k0) {
             System.out.println("conf添加字段");
-            jdbcTemplate.update("ALTER TABLE 'conf' ADD 'code' VARCHAR(1048576) NOT NULL DEFAULT '';");
+            jdbcTemplate.update("alter table conf add del0 VARCHAR(40) default '删词';");
         }
+        k0 = false;
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
+            String name = e0.get("name").toString();
+            if ("status0".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            System.out.println("conf添加字段");
+            jdbcTemplate.update("alter table conf add status0 VARCHAR(40) default '/状态';");
+        }
+        k0 = false;
+
+
     }
 
     /**

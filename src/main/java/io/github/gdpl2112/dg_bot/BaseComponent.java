@@ -23,11 +23,12 @@ import java.util.Date;
  */
 @Configuration
 public class BaseComponent {
+    public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy年MM月dd日");
+
     @Bean
     public Logger getLogger() {
         Logger l = new LoggerImpl();
-        String path = String.format(
-                "logs/%s.log", new SimpleDateFormat("yyyy/MM-dd").format(new Date()));
+        String path = String.format("logs/%s.log", SIMPLE_DATE_FORMAT.format(new Date()));
         new File(path).getParentFile().mkdirs();
         l.setOutFile(path);
         l.info("================logger=create===================");

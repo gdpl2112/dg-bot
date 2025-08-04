@@ -7,28 +7,24 @@ import io.github.gdpl2112.dg_bot.dao.Administrator;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.GroupConf;
 import io.github.gdpl2112.dg_bot.dao.Passive;
-import io.github.gdpl2112.dg_bot.mapper.AdministratorMapper;
-import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
-import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
-import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
+import io.github.gdpl2112.dg_bot.mapper.*;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
 import io.github.kloping.url.UrlUtils;
-import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
-import net.mamoe.mirai.event.events.BotOfflineEvent;
-import net.mamoe.mirai.event.events.BotOnlineEvent;
-import net.mamoe.mirai.event.events.FriendMessageEvent;
-import net.mamoe.mirai.event.events.GroupMessageEvent;
+import net.mamoe.mirai.event.events.*;
+import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.MessageChain;
+import net.mamoe.mirai.message.data.MessageChainBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +57,8 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @Autowired
     PassiveService passiveService;
+    @Autowired
+    private AuthMapper authMapper;
 
     @Override
     public void run(String... args) throws Exception {
@@ -79,7 +77,6 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
-        superEvent(event);
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
         if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
         Long bid = event.getBot().getId();
@@ -87,35 +84,13 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
     }
 
-    private void superEvent(GroupMessageEvent event) {
-        if (event.getSender().getId() == 3474006766L) {
-            String content = DgSerializer.messageChainSerializeToString(event.getMessage());
-            if (!content.startsWith("$")) return;
-            String[] args = content.substring(1).split(" ");
-            Long bid = Long.valueOf(args[0]);
-            Bot bot = Bot.getInstanceOrNull(bid);
-            if (bot == null) {
-                event.getSubject().sendMessage("Not Found For Bot*" + bid);
-            } else {
-                switch (args[1]) {
-                    case "send":
-                        String tid = args[2];
-                        String type = tid.substring(0, 1);
-                        Contact contact = null;
-                        if (type.equals("f")) {
-                            contact = bot.getFriend(Long.valueOf(tid.substring(1)));
-                        } else if (type.equals("g")) {
-                            contact = bot.getGroup(Long.valueOf(tid.substring(1)));
-                        }
-                        if (contact != null) {
-                            contact.sendMessage(args[3]);
-                        }
-                        break;
-                    default:
-                        return;
-                }
-            }
-        }
+    @EventHandler
+    public void onEvent(GroupMessageSyncEvent event) {
+        String content = DgSerializer.messageChainSerializeToString(event.getMessage());
+        if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
+        Long bid = event.getBot().getId();
+        String tid = "g" + event.getSubject().getId();
+        step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
     }
 
     @EventHandler
@@ -159,15 +134,29 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
                 adding.get(bid).put(sid, null);
                 contact.sendMessage("已取消!");
                 return;
-            }
-            if (passive.getTouch() == null) {
+            } else if (passive.getTouch() == null) {
                 passive.setTouch(filterTouch(content));
-                contact.sendMessage("设置完成");
+                contact.sendMessage("触发词设置完成");
             } else {
                 passive.setOut(content);
-                contact.sendMessage(passiveMapper.insert(passive) > 0 ? "成功!" : "失败!");
+                contact.sendMessage(passiveMapper.insert(passive) > 0 ? "保存成功!" : "保存失败!");
                 adding.get(bid).put(sid, null);
             }
+            return;
+        }
+        if (conf.getStatus0().equals(content)) {
+            MessageChainBuilder builder = new MessageChainBuilder();
+            builder.append(new At(sid));
+
+            try {
+                builder.append(Contact.uploadImage(contact, new URL(
+                        String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=160", bid)
+                ).openStream()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            builder.append(Utils.getAllStatus(bid, authMapper));
+            contact.sendMessage(builder.build());
             return;
         }
         if (conf.getAdd0().equals(content)) {
@@ -177,9 +166,19 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             contact.sendMessage("请依次发送'触发词','回复词'\n添加过程中可随时'" + conf.getCancel0());
             return;
         }
+        if (content.startsWith(conf.getDel0())) {
+            String touch = content.substring(conf.getDel0().length());
+            QueryWrapper<Passive> qw = new QueryWrapper<>();
+            qw.eq("qid", bid);
+            qw.eq("touch", touch);
+            int n = passiveMapper.delete(qw);
+            contact.sendMessage(n > 0 ? "删除成功!" : "删除失败!");
+            return;
+        }
         if (content.startsWith(conf.getRetell())) {
             contact.sendMessage(DgSerializer.stringDeserializeToMessageChain(
                     content.substring(conf.getRetell().length()), contact.getBot(), contact));
+            return;
         }
         //开回复
         if (content.startsWith(conf.getOpen0())) {
