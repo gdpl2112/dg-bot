@@ -3,7 +3,7 @@ package io.github.gdpl2112.dg_bot.service.script.impl;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
-import io.github.gdpl2112.dg_bot.built.ScriptService;
+import io.github.gdpl2112.dg_bot.service.ScriptService;
 import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.kloping.map.MapUtils;
 import net.mamoe.mirai.Bot;

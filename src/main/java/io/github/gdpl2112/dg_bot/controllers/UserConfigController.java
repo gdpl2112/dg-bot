@@ -2,7 +2,7 @@ package io.github.gdpl2112.dg_bot.controllers;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import io.github.gdpl2112.dg_bot.built.ScriptService;
+import io.github.gdpl2112.dg_bot.service.ScriptService;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import org.springframework.beans.factory.annotation.Autowired;

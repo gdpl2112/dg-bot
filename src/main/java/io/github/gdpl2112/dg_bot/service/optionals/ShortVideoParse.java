@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
+import io.github.kloping.judge.Judge;
 import io.github.kloping.url.UrlUtils;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -83,12 +84,19 @@ public class ShortVideoParse implements BaseOptional {
 
         var builder = new MessageChainBuilder();
 
-        byte[] coverBytes = UrlUtils.getBytesFromHttpUrl(jxData.getCover());
-        Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(coverBytes), "jpg");
+        byte[] coverBytes = null;
+        if (Judge.isNotEmpty(jxData.getCover())) {
+            coverBytes = UrlUtils.getBytesFromHttpUrl(jxData.getCover());
+            Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(coverBytes), "jpg");
+            builder.append(image);
+        }
 
-        builder.append(image);
         builder.append("解析成功! 平台: ").append(jxData.getType()).append("\n");
-        builder.append(jxData.getTitle()).append(" \\ ").append(jxData.getAuthor());
+
+        if (jxData.getTitle() != null)
+            builder.append(jxData.getTitle());
+        if (jxData.getAuthor() != null)
+            builder.append(" \\ ").append(jxData.getAuthor());
 
         HashMap<String, Object> dataMap = (HashMap<String, Object>) jxData.getData();
 
@@ -98,11 +106,12 @@ public class ShortVideoParse implements BaseOptional {
             event.getSubject().sendMessage(builder.build());
 
             var fbuilder = new ForwardMessageBuilder(event.getSubject());
-            fbuilder.add(bot, new PlainText("音频直链:" + dataMap.get("music")));
+            if (dataMap.containsKey("music"))
+                fbuilder.add(bot, new PlainText("音频直链:" + dataMap.get("music")));
             for (String s : images) {
                 try {
                     byte[] bytes = UrlUtils.getBytesFromHttpUrl(s);
-                    image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
+                    Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
                     fbuilder.add(bot, image);
                 } catch (Exception ex) {
                     fbuilder.add(bot, new PlainText("[图片加载失败;" + s + "]"));
@@ -117,9 +126,11 @@ public class ShortVideoParse implements BaseOptional {
             event.getSubject().sendMessage(builder.build());
 
             var fbuilder = new ForwardMessageBuilder(event.getSubject());
-            ShortVideo shortVideo = event.getSubject().uploadShortVideo(ExternalResource.create(coverBytes), ExternalResource.create(bytes),
-                    jxData.getTitle() + ".mp4");
-            fbuilder.add(bot, shortVideo);
+            if (coverBytes != null) {
+                ShortVideo shortVideo = event.getSubject().uploadShortVideo(ExternalResource.create(coverBytes), ExternalResource.create(bytes),
+                        jxData.getTitle() + ".mp4");
+                fbuilder.add(bot, shortVideo);
+            }
 
             fbuilder.add(bot, new PlainText("视频直链: " + u0));
             event.getSubject().sendMessage(fbuilder.build());

@@ -1,13 +1,13 @@
-package io.github.gdpl2112.dg_bot.built;
+package io.github.gdpl2112.dg_bot.service;
 
 import io.github.gdpl2112.dg_bot.Utils;
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
-import io.github.gdpl2112.dg_bot.service.ConfigService;
 import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
 import io.github.kloping.common.Public;
