@@ -89,8 +89,21 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
         if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
         Long bid = event.getBot().getId();
-        String tid = "g" + event.getSubject().getId();
-        step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
+        Conf conf = getConf(bid);
+        if (conf.getStatus0().equals(content)) {
+            MessageChainBuilder builder = new MessageChainBuilder();
+            builder.append(new At(event.getSender().getId()));
+            try {
+                builder.append(Contact.uploadImage(event.getSubject(), new URL(
+                        String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=160", bid)
+                ).openStream()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            builder.append(Utils.getAllStatus(bid, authMapper));
+            event.getSubject().sendMessage(builder.build());
+            return;
+        }
     }
 
     @EventHandler
@@ -142,21 +155,6 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
                 contact.sendMessage(passiveMapper.insert(passive) > 0 ? "保存成功!" : "保存失败!");
                 adding.get(bid).put(sid, null);
             }
-            return;
-        }
-        if (conf.getStatus0().equals(content)) {
-            MessageChainBuilder builder = new MessageChainBuilder();
-            builder.append(new At(sid));
-
-            try {
-                builder.append(Contact.uploadImage(contact, new URL(
-                        String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=160", bid)
-                ).openStream()));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            builder.append(Utils.getAllStatus(bid, authMapper));
-            contact.sendMessage(builder.build());
             return;
         }
         if (conf.getAdd0().equals(content)) {
