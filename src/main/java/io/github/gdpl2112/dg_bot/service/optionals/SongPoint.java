@@ -60,10 +60,10 @@ public class SongPoint implements BaseOptional {
         } else if (out.startsWith("取消点歌") || out.startsWith("取消选择")) {
             SongData o = QID2DATA.remove(event.getSender().getId());
             event.getSubject().sendMessage("已取消.\n" + o.name);
-        } else if (out.matches("[+\\-\\d]+")) {
-            Integer n = Integer.valueOf(out);
+        } else if (out.matches("\\d{1,2}")) {
             SongData e = QID2DATA.get(event.getSender().getId());
             if (e != null) {
+                Integer n = Integer.valueOf(out);
                 if (n == 0) {
                     String r = listSongs(event.getSender().getId(), e.type, e.p + 1, e.name);
                     if (r == null) event.getSubject().sendMessage("翻页时异常!");
@@ -84,7 +84,7 @@ public class SongPoint implements BaseOptional {
     }
 
 
-    public static final String TYPE_KUGOU = "KG";
+    public static final String TYPE_KUGOU = "kg";
     public static final String TYPE_QQ = "qq";
     public static final String TYPE_WY = "wy";
 
