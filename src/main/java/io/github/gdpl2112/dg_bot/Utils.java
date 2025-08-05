@@ -17,7 +17,6 @@ import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
 import oshi.util.Util;
 import top.mrxiaom.overflow.contact.RemoteBot;
-import top.mrxiaom.overflow.internal.contact.BotWrapper;
 
 import java.io.File;
 import java.io.IOException;

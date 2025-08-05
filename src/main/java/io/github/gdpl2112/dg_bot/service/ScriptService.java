@@ -15,11 +15,16 @@ import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
 import lombok.Getter;
 import net.mamoe.mirai.Bot;
+import net.mamoe.mirai.contact.Contact;
+import net.mamoe.mirai.contact.Friend;
+import net.mamoe.mirai.contact.Member;
+import net.mamoe.mirai.contact.UserOrBot;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.*;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -210,6 +215,12 @@ public class ScriptService extends SimpleListenerHost {
         if (event instanceof MessagePostSendEvent) return;
         if (event instanceof BotOnlineEvent) return;
         if (event instanceof BotOfflineEvent) return;
+
+        Contact contact = getContact(event);
+        if (contact != null) {
+            String tid = contact instanceof Friend ? "f" + contact.getId() : "g" + contact.getId();
+            if (tid != null) if (configService.isNotOpenK0(event.getBot().getId(), tid)) return;
+        }
         ScriptEngine JS_ENGINE = getJsEngine(event.getBot().getId());
         if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
@@ -223,6 +234,25 @@ public class ScriptService extends SimpleListenerHost {
                 onException(event.getBot(), e);
             }
         });
+    }
+
+    private static @Nullable Contact getContact(BotEvent event) {
+        Contact contact = null;
+        if (event instanceof NudgeEvent) {
+            contact = ((NudgeEvent) event).getSubject();
+        } else if (event instanceof SignEvent) {
+            UserOrBot userOrBot = ((SignEvent) event).getUser();
+            if (userOrBot instanceof Member) {
+                contact = ((Member) userOrBot).getGroup();
+            } else if (userOrBot instanceof Friend) {
+                contact = ((Friend) userOrBot);
+            }
+        } else if (event instanceof GroupEvent) {
+            contact = ((GroupEvent) event).getGroup();
+        } else if (contact instanceof FriendEvent) {
+            contact = ((FriendEvent) event).getFriend();
+        }
+        return contact;
     }
 
     @EventListener
