@@ -11,7 +11,6 @@ import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
 import io.github.kloping.common.Public;
-import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
 import lombok.Getter;
@@ -283,22 +282,28 @@ public class ScriptService extends SimpleListenerHost {
     }
 
     private static @Nullable Contact getContact(BotEvent event) {
-        Contact contact = null;
-        if (event instanceof NudgeEvent) {
-            contact = ((NudgeEvent) event).getSubject();
-        } else if (event instanceof SignEvent) {
-            UserOrBot userOrBot = ((SignEvent) event).getUser();
-            if (userOrBot instanceof Member) {
-                contact = ((Member) userOrBot).getGroup();
-            } else if (userOrBot instanceof Friend) {
-                contact = ((Friend) userOrBot);
+        try {
+            Contact contact = null;
+            if (event instanceof NudgeEvent) {
+                NudgeEvent nudgeEvent = (NudgeEvent) event;
+                contact = nudgeEvent.getSubject();
+            } else if (event instanceof SignEvent) {
+                UserOrBot userOrBot = ((SignEvent) event).getUser();
+                if (userOrBot instanceof Member) {
+                    contact = ((Member) userOrBot).getGroup();
+                } else if (userOrBot instanceof Friend) {
+                    contact = ((Friend) userOrBot);
+                }
+            } else if (event instanceof GroupEvent) {
+                contact = ((GroupEvent) event).getGroup();
+            } else if (contact instanceof FriendEvent) {
+                contact = ((FriendEvent) event).getFriend();
             }
-        } else if (event instanceof GroupEvent) {
-            contact = ((GroupEvent) event).getGroup();
-        } else if (contact instanceof FriendEvent) {
-            contact = ((FriendEvent) event).getFriend();
+            return contact;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
-        return contact;
     }
 
     @EventListener
