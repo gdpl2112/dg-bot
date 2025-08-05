@@ -11,6 +11,7 @@ import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
 import io.github.kloping.common.Public;
+import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
 import lombok.Getter;
@@ -33,8 +34,8 @@ import org.springframework.web.client.RestTemplate;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import java.util.HashMap;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * @author github.kloping
@@ -66,6 +67,10 @@ public class ScriptService extends SimpleListenerHost {
     @Autowired
     ConfigService configService;
 
+    public static final Integer MAX_LINE = 30;
+
+    private static final SimpleDateFormat SF_0 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     public synchronized ScriptEngine getJsEngine(long bid) {
         if (BID2ENGINE.containsKey(bid)) return BID2ENGINE.get(bid);
         else {
@@ -78,6 +83,37 @@ public class ScriptService extends SimpleListenerHost {
                 try {
                     engine = SCRIPT_ENGINE_MANAGER.getEngineByName("JavaScript");
                     engine.eval(code);
+                    engine.put("utils", getScriptUtils(bid));
+                    engine.put("bot", Bot.getInstance(bid));
+                    Logger logger = new Logger() {
+                        private String key = String.valueOf(bid);
+
+                        @Override
+                        public void log(String msg) {
+                            synchronized (this) {
+                                offerLogMsg(msg);
+                            }
+                        }
+
+                        @Override
+                        public void log(String msg, Object... args) {
+                            synchronized (this) {
+                                msg = String.format(msg, args);
+                                offerLogMsg(msg);
+                            }
+                        }
+
+                        private void offerLogMsg(String msg) {
+                            if (!PRINT_MAP.containsKey(key)) {
+                                PRINT_MAP.put(key, new LinkedList<>());
+                            }
+                            PRINT_MAP.get(key).add("[" + SF_0.format(new Date()) + "] " + msg);
+                            if (PRINT_MAP.get(key).size() > MAX_LINE)
+                                PRINT_MAP.get(key).remove(0);
+                        }
+                    };
+                    engine.put("logger", logger);
+                    engine.put("log", logger);
                 } catch (Exception e) {
                     onException(bid, e, "初始化JS脚本时报错");
                 }
@@ -106,12 +142,16 @@ public class ScriptService extends SimpleListenerHost {
         if (map != null) map.clear();
     }
 
-    public static Map<Long, ScriptEngine> BID2ENGINE = new HashMap<>();
-
-    public static Map<Long, Map<String, Boolean>> BID2F2K = new HashMap<>();
-    public static Map<String, ScriptException> exceptionMap = new HashMap<>();
-
     private static final Map<Long, ScriptUtils> BID2UTILS = new HashMap<>();
+    // bot 的 编译后代码环境
+    public static Map<Long, ScriptEngine> BID2ENGINE = new HashMap<>();
+    // bot 的 函数缓存
+    public static Map<Long, Map<String, Boolean>> BID2F2K = new HashMap<>();
+    //报错缓存
+    public static Map<String, ScriptException> exceptionMap = new HashMap<>();
+    //bot 打印结果
+    public static Map<String, List<String>> PRINT_MAP = new HashMap<>();
+
     private static final RestTemplate TEMPLATE = new RestTemplate();
 
     public static ScriptUtils getScriptUtils(long bid) {
@@ -175,6 +215,12 @@ public class ScriptService extends SimpleListenerHost {
         }
     }
 
+    public interface Logger {
+        void log(String msg);
+
+        void log(String msg, Object... args);
+    }
+
     //===================================
     // MessageEvent 事件入口 方法名
     private static final String ON_MSG_EVENT_FUNCTION = "onMsgEvent";
@@ -199,7 +245,7 @@ public class ScriptService extends SimpleListenerHost {
                 if (isDefined(event.getBot().getId(), JS_ENGINE, ON_MSG_EVENT_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
-                        inv.invokeFunction(ON_MSG_EVENT_FUNCTION, toMsg(event.getMessage()), event, getScriptUtils(event.getBot().getId()));
+                        inv.invokeFunction(ON_MSG_EVENT_FUNCTION, toMsg(event.getMessage()), event);
                     }
                 }
             } catch (Throwable e) {
@@ -227,7 +273,7 @@ public class ScriptService extends SimpleListenerHost {
                 if (isDefined(event.getBot().getId(), JS_ENGINE, ON_BOT_EVENT_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
-                        inv.invokeFunction(ON_BOT_EVENT_FUNCTION, event, getScriptUtils(event.getBot().getId()));
+                        inv.invokeFunction(ON_BOT_EVENT_FUNCTION, event);
                     }
                 }
             } catch (Throwable e) {
@@ -264,7 +310,7 @@ public class ScriptService extends SimpleListenerHost {
                 if (isDefined(bid, JS_ENGINE, ON_PROFILE_LIKE_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
-                        inv.invokeFunction(ON_PROFILE_LIKE_FUNCTION, event, getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                        inv.invokeFunction(ON_PROFILE_LIKE_FUNCTION, event);
                     }
                 }
             } catch (Throwable e) {
@@ -282,7 +328,7 @@ public class ScriptService extends SimpleListenerHost {
                 if (isDefined(bid, JS_ENGINE, ON_SEND_LIKED_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
-                        inv.invokeFunction(ON_SEND_LIKED_FUNCTION, event, getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                        inv.invokeFunction(ON_SEND_LIKED_FUNCTION, event);
                     }
                 }
             } catch (Throwable e) {
@@ -300,7 +346,7 @@ public class ScriptService extends SimpleListenerHost {
                 if (isDefined(bid, JS_ENGINE, ON_GROUP_SIGN_FUNCTION)) {
                     if (JS_ENGINE instanceof Invocable) {
                         Invocable inv = (Invocable) JS_ENGINE;
-                        inv.invokeFunction(ON_GROUP_SIGN_FUNCTION, event, getScriptUtils(bid), Bot.getInstanceOrNull(bid));
+                        inv.invokeFunction(ON_GROUP_SIGN_FUNCTION, event);
                     }
                 }
             } catch (Throwable e) {

@@ -2,9 +2,9 @@ package io.github.gdpl2112.dg_bot.controllers;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import io.github.gdpl2112.dg_bot.service.ScriptService;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
+import io.github.gdpl2112.dg_bot.service.ScriptService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author github-kloping
@@ -75,8 +78,16 @@ public class UserConfigController {
     @RequestMapping("/get-exception")
     public ScriptService.ScriptException codeModify(@AuthenticationPrincipal UserDetails userDetails) {
         String id = userDetails.getUsername();
-        if (scriptService.exceptionMap.containsKey(id)) {
-            return scriptService.exceptionMap.get(id);
+        if (ScriptService.exceptionMap.containsKey(id)) {
+            return ScriptService.exceptionMap.get(id);
         } else return new ScriptService.ScriptException("未发现报错", System.currentTimeMillis(), Long.valueOf(id));
+    }
+
+    @RequestMapping("/get-log")
+    public List<String> getLogMsg(@AuthenticationPrincipal UserDetails userDetails) {
+        String id = userDetails.getUsername();
+        if (ScriptService.PRINT_MAP.containsKey(id)) {
+            return ScriptService.PRINT_MAP.get(id);
+        } else return new LinkedList<>();
     }
 }
