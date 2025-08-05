@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.service.ScriptService;
+import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.kloping.map.MapUtils;
 import net.mamoe.mirai.Bot;
@@ -52,20 +53,20 @@ public class BaseScriptUtils implements ScriptUtils {
 
     @Override
     public Object get(String name) {
-        return Utils.getValueOrDefault(ScriptService.BID_2_VARIABLES, bid, name, null);
+        return Utils.getValueOrDefault(ScriptManager.BID_2_VARIABLES, bid, name, null);
     }
 
     @Override
     public Object set(String name, Object value) {
-        Object ov = Utils.getValueOrDefault(ScriptService.BID_2_VARIABLES, bid, name, null);
-        MapUtils.append(ScriptService.BID_2_VARIABLES, bid, name, value, HashMap.class);
+        Object ov = Utils.getValueOrDefault(ScriptManager.BID_2_VARIABLES, bid, name, null);
+        MapUtils.append(ScriptManager.BID_2_VARIABLES, bid, name, value, HashMap.class);
         return ov;
     }
 
     @Override
     public Integer clear() {
         int i = 0;
-        Map<String, Object> sizeMap = ScriptService.BID_2_VARIABLES.get(bid);
+        Map<String, Object> sizeMap = ScriptManager.BID_2_VARIABLES.get(bid);
         if (sizeMap != null) {
             i = sizeMap.size();
             sizeMap.clear();
@@ -75,7 +76,7 @@ public class BaseScriptUtils implements ScriptUtils {
 
     @Override
     public Object del(String name) {
-        Map<String, Object> sizeMap = ScriptService.BID_2_VARIABLES.get(bid);
+        Map<String, Object> sizeMap = ScriptManager.BID_2_VARIABLES.get(bid);
         if (sizeMap != null) {
             Object oa = sizeMap.get(name);
             sizeMap.remove(name);
@@ -86,8 +87,8 @@ public class BaseScriptUtils implements ScriptUtils {
 
     @Override
     public List<Map.Entry<String, Object>> list() {
-        if (ScriptService.BID_2_VARIABLES.containsKey(bid))
-            return new LinkedList<>(ScriptService.BID_2_VARIABLES.get(bid).entrySet());
+        if (ScriptManager.BID_2_VARIABLES.containsKey(bid))
+            return new LinkedList<>(ScriptManager.BID_2_VARIABLES.get(bid).entrySet());
         return new ArrayList<>();
     }
 

@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 public class Utils {
 
     public static String getAllStatus(long bid, AuthMapper authMapper) {
+        System.gc();
         AuthM authM = authMapper.selectById(String.valueOf(bid));
         StringBuilder sb = new StringBuilder();
         Bot bot = Bot.getInstance(bid);

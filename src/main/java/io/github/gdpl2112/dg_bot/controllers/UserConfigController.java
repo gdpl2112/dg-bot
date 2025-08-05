@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.service.ScriptService;
+import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -67,7 +68,8 @@ public class UserConfigController {
         }
         conf.setCode(code);
         Long bid = Long.valueOf(conf.getQid());
-        ScriptService.clearBidCache(bid);
+        ScriptManager.clearBidCache(bid);
+        System.gc();
         return confMapper.updateById(conf) > 0 ? "成功" : "失败";
     }
 
@@ -76,18 +78,18 @@ public class UserConfigController {
     ScriptService scriptService;
 
     @RequestMapping("/get-exception")
-    public ScriptService.ScriptException codeModify(@AuthenticationPrincipal UserDetails userDetails) {
+    public ScriptManager.ScriptException codeModify(@AuthenticationPrincipal UserDetails userDetails) {
         String id = userDetails.getUsername();
-        if (ScriptService.exceptionMap.containsKey(id)) {
-            return ScriptService.exceptionMap.get(id);
-        } else return new ScriptService.ScriptException("未发现报错", System.currentTimeMillis(), Long.valueOf(id));
+        if (ScriptManager.exceptionMap.containsKey(id)) {
+            return ScriptManager.exceptionMap.get(id);
+        } else return new ScriptManager.ScriptException("未发现报错", System.currentTimeMillis(), Long.valueOf(id));
     }
 
     @RequestMapping("/get-log")
     public List<String> getLogMsg(@AuthenticationPrincipal UserDetails userDetails) {
         String id = userDetails.getUsername();
-        if (ScriptService.PRINT_MAP.containsKey(id)) {
-            return ScriptService.PRINT_MAP.get(id);
+        if (ScriptManager.PRINT_MAP.containsKey(id)) {
+            return ScriptManager.PRINT_MAP.get(id);
         } else return new LinkedList<>();
     }
 }

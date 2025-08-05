@@ -1,10 +1,12 @@
 package io.github.gdpl2112.dg_bot.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.github.gdpl2112.dg_bot.built.ScriptCompile;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
+import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.date.CronJob;
@@ -19,8 +21,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,15 +76,12 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                     if (bot == null) {
                         logger.waring(String.format("%s 用户实例获取失败! 可能掉线或未登录", bid));
                     } else {
-                        ScriptEngine JS_ENGINE = scriptService.getJsEngine(bid);
-                        if (JS_ENGINE != null) Public.EXECUTOR_SERVICE.submit(() -> {
+                        ScriptCompile scriptCompile = scriptService.getJsEngine(bid);
+                        if (scriptCompile != null) Public.EXECUTOR_SERVICE.submit(() -> {
                             try {
-                                if (JS_ENGINE instanceof Invocable) {
-                                    Invocable inv = (Invocable) JS_ENGINE;
-                                    inv.invokeFunction(msg.getMsg());
-                                }
+                                scriptCompile.executeFuc(msg.getMsg());
                             } catch (Throwable e) {
-                                ScriptService.onException(bid, e);
+                                ScriptManager.onException(bid, e);
                             }
                         });
                     }
