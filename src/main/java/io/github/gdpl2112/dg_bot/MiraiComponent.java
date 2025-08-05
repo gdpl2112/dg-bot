@@ -2,7 +2,6 @@ package io.github.gdpl2112.dg_bot;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import io.github.gdpl2112.dg_bot.service.ScriptService;
 import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
@@ -12,6 +11,7 @@ import io.github.gdpl2112.dg_bot.service.*;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.file.FileUtils;
+import net.mamoe.mirai.console.MiraiConsole;
 import net.mamoe.mirai.console.command.CommandExecuteResult;
 import net.mamoe.mirai.console.command.CommandManager;
 import net.mamoe.mirai.console.command.ConsoleCommandSender;
@@ -22,6 +22,7 @@ import net.mamoe.mirai.event.GlobalEventChannel;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
 import net.mamoe.mirai.message.data.PlainText;
+import net.mamoe.mirai.utils.MiraiLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,7 +33,7 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author github-kloping
@@ -129,17 +130,28 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 
     @EventHandler
     public void onStartupEvent(net.mamoe.mirai.console.events.StartupEvent event) {
-        System.out.println("Q云代挂启动成功 compile at 2025/7/29");
+        System.out.println("Q云代挂启动成功 compile at 2025/8/05");
         Public.EXECUTOR_SERVICE1.submit(() -> {
             try {
                 TimeUnit.SECONDS.sleep(1);
                 String[] lines = FileUtils.getStringsFromFile("./after.line");
                 if (lines != null) {
                     for (String line : lines) {
-                        CommandExecuteResult result = CommandManager.INSTANCE.executeCommand(ConsoleCommandSender.INSTANCE,
-                                new PlainText(line), false);
-                        if (result instanceof CommandExecuteResult.Success) {
-                            System.out.println("执行成功:" + line);
+                        log.log("执行pre: " + line);
+                        CountDownLatch cdl = new CountDownLatch(1);
+                        EXECUTOR_SERVICE.submit(() -> {
+                            CommandExecuteResult result = CommandManager.INSTANCE.executeCommand(ConsoleCommandSender.INSTANCE,
+                                    new PlainText(line), false);
+                            if (result instanceof CommandExecuteResult.Success) {
+                                log.info("执行成功:" + line);
+                            }
+                            cdl.countDown();
+                        });
+                        try {
+                            boolean k = cdl.await(75, TimeUnit.SECONDS);
+                            if (!k) log.error("执行等待超时: " + line);
+                        } catch (InterruptedException e) {
+                            log.waring("执行等待报错:" + e.getMessage());
                         }
                     }
                 }
@@ -149,4 +161,10 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 
         });
     }
+
+    public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(15, 15,
+            0, TimeUnit.MINUTES,
+            new LinkedBlockingQueue<Runnable>());
+
+
 }
