@@ -15,5 +15,6 @@ import lombok.NoArgsConstructor;
 public class GroupSignEvent {
     private Long gid;
     private Long selfId;
+    private Long userId;
     private Boolean ok;
 }

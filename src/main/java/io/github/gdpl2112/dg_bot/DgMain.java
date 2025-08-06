@@ -40,7 +40,7 @@ public class DgMain implements CommandLineRunner {
     public static ConfigurableApplicationContext applicationContext;
 
     public static void main(String[] args) throws Exception {
-        System.out.println("start pre build time on 25/08.05");
+        System.out.println("start pre build time on 25/08.06");
         HttpsUtils.trustAllHttpsCertificates();
         applicationContext = SpringApplication.run(DgMain.class, args);
     }

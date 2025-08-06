@@ -166,7 +166,6 @@ public class V11AutoService extends SimpleListenerHost {
             Boolean isVip = getIsVip(bot.getId(), remoteBot);
             int max = isVip ? 20 : 10;
 
-
             //==== 根据记录查询
             String date = ProfileLike.SF_MM_DD.format(new Date(System.currentTimeMillis() - 1000 * 60 * 60 * 24));
             List<LikeReco> list = likeRecoMapper.selectListByDateAndBid(bid, date);
@@ -242,7 +241,7 @@ public class V11AutoService extends SimpleListenerHost {
                             component.log.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, group, groups));
                         } else {
                             component.log.info("自动打卡成功：b" + bid + " g" + group);
-                            applicationEventPublisher.publishEvent(new GroupSignEvent(gid, bot.getId(), true));
+                            applicationEventPublisher.publishEvent(new GroupSignEvent(gid, bot.getId(), bot.getId(), true));
                         }
                     }
                 }

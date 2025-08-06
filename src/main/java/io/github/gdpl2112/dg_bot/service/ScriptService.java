@@ -28,8 +28,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -50,7 +48,6 @@ public class ScriptService extends SimpleListenerHost {
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
         exception.printStackTrace();
     }
-
 
     @Autowired
     ConfMapper confMapper;
@@ -76,9 +73,6 @@ public class ScriptService extends SimpleListenerHost {
         if (Judge.isEmpty(conf.getCode())) return null;
         return conf.getCode();
     }
-
-
-
 
     public synchronized ScriptCompile getJsEngine(long bid) {
         if (BID2ENGINE.containsKey(bid)) return BID2ENGINE.get(bid);
@@ -153,7 +147,7 @@ public class ScriptService extends SimpleListenerHost {
         ScriptCompile scriptCompile = getJsEngine(event.getBot().getId());
         if (scriptCompile != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                if (isDefined(event.getBot().getId(),scriptCompile, ON_MSG_EVENT_FUNCTION)) {
+                if (isDefined(event.getBot().getId(), scriptCompile, ON_MSG_EVENT_FUNCTION)) {
                     scriptCompile.executeFuc(ON_MSG_EVENT_FUNCTION, toMsg(event.getMessage()), event);
                 }
             } catch (Throwable e) {
@@ -212,48 +206,34 @@ public class ScriptService extends SimpleListenerHost {
         });
     }
 
-    @EventListener
-    public void onEvent(ProfileLikeEvent event) {
-        long bid = event.getSelfId();
+    public void onEvent(long bid, String funName, Object eve) {
         ScriptCompile scriptCompile = getJsEngine(bid);
         if (scriptCompile != null) Public.EXECUTOR_SERVICE.submit(() -> {
             try {
-                if (isDefined(bid, scriptCompile, ON_PROFILE_LIKE_FUNCTION)) {
-                    scriptCompile.executeFuc(ON_PROFILE_LIKE_FUNCTION, event);
+                if (isDefined(bid, scriptCompile, funName)) {
+                    scriptCompile.executeFuc(funName, eve);
                 }
             } catch (Throwable e) {
                 onException(bid, e);
             }
         });
+    }
+
+    @EventListener
+    public void onEvent(ProfileLikeEvent event) {
+        long bid = event.getSelfId();
+        onEvent(bid, ON_PROFILE_LIKE_FUNCTION, event);
     }
 
     @EventListener
     public void onEvent(SendLikedEvent event) {
         long bid = event.getSelfId();
-        ScriptCompile scriptCompile = getJsEngine(bid);
-        if (scriptCompile != null) Public.EXECUTOR_SERVICE.submit(() -> {
-            try {
-                if (isDefined(bid, scriptCompile,  ON_SEND_LIKED_FUNCTION)) {
-                    scriptCompile.executeFuc(ON_PROFILE_LIKE_FUNCTION, event);
-                }
-            } catch (Throwable e) {
-                onException(bid, e);
-            }
-        });
+        onEvent(bid, ON_SEND_LIKED_FUNCTION, event);
     }
 
     @EventListener
     public void onEvent(GroupSignEvent event) {
         long bid = event.getSelfId();
-        ScriptCompile scriptCompile = getJsEngine(bid);
-        if (scriptCompile != null) Public.EXECUTOR_SERVICE.submit(() -> {
-            try {
-                if (isDefined(bid, scriptCompile,  ON_GROUP_SIGN_FUNCTION)) {
-                    scriptCompile.executeFuc(ON_PROFILE_LIKE_FUNCTION, event);
-                }
-            } catch (Throwable e) {
-                ScriptManager.onException(bid, e);
-            }
-        });
+        onEvent(bid, ON_GROUP_SIGN_FUNCTION, event);
     }
 }
