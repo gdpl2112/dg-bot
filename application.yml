@@ -23,3 +23,12 @@ server:
 
 wzry:
   api: http://192.168.1.11:8080
+
+
+logging:
+  level:
+    root: info
+    org.quartz.impl.StdSchedulerFactory: error
+    org.quartz.core.QuartzScheduler: error
+    org.quartz.core.SchedulerSignalerImpl: error
+    org.quartz.simpl.RAMJobStore: error

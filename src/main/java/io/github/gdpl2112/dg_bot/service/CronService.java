@@ -9,13 +9,14 @@ import io.github.gdpl2112.dg_bot.mapper.CronMapper;
 import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
-import io.github.kloping.date.CronJob;
 import io.github.kloping.date.CronUtils;
 import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
 import org.jetbrains.annotations.NotNull;
-import org.quartz.*;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 
 /**
@@ -46,7 +46,6 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
     }
 
-    private final Map<String, CronMessage> bid2cm = new HashMap<>();
     private final Map<Integer, Integer> cm2cron = new HashMap<>();
 
     @Override
@@ -91,8 +90,8 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                 logger.log(String.format("执行%s => %s cron任务结束", msg.getQid(), msg.getTargetId()));
             }
         });
-        bid2cm.put(msg.getQid(), msg);
         cm2cron.put(msg.getId(), id);
+        logger.log(String.format("(id.%s)添加%s => %s cron任务 (%s)", id, msg.getQid(), msg.getTargetId(), msg.getCron()));
         return id;
     }
 
@@ -110,6 +109,8 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
         try {
             int cid = cm2cron.get(Integer.parseInt(id));
             CronUtils.INSTANCE.stop(cid);
+            cm2cron.remove(Integer.parseInt(id));
+            logger.log(String.format("删除并停止cron任务(id.%s)", cid));
         } catch (Exception e) {
             e.printStackTrace();
         }
