@@ -46,7 +46,7 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
     }
 
-    private final Map<Integer, Integer> cm2cron = new HashMap<>();
+    private final Map<Integer, Integer> cmid2cronid = new HashMap<>();
 
     @Override
     public void run(String... args) throws Exception {
@@ -63,6 +63,16 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
 
     @Autowired
     ScriptService scriptService;
+
+    @Autowired
+    ConfMapper confMapper;
+
+    private String getScriptCode(long bid) {
+        Conf conf = confMapper.selectById(bid);
+        if (conf == null) return null;
+        if (Judge.isEmpty(conf.getCode())) return null;
+        return conf.getCode();
+    }
 
     public int appendTask(CronMessage msg) {
         Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
@@ -90,27 +100,17 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
                 logger.log(String.format("执行%s => %s cron任务结束", msg.getQid(), msg.getTargetId()));
             }
         });
-        cm2cron.put(msg.getId(), id);
-        logger.log(String.format("(id.%s)添加%s => %s cron任务 (%s)", id, msg.getQid(), msg.getTargetId(), msg.getCron()));
+        cmid2cronid.put(msg.getId(), id);
+        logger.info(String.format("(id.%s)添加%s => %s cron任务 (%s)", id, msg.getQid(), msg.getTargetId(), msg.getCron()));
         return id;
-    }
-
-    @Autowired
-    ConfMapper confMapper;
-
-    private String getScriptCode(long bid) {
-        Conf conf = confMapper.selectById(bid);
-        if (conf == null) return null;
-        if (Judge.isEmpty(conf.getCode())) return null;
-        return conf.getCode();
     }
 
     public void del(String id) {
         try {
-            int cid = cm2cron.get(Integer.parseInt(id));
+            Integer aid = Integer.parseInt(id);
+            int cid = cmid2cronid.remove(aid);
             CronUtils.INSTANCE.stop(cid);
-            cm2cron.remove(Integer.parseInt(id));
-            logger.log(String.format("删除并停止cron任务(id.%s)", cid));
+            logger.waring(String.format("删除并停止cron任务(id.%s)", cid));
         } catch (Exception e) {
             e.printStackTrace();
         }
