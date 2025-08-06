@@ -14,6 +14,7 @@ public class ConfigService {
     @Autowired
     GroupConfMapper groupConfMapper;
 
+    //被动回复
     public boolean isNotOpenK2(Long bid, String tid) {
         QueryWrapper<GroupConf> qw = new QueryWrapper<>();
         qw.eq("qid", bid);
@@ -33,6 +34,7 @@ public class ConfigService {
         return false;
     }
 
+    //API
     public boolean isNotOpenK0(Long bid, String tid) {
         QueryWrapper<GroupConf> qw = new QueryWrapper<>();
         qw.eq("qid", bid);

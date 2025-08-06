@@ -44,7 +44,7 @@ public class UserController {
                 if (Judge.isEmpty(nick)) nick = qid.toString();
                 jo.put("nickname", nick);
                 jo.put("t0", authM.getT0());
-            } else{
+            } else {
                 jo.put("nickname", "未在线");
                 jo.put("t0", -1L);
             }
@@ -138,12 +138,6 @@ public class UserController {
         Bot bot = Bot.getInstanceOrNull(Long.valueOf(userDetails.getUsername()));
         List outList = new ArrayList();
         if (bot != null) {
-            for (Friend friend : bot.getFriends()) {
-                String tid = "f" + friend.getId();
-                JSONObject jo = setSwitchInfo(tid2conf, tid, friend.getRemark(), friend.getAvatarUrl());
-                outList.add(jo);
-            }
-
             for (Group group : bot.getGroups()) {
                 String tid = "g" + group.getId();
                 JSONObject jo = setSwitchInfo(tid2conf, tid, group.getName(), group.getAvatarUrl());
@@ -157,13 +151,41 @@ public class UserController {
                 jo.put("tid", conf.getTid());
                 jo.put("name", conf.getTid());
                 String aid = conf.getTid().substring(1);
-                jo.put("icon", conf.getTid().substring(0, 1).equals("g") ?
-                        String.format("http://p.qlogo.cn/gh/%s/%s/640", aid, aid) :
-                        String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", aid));
+                jo.put("icon", String.format("http://p.qlogo.cn/gh/%s/%s/640", aid, aid));
             }
         }
         return outList;
     }
+
+    @RequestMapping("flist")
+    public List flist(@AuthenticationPrincipal UserDetails userDetails) {
+        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
+        qw.eq("qid", userDetails.getUsername());
+        List<GroupConf> confs = groupConfMapper.selectList(qw);
+        Map<String, GroupConf> tid2conf = new HashMap<>();
+        for (GroupConf conf : confs) tid2conf.put(conf.getTid(), conf);
+        Bot bot = Bot.getInstanceOrNull(Long.valueOf(userDetails.getUsername()));
+        List outList = new ArrayList();
+        if (bot != null) {
+            for (Friend friend : bot.getFriends()) {
+                String tid = "f" + friend.getId();
+                JSONObject jo = setSwitchInfo(tid2conf, tid, friend.getRemark(), friend.getAvatarUrl());
+                outList.add(jo);
+            }
+        } else {
+            for (GroupConf conf : confs) {
+                JSONObject jo = new JSONObject();
+                jo.put("k1", conf.getK1());
+                jo.put("k2", conf.getK2());
+                jo.put("tid", conf.getTid());
+                jo.put("name", conf.getTid());
+                String aid = conf.getTid().substring(1);
+                jo.put("icon", String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", aid));
+            }
+        }
+        return outList;
+    }
+
 
     @NotNull
     private static JSONObject setSwitchInfo(Map<String, GroupConf> tid2conf, String tid, String name, String icon) {
@@ -179,7 +201,7 @@ public class UserController {
             jo.put("k2", true);
         }
         jo.put("tid", tid);
-        jo.put("name", name);
+        jo.put("name", name.length() > 6 ? name.substring(0, 5) + ".." : name);
         jo.put("icon", icon);
         return jo;
     }

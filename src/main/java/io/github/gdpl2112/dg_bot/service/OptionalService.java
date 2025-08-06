@@ -21,10 +21,10 @@ import java.util.Map;
  */
 @Service
 public class OptionalService implements ListenerHost {
-    private void touchEvent(MessageEvent event, String id, String tid) {
-        if (configService.isNotOpenK0(event.getBot().getId(), tid)) return;
+    private void touchEvent(MessageEvent event, String bid, String tid) {
+        if (configService.isNotOpenK2(event.getBot().getId(), tid)) return;
         getBos().forEach((k, v) -> {
-            if (isOpen(id, tid, k)) {
+            if (isOpen(bid, k)) {
                 v.run(event);
             }
         });
@@ -90,10 +90,10 @@ public class OptionalService implements ListenerHost {
     @Autowired
     ConfigService configService;
 
-    public boolean isOpen(String id, String tid, String name) {
+    public boolean isOpen(String id, String name) {
         Optional optional = optionalMapper.selectByQidAndOpt(id, name);
         if (optional == null ? false : optional.getOpen()) {
-            return !configService.isNotOpenK2(Long.valueOf(id), tid);
+            return true;
         } else return false;
     }
 }
