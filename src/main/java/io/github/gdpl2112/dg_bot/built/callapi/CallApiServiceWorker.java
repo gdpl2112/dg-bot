@@ -17,6 +17,8 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.net.URI;
 
+import static io.github.gdpl2112.dg_bot.built.callapi.Converter.PAR_URL;
+
 
 @Component
 public class CallApiServiceWorker {
@@ -73,17 +75,18 @@ public class CallApiServiceWorker {
     public ConnectionContext doc(Bot bot, long gid, long qid, CallTemplate template, String text, String... args) throws Exception {
         int i = 1;
         String url = template.url;
-        if (onlyOneArg(url)) {
-            url = url.replaceAll("\\$1", text.substring(template.touch.length()).trim());
-        } else {
-            for (String arg : args) {
-                url = url.replaceFirst(String.format(Converter.CHAR0, i++), arg);
-            }
+        for (String arg : args) {
+            url = url.replaceFirst(String.format(Converter.CHAR0, i++), arg);
         }
         url = Converter.filterArgs(url, bot, gid, qid, args);
         url = filterCall(url, template);
         try {
-            return getConnection(url);
+            if (template.outArgs.equalsIgnoreCase(PAR_URL)) {
+                ConnectionContext context = new ConnectionContext();
+                context.setUrl(Utils.getRedirectUrl(url));
+                context.setBody("");
+                return context;
+            } else return getConnection(url);
         } catch (IOException e) {
             e.printStackTrace();
         }

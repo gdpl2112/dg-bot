@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static io.github.gdpl2112.dg_bot.Utils.getRedirectUrl;
+
 /**
  * @author github.kloping
  */
@@ -121,31 +123,6 @@ public class SongPoint implements BaseOptional {
         }
     }
 
-    /**
-     * 获取重定向地址
-     *
-     * @param path
-     * @return
-     * @throws Exception
-     */
-    public static String getRedirectUrl(String path) {
-        Connection.Response response;
-        try {
-            response = Jsoup.connect(path).ignoreHttpErrors(true)
-                    .followRedirects(false)
-                    .ignoreContentType(true).header("Connection", "Keep-Alive")
-                    .header("User-Agent", "Apache-HttpClient/4.5.14 (Java/17.0.8.1)")
-                    .header("Accept-Encoding", "br,deflate,gzip,x-gzip").method(Connection.Method.HEAD).execute();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        String url = response.header("Location");
-        if (url == null) url = response.header("location");
-        if (url == null) url = response.url().toString();
-        System.out.println(path + " => redirect to " + url);
-        return url;
-    }
 
     public static class SongData {
         public SongData(String type, String name, Long qid, Long time) {

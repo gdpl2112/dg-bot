@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.controllers;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.github.gdpl2112.dg_bot.built.callapi.CallApiService;
 import io.github.gdpl2112.dg_bot.dao.CallTemplate;
 import io.github.gdpl2112.dg_bot.mapper.CallTemplateMapper;
 import io.github.kloping.judge.Judge;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserCallApiController {
     @Autowired
     CallTemplateMapper callTemplateMapper;
+    @Autowired
+    private CallApiService callApiService;
 
     @RequestMapping("/get_data")
     public Object getAll(@AuthenticationPrincipal UserDetails userDetails) {
@@ -38,6 +41,7 @@ public class UserCallApiController {
         qw.eq("qid", userDetails.getUsername());
         qw.eq("touch", touch);
         callTemplateMapper.delete(qw);
+        callApiService.clear(userDetails.getUsername());
         return getAll(userDetails);
     }
 
@@ -73,6 +77,7 @@ public class UserCallApiController {
         } else {
             callTemplateMapper.insert(template);
         }
+        callApiService.clear(userDetails.getUsername());
         return getAll(userDetails);
     }
 }

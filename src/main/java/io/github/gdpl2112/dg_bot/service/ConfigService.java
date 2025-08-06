@@ -23,6 +23,7 @@ public class ConfigService {
         return false;
     }
 
+    //监听
     public boolean isNotOpenK1(Long bid, String tid) {
         QueryWrapper<GroupConf> qw = new QueryWrapper<>();
         qw.eq("qid", bid);

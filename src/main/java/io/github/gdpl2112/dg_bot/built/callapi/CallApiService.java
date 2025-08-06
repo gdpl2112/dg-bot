@@ -14,9 +14,12 @@ import net.mamoe.mirai.event.events.GroupMessageEvent;
 import net.mamoe.mirai.event.events.GroupMessageSyncEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.Message;
-import org.jsoup.Connection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class CallApiService extends SimpleListenerHost {
@@ -72,26 +75,52 @@ public class CallApiService extends SimpleListenerHost {
      * @param subject
      * @return
      */
-    public Message call(String text, long gid, long qid, Bot bot, Contact subject) {
+    public Message call(final String text, long gid, long qid, Bot bot, Contact subject) {
         try {
-            String[] oArgs = text.split("\\s|,|，");
+            String[] oArgs = text.split("[\\s,，]{1,}");
             if (oArgs == null || oArgs.length == 0) return null;
-            String first = oArgs[0];
-            QueryWrapper<CallTemplate> qw = new QueryWrapper<>();
-            qw.eq("qid", bot.getId());
-            qw.eq("touch", first);
-            CallTemplate template = callTemplateMapper.selectOne(qw);
-            if (template == null) return null;
+            String touch = oArgs[0];
             String[] args = new String[oArgs.length - 1];
             System.arraycopy(oArgs, 1, args, 0, args.length);
-            //step in
+            QueryWrapper<CallTemplate> qw = new QueryWrapper<>();
+            qw.eq("qid", bot.getId());
+            qw.eq("touch", touch);
+            CallTemplate template = callTemplateMapper.selectOne(qw);
+            if (template == null) {
+                Map<String, CallTemplate> templates = cache.get(qid);
+                if (templates == null) cache.put(qid, templates = new HashMap<>());
+                if (templates.isEmpty()) {
+                    qw.clear();
+                    qw.eq("qid", bot.getId());
+                    List<CallTemplate> callTemplates = callTemplateMapper.selectList(qw);
+                    for (CallTemplate callTemplate : callTemplates) {
+                        templates.put(callTemplate.getTouch(), callTemplate);
+                    }
+                }
+                for (String key : templates.keySet()) {
+                    if (touch.startsWith(key)) {
+                        if (template == null || template.getTouch().length() < key.length()) {
+                            template = templates.get(key);
+                            args = text.substring(key.length()).split("[\\s,，]{1,}");
+                        }
+                    }
+                }
+            }
+            if (template == null) return null;
             ConnectionContext connection = worker.doc(bot, gid, qid, template, text, args);
             if (connection == null) return null;
-            //step out
             return worker.work(connection, template, bot, gid, qid, subject);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private Map<Long, Map<String, CallTemplate>> cache = new HashMap<>();
+
+    public void clear(String qid) {
+        Long id = Long.parseLong(qid);
+        Map map = cache.remove(id);
+        if (map != null) map.clear();
     }
 }
