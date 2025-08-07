@@ -4,12 +4,11 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
-import io.github.gdpl2112.dg_bot.dao.LikeReco;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
-import io.github.gdpl2112.dg_bot.mapper.LikeRecoMapper;
+import io.github.gdpl2112.dg_bot.service.ScriptService;
 import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import io.github.kloping.date.DateUtils;
 import net.mamoe.mirai.Bot;
@@ -19,6 +18,10 @@ import org.springframework.web.bind.annotation.*;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -35,14 +38,34 @@ public class RecController {
     @Autowired
     ApplicationEventPublisher eventPublisher;
 
+    private Map<String, CountDownLatch> key2cdl = new ConcurrentHashMap<>();
+
     @PostMapping
     public void rec(@RequestBody String rdata) {
         JSONObject jo = JSON.parseObject(rdata);
         if ("profile_like".equalsIgnoreCase(jo.getString("sub_type"))) {
             Long tid = jo.getLong("operator_id");
             Long bid = jo.getLong("self_id");
+            String key = String.format("b%s_t%s", bid, tid);
+            try {
+                CountDownLatch cdl = null;
+                if (key2cdl.containsKey(key)) {
+                    key2cdl.get(key).countDown();
+                    key2cdl.put(key, cdl = new CountDownLatch(1));
+                } else {
+                    key2cdl.put(key, cdl = new CountDownLatch(1));
+                }
+                boolean k = cdl.await(300, TimeUnit.MILLISECONDS);
+                if (k) {
+                    component.log.info("已忽略重复: " + key);
+                    return;
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             Integer times = jo.getInteger("times");
-            component.log.info(String.format("收到点赞: b%s t%s n%s", bid, tid, times));
+            ScriptService.offerLogMsg0(bid.toString(), String.format("收到点赞id:%s=%s次", tid, times));
             eventPublisher.publishEvent(new ProfileLikeEvent(bid, tid, times));
 
             int dayN = DateUtils.getDay();
@@ -65,7 +88,7 @@ public class RecController {
                         if (day != dayN) {
                             break;
                         } else {
-                            if (tid.equals(uid)) {
+                            if (tid == uid) {
                                 pl = new ProfileLike(info0);
                                 break;
                             }
@@ -86,15 +109,18 @@ public class RecController {
                         if (pl.getBTodayVotedCnt() < max) {
                             Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
                             eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
-                        }
+                        } else component.log.waring("跳过b" + bid + "已满赞t" + tid + "C:" + pl.getBTodayVotedCnt());
                         return;
                     } else {
                         component.log.info("未找到该用户的点赞信息:" + tid);
                     }
                 } catch (Exception e) {
-                    component.log.info("收到点赞时获取点赞[列表失败]: " + e.getMessage());
+                    String msg = "收到点赞时获取点赞[列表失败]: " + e.getMessage();
+                    component.log.error(msg);
+                    ScriptService.offerLogMsg0(bid.toString(), msg);
                 }
             }
+            key2cdl.remove(key);
         }
     }
 

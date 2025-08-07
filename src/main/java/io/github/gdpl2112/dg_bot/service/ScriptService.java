@@ -93,7 +93,7 @@ public class ScriptService extends SimpleListenerHost {
                     public void log(String msg) {
                         synchronized (this) {
                             System.out.println("from js(" + bid + ") " + msg);
-                            offerLogMsg(msg);
+                            offerLogMsg(key, msg);
                         }
                     }
 
@@ -103,14 +103,6 @@ public class ScriptService extends SimpleListenerHost {
                         log(msg);
                     }
 
-                    private void offerLogMsg(String msg) {
-                        if (!PRINT_MAP.containsKey(key)) {
-                            PRINT_MAP.put(key, new LinkedList<>());
-                        }
-                        PRINT_MAP.get(key).add("[" + SF_0.format(new Date()) + "] " + msg);
-                        if (PRINT_MAP.get(key).size() > MAX_LINE)
-                            PRINT_MAP.get(key).remove(0);
-                    }
                 };
                 objectMap.put("logger", logger);
                 objectMap.put("log", logger);
@@ -124,6 +116,19 @@ public class ScriptService extends SimpleListenerHost {
                 return scriptCompile;
             }
         }
+    }
+
+    public static void offerLogMsg(String key, String msg) {
+        if (!PRINT_MAP.containsKey(key)) {
+            PRINT_MAP.put(key, new LinkedList<>());
+        }
+        PRINT_MAP.get(key).add("[" + SF_0.format(new Date()) + "] " + msg);
+        if (PRINT_MAP.get(key).size() > MAX_LINE)
+            PRINT_MAP.get(key).remove(0);
+    }
+
+    public static void offerLogMsg0(String key, String msg) {
+        offerLogMsg(key, "[系统]" + msg);
     }
 
     //===================================
