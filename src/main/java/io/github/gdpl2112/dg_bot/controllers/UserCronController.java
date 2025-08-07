@@ -28,6 +28,7 @@ import java.util.List;
  */
 @RestController
 @PreAuthorize("hasAuthority('user')")
+@RequestMapping("/api")
 public class UserCronController {
 
     @Autowired

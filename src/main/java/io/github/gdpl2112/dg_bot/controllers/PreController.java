@@ -17,7 +17,7 @@ import java.util.List;
  * @date 2025/6/2-22:06
  */
 @RestController
-@RequestMapping("/pre")
+@RequestMapping("/api")
 public class PreController {
 
     @Autowired

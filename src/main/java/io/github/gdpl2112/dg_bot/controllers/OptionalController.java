@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @PreAuthorize("hasAuthority('user')")
+@RequestMapping("/api")
 public class OptionalController {
     @Autowired
     OptionalMapper optionalMapper;

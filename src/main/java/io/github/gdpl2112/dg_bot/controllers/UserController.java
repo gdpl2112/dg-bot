@@ -28,6 +28,7 @@ import java.util.Map;
  */
 @RestController
 @PreAuthorize("hasAuthority('user')")
+@RequestMapping("/api")
 public class UserController {
     @Autowired
     AuthMapper authMapper;

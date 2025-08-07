@@ -130,7 +130,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 
     @EventHandler
     public void onStartupEvent(net.mamoe.mirai.console.events.StartupEvent event) {
-        System.out.println("Q云代挂启动成功 compile at 2025/8/06");
+        System.out.println("Q云代挂启动成功 compile at 2025/8/07");
         Public.EXECUTOR_SERVICE1.submit(() -> {
             try {
                 TimeUnit.SECONDS.sleep(1);

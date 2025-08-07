@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @date 2023-07-31
  */
 @RestController
-@RequestMapping("/ca")
+@RequestMapping("/api/ca")
 @PreAuthorize("hasAuthority('user')")
 public class UserCallApiController {
     @Autowired

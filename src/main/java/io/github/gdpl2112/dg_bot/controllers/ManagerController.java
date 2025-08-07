@@ -19,7 +19,7 @@ import java.util.List;
  * @author github.kloping
  */
 @RestController
-@RequestMapping("/m")
+@RequestMapping("/api/m")
 @PreAuthorize("hasAuthority('admin')")
 public class ManagerController {
     @Autowired
