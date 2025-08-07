@@ -170,7 +170,9 @@ public class UserController {
         if (bot != null) {
             for (Friend friend : bot.getFriends()) {
                 String tid = "f" + friend.getId();
-                JSONObject jo = setSwitchInfo(tid2conf, tid, friend.getRemark(), friend.getAvatarUrl());
+                String nick = friend.getRemark();
+                if (Judge.isEmpty(nick)) nick = friend.getNick();
+                JSONObject jo = setSwitchInfo(tid2conf, tid, nick, friend.getAvatarUrl());
                 outList.add(jo);
             }
         } else {
