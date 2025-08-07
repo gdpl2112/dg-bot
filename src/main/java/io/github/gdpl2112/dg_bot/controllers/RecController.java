@@ -50,7 +50,8 @@ public class RecController {
             try {
                 CountDownLatch cdl = null;
                 if (key2cdl.containsKey(key)) {
-                    key2cdl.get(key).countDown();
+                    cdl = key2cdl.get(key);
+                    if (cdl != null) cdl.countDown();
                     key2cdl.put(key, cdl = new CountDownLatch(1));
                 } else {
                     key2cdl.put(key, cdl = new CountDownLatch(1));
