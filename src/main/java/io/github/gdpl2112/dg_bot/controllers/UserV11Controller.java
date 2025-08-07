@@ -40,6 +40,9 @@ public class UserV11Controller {
             case "autoLike":
                 v11Conf.setAutoLike(Boolean.parseBoolean(value));
                 break;
+            case "needMaxLike":
+                v11Conf.setNeedMaxLike(Boolean.parseBoolean(value));
+                break;
             case "autoZoneLike":
                 v11Conf.setAutoZoneLike(Boolean.parseBoolean(value));
                 break;

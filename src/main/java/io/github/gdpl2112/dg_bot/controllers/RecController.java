@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.LikeReco;
+import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
@@ -29,15 +30,11 @@ import java.util.Date;
 public class RecController {
 
     @Autowired
-    LikeRecoMapper likeRecoMapper;
-
-    @Autowired
     MiraiComponent component;
 
     @Autowired
     ApplicationEventPublisher eventPublisher;
 
-    //{"time":1752683938,"self_id":3474006766,"post_type":"notice","notice_type":"notify","sub_type":"profile_like","operator_id":291841860,"operator_nick":"skid","times":1}
     @PostMapping
     public void rec(@RequestBody String rdata) {
         JSONObject jo = JSON.parseObject(rdata);
@@ -47,47 +44,56 @@ public class RecController {
             Integer times = jo.getInteger("times");
             component.log.info(String.format("收到点赞: b%s t%s n%s", bid, tid, times));
             eventPublisher.publishEvent(new ProfileLikeEvent(bid, tid, times));
+
             int dayN = DateUtils.getDay();
-            String date = ProfileLike.SF_MM_DD.format(new Date());
-            LikeReco likeReco = likeRecoMapper.getByDateAndBidAndTid(bid, date, tid.toString());
-            if (likeReco == null) {
-                likeReco = new LikeReco();
-                likeReco.setBid(bid.toString());
-                likeReco.setTid(tid.toString());
-                likeReco.setDate(date);
-                likeRecoMapper.insert(likeReco);
-            }
             Bot bot = Bot.getInstanceOrNull(bid);
+            V11Conf v11Conf = v11AutoService.getV11Conf(String.valueOf(bot.getId()));
+
             if (bot != null && bot instanceof RemoteBot) {
-                //不在判断直接 点赞
                 RemoteBot remoteBot = null;
-                int max = 0;
                 try {
                     remoteBot = (RemoteBot) bot;
                     JSONObject jsonObject = ProfileLike.getProfileLikeData1(remoteBot);
-                    JSONObject favoriteInfo = jsonObject.getJSONObject("favoriteInfo");
-                    JSONArray fUserInfos = favoriteInfo.getJSONArray("userInfos");
-                    max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
-                    for (Object fUserInfo : fUserInfos) {
-                        ProfileLike pl = new ProfileLike((JSONObject) fUserInfo);
-                        if (pl.getDay() != dayN) {
+                    JSONObject infoObj = jsonObject.getJSONObject("voteInfo");
+                    JSONArray infos = infoObj.getJSONArray("userInfos");
+                    ProfileLike pl = null;
+                    for (Object info : infos) {
+                        JSONObject info0 = (JSONObject) info;
+                        long cut = info0.getLong("latestTime") * 1000L;
+                        int day = Integer.valueOf(ProfileLike.SF_DD.format(new Date(cut)).trim());
+                        long uid = info0.getLong("uin");
+                        if (day != dayN) {
                             break;
                         } else {
-                            if (tid.equals(pl.getVid())) {
-                                if (pl.getCount() < max) {
-                                    Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
-                                    eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
-                                }
+                            if (tid.equals(uid)) {
+                                pl = new ProfileLike(info0);
+                                break;
+                            }
+                        }
+                    }
+                    if (pl != null) {
+                        if (v11Conf.getNeedMaxLike()) {
+                            int fmax = pl.isSvip() ? 20 : 10;
+                            if (pl.getCount() < fmax) {
+                                component.log.waring(String.format("B%s开启满赞回赞,当前f%s点赞%s次,返回", bid, pl.getVid(), pl.getCount()));
                                 return;
                             }
                         }
+                        // 保存点赞信息
+                        // v11AutoService.saveLikeReco(bid, date, tid);
+                        //如果没点满 则点赞
+                        int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
+                        if (pl.getBTodayVotedCnt() < max) {
+                            Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
+                            eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
+                        }
+                        return;
+                    } else {
+                        component.log.info("未找到该用户的点赞信息:" + tid);
                     }
                 } catch (Exception e) {
                     component.log.info("收到点赞时获取点赞[列表失败]: " + e.getMessage());
                 }
-                //今日 第一次点赞
-                Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
-                eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
             }
         }
     }

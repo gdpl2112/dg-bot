@@ -15,6 +15,8 @@ public class V11Conf {
     private String qid;
     //自动回赞
     private Boolean autoLike;
+    //需要暂满 才回赞 默认false
+    private Boolean needMaxLike;
     //隔日回赞
     private Boolean autoLikeYesterday;
     //自动打卡群id

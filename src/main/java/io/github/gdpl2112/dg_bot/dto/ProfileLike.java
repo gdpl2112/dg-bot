@@ -19,14 +19,14 @@ import java.util.Date;
 public class ProfileLike {
 
     public static final SimpleDateFormat SF_DD = new SimpleDateFormat("dd");
-    public static final SimpleDateFormat SF_MM_DD = new SimpleDateFormat("MM-dd");
+//    public static final SimpleDateFormat SF_MM_DD = new SimpleDateFormat("MM-dd");
     public static final String FORMAT_SEND_LIKE = "{\"user_id\": \"%s\",\"times\": %s}";
 
     private long vid, date;
     private int count;
     private int day;
     private int bTodayVotedCnt;
-
+    private boolean isSvip;
     private JSONObject odata;
 
     public ProfileLike(JSONObject fUser) {
@@ -36,9 +36,16 @@ public class ProfileLike {
         date = fUser.getLong("latestTime") * 1000L;
         day = Integer.valueOf(SF_DD.format(new Date(date)).trim());
         bTodayVotedCnt = fUser.getInteger("bTodayVotedCnt");
+        isSvip = fUser.getBoolean("isSvip");
     }
 
 
+    /**
+     * 获得 最近点赞信息 带VIP信息
+     *
+     * @param remoteBot
+     * @return
+     */
     public static JSONObject getProfileLikeData1(RemoteBot remoteBot) {
         String data = remoteBot.executeAction(ActionContext.build("get_profile_like", b -> b.throwExceptions(true)), "{}");
         JSONObject jsonObject = JSONObject.parseObject(data);
@@ -46,9 +53,25 @@ public class ProfileLike {
         return jsonObject;
     }
 
+    /**
+     * 获得 所有 被点赞的记录  不带VIP信息
+     *
+     * @param remoteBot
+     * @return
+     */
     public static JSONObject getProfileLikeData0(RemoteBot remoteBot) {
         String data = remoteBot.executeAction(ActionContext.build("get_profile_like", b -> b.throwExceptions(true)),
                 String.format("{\"user_id\": %s}", ((Bot) remoteBot).getId()));
+        JSONObject jsonObject = JSONObject.parseObject(data);
+        jsonObject = jsonObject.getJSONObject("data");
+        return jsonObject;
+    }
+
+    // 分页 鞋带VIP信息
+    public static JSONObject getProfileLikePage(RemoteBot remoteBot, int st, int count) {
+        String data = remoteBot.executeAction(ActionContext.build("get_profile_like", b -> b.throwExceptions(true)),
+                String.format("{\"user_id\": 0,\"start\": %s, \"count\": %s}", st, count)
+        );
         JSONObject jsonObject = JSONObject.parseObject(data);
         jsonObject = jsonObject.getJSONObject("data");
         return jsonObject;

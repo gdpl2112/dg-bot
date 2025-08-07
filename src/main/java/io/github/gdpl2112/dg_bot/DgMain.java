@@ -40,7 +40,7 @@ public class DgMain implements CommandLineRunner {
     public static ConfigurableApplicationContext applicationContext;
 
     public static void main(String[] args) throws Exception {
-        System.out.println("start pre build time on 25/08.07");
+        System.out.println("start pre build time on 25/08.07.");
         HttpsUtils.trustAllHttpsCertificates();
         applicationContext = SpringApplication.run(DgMain.class, args);
     }
@@ -69,11 +69,6 @@ public class DgMain implements CommandLineRunner {
 
         logger.info("tables update");
 
-        //alter table conf
-        //    add del0 VARCHAR(120) default '删词';
-        //
-        //alter table conf
-        //    add status0 VARCHAR(120) default '/状态';
         boolean k0 = false;
         for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
             String name = e0.get("name").toString();
@@ -97,7 +92,17 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("alter table conf add status0 VARCHAR(40) default '/状态';");
         }
         k0 = false;
-
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('v11_conf')")) {
+            String name = e0.get("name").toString();
+            if ("need_max_like".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            System.out.println("conf添加字段");
+            jdbcTemplate.update("alter table v11_conf add need_max_like BLOB default false;");
+        }
+        k0 = false;
 
     }
 
