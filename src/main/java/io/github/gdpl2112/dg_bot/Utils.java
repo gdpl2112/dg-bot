@@ -17,6 +17,8 @@ import org.jsoup.Jsoup;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
+import oshi.software.os.OSProcess;
+import oshi.software.os.OperatingSystem;
 import oshi.util.Util;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
@@ -74,35 +76,45 @@ public class Utils {
             sb.append("ID: ").append(bot.getBot().getNick()).append("(").append(bid).append(")");
             sb.append("\n协议: ").append(remoteBot.getAppName()).append(" v.").append(remoteBot.getAppVersion());
             sb.append("\n过期: ").append(BaseComponent.SIMPLE_DATE_FORMAT.format(authM.getExp()));
+            sb.append("\n上线: ").append(BaseComponent.SIMPLE_DATE_FORMAT.format(authM.getT0()));
         }
-        Runtime runtime = Runtime.getRuntime();
-        long totalMemory = runtime.totalMemory();
-        long freeMemory = runtime.freeMemory();
-        long usedMemory = totalMemory - freeMemory;
-
-        sb.append("\n程序占用内存: " + usedMemory / (1024 * 1024) + "MB");
 
         SystemInfo systemInfo = new SystemInfo();
+        OperatingSystem os = systemInfo.getOperatingSystem();
+        // 获取当前进程 ID
+        int pid = os.getProcessId();
+        // 获取当前进程对象
+        OSProcess currentProcess = os.getProcess(pid);
+        // 获取内存占用（常驻内存集大小，即实际物理内存）
+        long memoryUsageBytes = currentProcess.getResidentSetSize();
+        sb.append("\n程序占用内存: " + formatBytes(memoryUsageBytes));
+
         GlobalMemory memory = systemInfo.getHardware().getMemory();
 
         long totalPhysical = memory.getTotal();
         long availablePhysical = memory.getAvailable();
         long usedPhysical = totalPhysical - availablePhysical;
 
-        sb.append("\n物理已占内存: " + (usedPhysical * 100 / totalPhysical) + "%");
+        sb.append("\n物理总占内存: " + (usedPhysical * 100 / totalPhysical) + "%");
 
-        sb.append("\n物理已用内存: " +
-                (usedPhysical / (1024 * 1024) + "MB" + "/" + (totalPhysical / (1024 * 1024) + "MB"))
-        );
+        sb.append("\n物理总用内存: " + formatBytes(usedPhysical) + "/" + formatBytes(totalPhysical));
 
         CentralProcessor processor = systemInfo.getHardware().getProcessor();
         long[] prevTicks = processor.getSystemCpuLoadTicks();
         Util.sleep(1000);
         double usage = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
         sb.append("\n" + String.format("CPU使用率: %.2f%%", usage));
+        sb.append("\nDG版本: v25.0815");
         return sb.toString();
     }
 
+    // 字节单位转换工具（如 B → GB）
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        char unit = "KMGTPE".charAt(exp - 1);
+        return String.format("%.2f %sB", bytes / Math.pow(1024, exp), unit);
+    }
 
     public static final Random RANDOM = new Random();
 

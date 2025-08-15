@@ -11,6 +11,7 @@ import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.service.ScriptService;
 import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import io.github.kloping.date.DateUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -19,6 +20,7 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +30,7 @@ import java.util.concurrent.TimeUnit;
  * @author github kloping
  * @date 2025/7/17-00:34
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/rec")
 public class RecController {
@@ -40,12 +43,43 @@ public class RecController {
 
     private Map<String, CountDownLatch> key2cdl = new ConcurrentHashMap<>();
 
+    private boolean waited = false;
+
+    private Queue<String> waitQueue = new java.util.concurrent.LinkedBlockingQueue<>();
+
+    private synchronized void gotoWait(String rdata) {
+        component.log.info("接收点赞事件进入等待：" + rdata);
+        waitQueue.offer(rdata);
+        if (waited) {
+            return;
+        } else {
+            waited = true;
+            try {
+                V11AutoService.latch.await();
+            } catch (InterruptedException e) {
+                log.error("等待超时", e);
+            }
+            component.log.info("接收点赞事件等待结束: 总队列长度:" + waitQueue.size());
+            waitQueue.forEach(e -> {
+                rec(e);
+            });
+            waitQueue.clear();
+            waited = false;
+        }
+    }
+
     @PostMapping
     public void rec(@RequestBody String rdata) {
         JSONObject jo = JSON.parseObject(rdata);
         if ("profile_like".equalsIgnoreCase(jo.getString("sub_type"))) {
+            if (V11AutoService.latch != null && V11AutoService.latch.getCount() > 0) {
+                gotoWait(rdata);
+                return;
+            }
             Long tid = jo.getLong("operator_id");
             Long bid = jo.getLong("self_id");
+
+            // 控制短时内重读点赞
             String key = String.format("b%s_t%s", bid, tid);
             try {
                 CountDownLatch cdl = null;
@@ -64,7 +98,7 @@ public class RecController {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
+            // 开始处理
             Integer times = jo.getInteger("times");
             ScriptService.offerLogMsg0(bid.toString(), String.format("收到点赞id:%s=%s次", tid, times));
             eventPublisher.publishEvent(new ProfileLikeEvent(bid, tid, times));

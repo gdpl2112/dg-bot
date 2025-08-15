@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author github.kloping
@@ -151,17 +152,26 @@ public class V11AutoService extends SimpleListenerHost {
         return sb != null ? sb.toString() : null;
     }
 
+    public static CountDownLatch latch = null;
+
     // 回赞昨日
     @Scheduled(cron = "00 01 00 * * ?")
     public void yesterday() {
         component.log.info("回赞昨日启动");
-        for (Bot bot : Bot.getInstances()) {
-            if (bot != null && bot.isOnline()) {
-                yesterdayLieNow(String.valueOf(bot.getId()));
+        latch = new CountDownLatch(1);
+        try {
+            for (Bot bot : Bot.getInstances()) {
+                if (bot != null && bot.isOnline()) {
+                    yesterdayLieNow(String.valueOf(bot.getId()));
+                }
             }
+        } finally {
+            component.log.info("所有回赞结束");
+            latch.countDown();
+            component.log.info("结束回赞等待: ");
+            latch = null;
         }
 //        component.log.info("所有回赞结束 删除全部记录: " + likeRecoMapper.delete(null));
-        component.log.info("所有回赞结束");
     }
 
     public String yesterdayLieNow(String id) {
