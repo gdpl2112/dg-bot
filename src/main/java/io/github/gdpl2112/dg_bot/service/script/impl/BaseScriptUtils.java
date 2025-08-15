@@ -157,7 +157,7 @@ public class BaseScriptUtils implements ScriptUtils {
         return null;
     }
 
-    private static Map<Long, JdbcTemplate> templateMap = new HashMap<>();
+    public static final Map<Long, JdbcTemplate> templateMap = new HashMap<>();
 
     @NotNull
     private static JdbcTemplate getJdbcTemplate(long bid) {

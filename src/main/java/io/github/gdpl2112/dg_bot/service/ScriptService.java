@@ -1,7 +1,9 @@
 package io.github.gdpl2112.dg_bot.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.built.ScriptCompile;
+import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
@@ -9,6 +11,7 @@ import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
+import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
@@ -25,6 +28,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -142,6 +147,13 @@ public class ScriptService extends SimpleListenerHost {
     private static final String ON_SEND_LIKED_FUNCTION = "onSendLiked";
     // GroupSignEvent 事件入口 方法名
     private static final String ON_GROUP_SIGN_FUNCTION = "onGroupSign";
+
+    @Scheduled(cron = "0 1 */3 * * ?")
+    public void deleteMsg() {
+        for (JdbcTemplate value : BaseScriptUtils.templateMap.values()) {
+            value.execute("VACUUM;");
+        }
+    }
 
     @EventHandler
     public void onMessage(@NotNull MessageEvent event) {
