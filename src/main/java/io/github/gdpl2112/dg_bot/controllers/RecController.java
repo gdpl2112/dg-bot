@@ -58,6 +58,7 @@ public class RecController {
                 try {
                     if (V11AutoService.latch == null) {
                         rec(rdata);
+                        waitQueue.remove(rdata);
                         return;
                     }
                     V11AutoService.latch.await();
