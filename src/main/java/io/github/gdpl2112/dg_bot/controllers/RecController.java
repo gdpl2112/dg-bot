@@ -47,24 +47,30 @@ public class RecController {
 
     private Queue<String> waitQueue = new java.util.concurrent.LinkedBlockingQueue<>();
 
-    private synchronized void gotoWait(String rdata) {
+    private void gotoWait(String rdata) {
         component.log.info("接收点赞事件进入等待：" + rdata);
         waitQueue.offer(rdata);
         if (waited) {
             return;
         } else {
-            waited = true;
-            try {
-                V11AutoService.latch.await();
-            } catch (InterruptedException e) {
-                log.error("等待超时", e);
+            synchronized (this) {
+                waited = true;
+                try {
+                    if (V11AutoService.latch == null) {
+                        rec(rdata);
+                        return;
+                    }
+                    V11AutoService.latch.await();
+                } catch (Exception e) {
+                    log.error("接收点赞等待异常", e);
+                }
+                component.log.info("接收点赞事件等待结束: 总队列长度:" + waitQueue.size());
+                waitQueue.forEach(e -> {
+                    rec(e);
+                });
+                waitQueue.clear();
+                waited = false;
             }
-            component.log.info("接收点赞事件等待结束: 总队列长度:" + waitQueue.size());
-            waitQueue.forEach(e -> {
-                rec(e);
-            });
-            waitQueue.clear();
-            waited = false;
         }
     }
 
