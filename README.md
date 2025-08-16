@@ -2,6 +2,8 @@
 
 已部署 https://dg.kloping.top
 
+> [前端页面仓库](../dg-bot-front)
+
 - 不支持添加插件 # 节省内存 避免多bot数据混乱
 - 定时消息发送 #主动续火
 - 简单的关键词回复 #被动续火
@@ -10,6 +12,7 @@
 - 更多功能请pr
 
 ### [用户使用手册](userManual/README.md)
+
 
 #### 内置功能: [API调用](expression.md)
 
