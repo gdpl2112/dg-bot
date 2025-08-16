@@ -22,8 +22,10 @@ import oshi.software.os.OperatingSystem;
 import oshi.util.Util;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -104,8 +106,33 @@ public class Utils {
         Util.sleep(1000);
         double usage = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
         sb.append("\n" + String.format("CPU使用率: %.2f%%", usage));
-        sb.append("\nDG版本: v25.0815");
+        sb.append("\nDG版本: v25.0818");
+        if (isLinux()) {
+            sb.append("\nCPU温度: " + getCpuTemplate());
+        }
         return sb.toString();
+    }
+
+    public static boolean isLinux() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("linux")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static String getCpuTemplate() {
+        try {
+            Process process = Runtime.getRuntime().exec("cat /sys/class/thermal/thermal_zone0/temp");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line = reader.readLine();
+            double tempCelsius = Double.parseDouble(line) / 1000.0;
+            return String.format("%.1f°C", tempCelsius);
+        } catch (Exception e) {
+            System.err.println("读取失败，需root权限或驱动支持");
+            return null;
+        }
     }
 
     // 字节单位转换工具（如 B → GB）
