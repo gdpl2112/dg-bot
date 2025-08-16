@@ -17,7 +17,7 @@ public class SystemController {
 
     @RequestMapping("/favicon.ico")
     public void favicon(HttpServletResponse resp, @AuthenticationPrincipal @Nullable UserDetails userDetails) throws IOException {
-        String redirectURL = "http://kloping.top/icon.jpg";
+        String redirectURL = "https://kloping.top/icon.jpg";
         if (userDetails != null)
             redirectURL = String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", userDetails.getUsername());
         resp.sendRedirect(redirectURL);
@@ -25,7 +25,7 @@ public class SystemController {
 
     @RequestMapping("/icon")
     public void icon(HttpServletResponse resp, @AuthenticationPrincipal @Nullable UserDetails userDetails) throws IOException {
-        String redirectURL = "http://kloping.top/icon.jpg";
+        String redirectURL = "https://kloping.top/icon.jpg";
         if (userDetails != null)
             redirectURL = String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", userDetails.getUsername());
         resp.sendRedirect(redirectURL);
