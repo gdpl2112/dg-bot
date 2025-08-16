@@ -2,7 +2,7 @@
 
 已部署 https://dg.kloping.top
 
-> [前端页面仓库](../dg-bot-front)
+> [前端页面仓库](https://github.com/gdpl2112/dg-bot-front)
 
 - 不支持添加插件 # 节省内存 避免多bot数据混乱
 - 定时消息发送 #主动续火
