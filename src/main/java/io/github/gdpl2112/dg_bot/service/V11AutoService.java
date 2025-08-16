@@ -149,14 +149,8 @@ public class V11AutoService extends SimpleListenerHost {
             }
         } finally {
             yesterdayLiking = false;
-            component.log.info("所有回赞结束,开始最后点赞");
-            for (Bot bot : Bot.getInstances()) {
-                if (bot != null && bot.isOnline()) {
-                    if (bot instanceof RemoteBot) {
-                        component.log.info(likeNow(String.valueOf(bot.getId())));
-                    }
-                }
-            }
+            component.log.info("所有回赞结束");
+            autoLike();
         }
     }
 

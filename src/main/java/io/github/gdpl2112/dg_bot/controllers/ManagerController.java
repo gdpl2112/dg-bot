@@ -3,9 +3,10 @@ package io.github.gdpl2112.dg_bot.controllers;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
-import io.github.kloping.judge.Judge;
+import io.github.gdpl2112.dg_bot.service.V11AutoService;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,6 +23,7 @@ import java.util.List;
 @RequestMapping("/api/m")
 @PreAuthorize("hasAuthority('admin')")
 public class ManagerController {
+
     @Autowired
     AuthMapper authMapper;
 
@@ -45,7 +47,7 @@ public class ManagerController {
             if (bot != null && bot.isOnline()) {
                 String nick = bot.getNick();
                 jo.put("t0", authM.getT0());
-            } else{
+            } else {
                 jo.put("t0", -1L);
             }
             list.add(jo);
@@ -80,5 +82,15 @@ public class ManagerController {
                 SF_YY.format(exp),
                 SF_MM.format(exp),
                 SF_DD.format(exp)};
+    }
+
+    @Autowired
+    @Lazy
+    V11AutoService v11AutoService;
+
+    @RequestMapping("/autoLike")
+    public String autoLike() {
+        v11AutoService.autoLike();
+        return "OK";
     }
 }

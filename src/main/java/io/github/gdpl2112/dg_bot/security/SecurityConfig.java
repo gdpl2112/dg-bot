@@ -3,6 +3,7 @@ package io.github.gdpl2112.dg_bot.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,18 +17,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    private static final Set<String> NEED_AUTH_PAGES = new CopyOnWriteArraySet<>();
-
-    static {
-        NEED_AUTH_PAGES.add("/bot.html");
-        NEED_AUTH_PAGES.add("/manager.html");
-        NEED_AUTH_PAGES.add("/conf.html");
-        NEED_AUTH_PAGES.add("/passive.html");
-        NEED_AUTH_PAGES.add("/cron.html");
-        NEED_AUTH_PAGES.add("/cron-list.html");
-        NEED_AUTH_PAGES.add("/call-api.html");
-    }
-
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
@@ -38,27 +27,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.sessionManagement()
                 .and()
-
-                .formLogin()
-                .loginPage("/login.html")
-//                .loginProcessingUrl("/bot/login")
-//                .failureForwardUrl("/login.html")
-//                .usernameParameter("qid")
-//                .passwordParameter("p")
-//                .failureUrl("/login.html")
-//                .defaultSuccessUrl("/bot.html")
-                .and()
+                .formLogin().disable()
+                .httpBasic().disable()
                 //=============
                 .authorizeRequests()
-                //匹配这些地址
-                .mvcMatchers(NEED_AUTH_PAGES.toArray(new String[0]))
-                //需要认证
-                .authenticated()
-                //其他的
                 .anyRequest()
-                //全部放行
-                .permitAll()
+                .authenticated()
                 .and()
+                .exceptionHandling(exception -> exception
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.getWriter().write("Access Denied: Insufficient permissions");
+                        })
+                )
                 //========
                 .rememberMe()
                 .tokenValiditySeconds(60 * 60 * 24)
