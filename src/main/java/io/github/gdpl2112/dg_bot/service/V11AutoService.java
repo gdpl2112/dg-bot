@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * @author github.kloping
@@ -43,23 +42,6 @@ public class V11AutoService extends SimpleListenerHost {
     public V11AutoService() {
         super();
     }
-
-//    /**
-//     * 保存点赞记录
-//     * @param bid
-//     * @param date 1-1
-//     * @param tid
-//     */
-//    public void saveLikeReco(Long bid, String date, Long tid) {
-//        LikeReco likeReco = likeRecoMapper.getByDateAndBidAndTid(bid, date, tid.toString());
-//        if (likeReco == null) {
-//            likeReco = new LikeReco();
-//            likeReco.setBid(bid.toString());
-//            likeReco.setTid(tid.toString());
-//            likeReco.setDate(date);
-//            likeRecoMapper.insert(likeReco);
-//        }
-//    }
 
     public @NotNull V11Conf getV11Conf(String id) {
         V11Conf v11Conf = mapper.selectById(id);
@@ -152,26 +134,30 @@ public class V11AutoService extends SimpleListenerHost {
         return sb != null ? sb.toString() : null;
     }
 
-    public static CountDownLatch latch = null;
+    public static boolean yesterdayLiking = false;
 
     // 回赞昨日
     @Scheduled(cron = "00 01 00 * * ?")
     public void yesterday() {
-        component.log.info("回赞昨日启动");
-        latch = new CountDownLatch(1);
         try {
+            yesterdayLiking = true;
+            component.log.info("回赞昨日启动");
             for (Bot bot : Bot.getInstances()) {
                 if (bot != null && bot.isOnline()) {
                     yesterdayLieNow(String.valueOf(bot.getId()));
                 }
             }
         } finally {
-            component.log.info("所有回赞结束");
-            latch.countDown();
-            component.log.info("结束回赞等待: ");
-            latch = null;
+            yesterdayLiking = false;
+            component.log.info("所有回赞结束,开始最后点赞");
+            for (Bot bot : Bot.getInstances()) {
+                if (bot != null && bot.isOnline()) {
+                    if (bot instanceof RemoteBot) {
+                        component.log.info(likeNow(String.valueOf(bot.getId())));
+                    }
+                }
+            }
         }
-//        component.log.info("所有回赞结束 删除全部记录: " + likeRecoMapper.delete(null));
     }
 
     public String yesterdayLieNow(String id) {

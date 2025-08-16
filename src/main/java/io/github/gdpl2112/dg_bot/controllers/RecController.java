@@ -43,46 +43,15 @@ public class RecController {
 
     private Map<String, CountDownLatch> key2cdl = new ConcurrentHashMap<>();
 
-    private boolean waited = false;
-
-    private Queue<String> waitQueue = new java.util.concurrent.LinkedBlockingQueue<>();
-
-    private void gotoWait(String rdata) {
-        component.log.info("接收点赞事件进入等待：" + rdata);
-        waitQueue.offer(rdata);
-        if (waited) {
-            return;
-        } else {
-            synchronized (this) {
-                waited = true;
-                try {
-                    if (V11AutoService.latch == null) {
-                        rec(rdata);
-                        waitQueue.remove(rdata);
-                        return;
-                    }
-                    V11AutoService.latch.await();
-                } catch (Exception e) {
-                    log.error("接收点赞等待异常", e);
-                }
-                component.log.info("接收点赞事件等待结束: 总队列长度:" + waitQueue.size());
-                waitQueue.forEach(e -> {
-                    rec(e);
-                });
-                waitQueue.clear();
-                waited = false;
-            }
-        }
-    }
 
     @PostMapping
     public void rec(@RequestBody String rdata) {
+        if (V11AutoService.yesterdayLiking) {
+            component.log.info("回赞昨日进行中..忽略点赞");
+            return;
+        }
         JSONObject jo = JSON.parseObject(rdata);
         if ("profile_like".equalsIgnoreCase(jo.getString("sub_type"))) {
-            if (V11AutoService.latch != null && V11AutoService.latch.getCount() > 0) {
-                gotoWait(rdata);
-                return;
-            }
             Long tid = jo.getLong("operator_id");
             Long bid = jo.getLong("self_id");
 
@@ -97,7 +66,7 @@ public class RecController {
                 } else {
                     key2cdl.put(key, cdl = new CountDownLatch(1));
                 }
-                boolean k = cdl.await(300, TimeUnit.MILLISECONDS);
+                boolean k = cdl.await(333, TimeUnit.MILLISECONDS);
                 if (k) {
                     component.log.info("已忽略重复: " + key);
                     return;
