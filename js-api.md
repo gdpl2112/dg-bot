@@ -11,14 +11,14 @@
 // msg string类型
 // event java事件对象
 // utils 工具
-function onMsgEvent(msg, event, utils) {
+function onMsgEvent(msg, event) {
 
 }
 
 // 所有机器人事件入口
 // event java事件对象
 // utils 工具
-function onBotEvent(event, utils) {
+function onBotEvent(event) {
 
 }
 
@@ -26,7 +26,7 @@ function onBotEvent(event, utils) {
 // event 包含字段 selfId,operatorId,times
 // utils 工具
 // bot 对象
-function onProfileLike(event, utils, bot) {
+function onProfileLike(event) {
 
 }
 
@@ -34,13 +34,13 @@ function onProfileLike(event, utils, bot) {
 // event 包含事件 selfId,operatorId,times ## Boolean ok; 是否成功 失败时原因 可能 不是好友 请求失败 或 点赞上限
 // 其余同上
 
-function onSendLiked(event, utils, bot) {
+function onSendLiked(event) {
 
 }
 
 // 群签到事件入口
 // event 字段 gid,selfId #Boolean ok;
-function onGroupSign(event, utils, bot) {
+function onGroupSign(event) {
 
 }
 ```
@@ -172,7 +172,7 @@ var GroupMessageEvent = Java.type("net.mamoe.mirai.event.events.GroupMessageEven
 var FriendMessageEvent = Java.type("net.mamoe.mirai.event.events.FriendMessageEvent")
 
 
-function onMsgEvent(msg, event, utils) {
+function onMsgEvent(msg, event) {
   if (msg === "test") {
     if (event instanceof GroupMessageEvent) {
       var strCls = Java.type("java.lang.String")
