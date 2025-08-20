@@ -13,7 +13,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
@@ -55,9 +54,11 @@ public class UserPassiveController {
     }
 
     @RequestMapping("/p-add")
-    public Collection<PassiveMessage> passiveAdd(@AuthenticationPrincipal UserDetails userDetails,
-                                                 @RequestParam(name = "t0") String touch,
-                                                 @RequestParam(name = "t1") String out) {
+    public Collection<PassiveMessage> passiveAdd(@AuthenticationPrincipal UserDetails userDetails
+            , @RequestBody String body) {
+        JSONObject jo = JSON.parseObject(body);
+        String touch = jo.getString("t0");
+        String out = jo.getString("t1");
         Passive passive = new Passive();
         passive.setQid(userDetails.getUsername());
         passive.setTouch(touch);
