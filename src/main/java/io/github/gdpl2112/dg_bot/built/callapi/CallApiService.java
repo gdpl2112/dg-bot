@@ -87,11 +87,12 @@ public class CallApiService extends SimpleListenerHost {
             qw.eq("touch", touch);
             CallTemplate template = callTemplateMapper.selectOne(qw);
             if (template == null) {
-                Map<String, CallTemplate> templates = cache.get(qid);
-                if (templates == null) cache.put(qid, templates = new HashMap<>());
+                Map<String, CallTemplate> templates = cache.get(bot.getId());
+                if (templates == null) cache.put(bot.getId(), templates = new HashMap<>());
                 if (templates.isEmpty()) {
                     qw.clear();
                     qw.eq("qid", bot.getId());
+                    qw.likeRight("touch", touch.substring(0, 1));
                     List<CallTemplate> callTemplates = callTemplateMapper.selectList(qw);
                     for (CallTemplate callTemplate : callTemplates) {
                         templates.put(callTemplate.getTouch(), callTemplate);
@@ -99,6 +100,7 @@ public class CallApiService extends SimpleListenerHost {
                 }
                 for (String key : templates.keySet()) {
                     if (touch.startsWith(key)) {
+                        if (!containsArgs(template.getUrl())) continue;
                         if (template == null || template.getTouch().length() < key.length()) {
                             template = templates.get(key);
                             args = text.substring(key.length()).split("[\\s,，]{1,}");
@@ -114,6 +116,10 @@ public class CallApiService extends SimpleListenerHost {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private boolean containsArgs(String url) {
+        return url.contains("$1") || url.contains("$number") || url.contains("$numberOrSelf");
     }
 
     private Map<Long, Map<String, CallTemplate>> cache = new HashMap<>();
