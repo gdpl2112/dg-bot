@@ -68,7 +68,10 @@ public class UserCronController {
             cronBuilder.append("? * ");
             for (String week : weeks) {
                 cronBuilder.append(week).append(",");
-                desc = week + "," + desc;
+                Integer wint = Integer.valueOf(week);
+                int n = ((wint + 5) % 7);
+                n++;
+                desc = n + "," + desc;
             }
             desc = "每星期" + desc;
             cronBuilder.delete(cronBuilder.length() - 1, cronBuilder.length());
@@ -92,9 +95,8 @@ public class UserCronController {
                 cronBuilder.append(month).append(" ");
                 desc = month + "月" + desc;
             }
-            cronBuilder.append("? ");
+            cronBuilder.append("?");
         }
-        cronBuilder.append("*");
         System.out.println(desc);
         String cron = cronBuilder.toString();
         System.out.println(cron);
