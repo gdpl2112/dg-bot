@@ -25,4 +25,8 @@ public class GroupConf {
      * 被动回复
      */
     private Boolean k2 = true;
+    /**
+     * 内置功能开关
+     */
+    private Boolean k3 = true;
 }

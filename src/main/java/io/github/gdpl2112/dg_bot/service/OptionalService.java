@@ -22,7 +22,7 @@ import java.util.Map;
 @Service
 public class OptionalService implements ListenerHost {
     private void touchEvent(MessageEvent event, String bid, String tid) {
-        if (configService.isNotOpenK2(event.getBot().getId(), tid)) return;
+        if (configService.isNotOpenK3(event.getBot().getId(), tid)) return;
         getBos().forEach((k, v) -> {
             if (isOpen(bid, k)) {
                 v.run(event);

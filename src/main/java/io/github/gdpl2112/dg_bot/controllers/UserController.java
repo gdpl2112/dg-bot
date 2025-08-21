@@ -198,10 +198,12 @@ public class UserController {
             jo.put("k0", f0.getK0());
             jo.put("k1", f0.getK1());
             jo.put("k2", f0.getK2());
+            jo.put("k3", f0.getK3());
         } else {
             jo.put("k0", true);
             jo.put("k1", true);
             jo.put("k2", true);
+            jo.put("k3", true);
         }
         jo.put("tid", tid);
         jo.put("name", name.length() > 6 ? name.substring(0, 5) + ".." : name);
@@ -270,6 +272,29 @@ public class UserController {
                 groupConf.setQid(userDetails.getUsername());
                 groupConf.setTid(tid);
                 groupConf.setK2(false);
+                groupConfMapper.insert(groupConf);
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @RequestMapping("gc3")
+    public Boolean change3(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String tid) {
+        try {
+            QueryWrapper<GroupConf> qw = new QueryWrapper<>();
+            qw.eq("qid", userDetails.getUsername());
+            qw.eq("tid", tid);
+            GroupConf groupConf = groupConfMapper.selectOne(qw);
+            if (groupConf != null) {
+                groupConf.setK3(!groupConf.getK3());
+                groupConfMapper.update(groupConf, qw);
+            } else {
+                groupConf = new GroupConf();
+                groupConf.setQid(userDetails.getUsername());
+                groupConf.setTid(tid);
+                groupConf.setK3(false);
                 groupConfMapper.insert(groupConf);
             }
             return true;

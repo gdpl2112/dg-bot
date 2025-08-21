@@ -14,6 +14,16 @@ public class ConfigService {
     @Autowired
     GroupConfMapper groupConfMapper;
 
+    //内置功能
+    public boolean isNotOpenK3(Long bid, String tid) {
+        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
+        qw.eq("qid", bid);
+        qw.eq("tid", tid);
+        GroupConf groupConf = groupConfMapper.selectOne(qw);
+        if (groupConf != null) if (!groupConf.getK3()) return true;
+        return false;
+    }
+
     //被动回复
     public boolean isNotOpenK2(Long bid, String tid) {
         QueryWrapper<GroupConf> qw = new QueryWrapper<>();

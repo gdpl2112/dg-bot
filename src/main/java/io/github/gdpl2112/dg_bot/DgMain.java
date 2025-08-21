@@ -103,6 +103,17 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("alter table v11_conf add need_max_like BLOB default false;");
         }
         k0 = false;
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('group_conf')")) {
+            String name = e0.get("name").toString();
+            if ("k3".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            System.out.println("group_conf添加字段");
+            jdbcTemplate.update("alter table group_conf add k3 BLOB;");
+        }
+        k0 = false;
 
     }
 
