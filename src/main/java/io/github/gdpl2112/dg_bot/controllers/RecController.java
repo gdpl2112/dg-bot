@@ -20,7 +20,6 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -81,6 +80,10 @@ public class RecController {
 
             int dayN = DateUtils.getDay();
             Bot bot = Bot.getInstanceOrNull(bid);
+            if (bot == null) {
+                component.log.error("BOT b" + bot.getId() + "未初始化完成!");
+                return;
+            }
             V11Conf v11Conf = v11AutoService.getV11Conf(String.valueOf(bot.getId()));
 
             if (bot != null && bot instanceof RemoteBot) {

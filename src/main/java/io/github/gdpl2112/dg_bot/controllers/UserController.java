@@ -144,16 +144,6 @@ public class UserController {
                 JSONObject jo = setSwitchInfo(tid2conf, tid, group.getName(), group.getAvatarUrl());
                 outList.add(jo);
             }
-        } else {
-            for (GroupConf conf : confs) {
-                JSONObject jo = new JSONObject();
-                jo.put("k1", conf.getK1());
-                jo.put("k2", conf.getK2());
-                jo.put("tid", conf.getTid());
-                jo.put("name", conf.getTid());
-                String aid = conf.getTid().substring(1);
-                jo.put("icon", String.format("http://p.qlogo.cn/gh/%s/%s/640", aid, aid));
-            }
         }
         return outList;
     }
@@ -174,16 +164,6 @@ public class UserController {
                 if (Judge.isEmpty(nick)) nick = friend.getNick();
                 JSONObject jo = setSwitchInfo(tid2conf, tid, nick, friend.getAvatarUrl());
                 outList.add(jo);
-            }
-        } else {
-            for (GroupConf conf : confs) {
-                JSONObject jo = new JSONObject();
-                jo.put("k1", conf.getK1());
-                jo.put("k2", conf.getK2());
-                jo.put("tid", conf.getTid());
-                jo.put("name", conf.getTid());
-                String aid = conf.getTid().substring(1);
-                jo.put("icon", String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", aid));
             }
         }
         return outList;

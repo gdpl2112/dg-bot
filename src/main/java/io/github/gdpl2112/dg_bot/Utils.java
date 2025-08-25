@@ -106,7 +106,7 @@ public class Utils {
         Util.sleep(1000);
         double usage = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
         sb.append("\n" + String.format("CPU使用率: %.2f%%", usage));
-        sb.append("\nDG版本: v25.0821");
+        sb.append("\nDG版本: v25.0825");
         if (isLinux()) {
             sb.append("\nCPU温度: " + getCpuTemplate());
         }
