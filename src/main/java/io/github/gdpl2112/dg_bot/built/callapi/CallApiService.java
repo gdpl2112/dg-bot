@@ -77,9 +77,10 @@ public class CallApiService extends SimpleListenerHost {
      */
     public Message call(final String text, long gid, long qid, Bot bot, Contact subject) {
         try {
-            String[] oArgs = text.split("[\\s,，]{1,}");
-            if (oArgs == null || oArgs.length == 0) return null;
+            if (text == null || text.isEmpty()) return null;
+            String[] oArgs = text.split("[\\s,，]+");
             String touch = oArgs[0];
+            if (touch.isEmpty()) return null;
             String[] args = new String[oArgs.length - 1];
             System.arraycopy(oArgs, 1, args, 0, args.length);
             QueryWrapper<CallTemplate> qw = new QueryWrapper<>();

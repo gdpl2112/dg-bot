@@ -1,9 +1,7 @@
 package io.github.gdpl2112.dg_bot.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.built.ScriptCompile;
-import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
@@ -15,6 +13,7 @@ import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import kotlin.coroutines.CoroutineContext;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Friend;
@@ -43,6 +42,7 @@ import static io.github.gdpl2112.dg_bot.service.script.ScriptManager.*;
 /**
  * @author github.kloping
  */
+@Slf4j
 @Service
 public class ScriptService extends SimpleListenerHost {
     public ScriptService() {
@@ -97,7 +97,6 @@ public class ScriptService extends SimpleListenerHost {
                     @Override
                     public void log(String msg) {
                         synchronized (this) {
-                            System.out.println("from js(" + bid + ") " + msg);
                             offerLogMsg(key, msg);
                         }
                     }
@@ -127,7 +126,9 @@ public class ScriptService extends SimpleListenerHost {
         if (!PRINT_MAP.containsKey(key)) {
             PRINT_MAP.put(key, new LinkedList<>());
         }
-        PRINT_MAP.get(key).add("[" + SF_0.format(new Date()) + "] " + msg);
+        String line = "[" + SF_0.format(new Date()) + "] " + msg;
+        PRINT_MAP.get(key).add(line);
+        log.info("script log: {}", line);
         if (PRINT_MAP.get(key).size() > MAX_LINE)
             PRINT_MAP.get(key).remove(0);
     }
