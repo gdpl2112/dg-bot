@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.web.bind.annotation.*;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
@@ -41,7 +42,6 @@ public class RecController {
     ApplicationEventPublisher eventPublisher;
 
     private Map<String, CountDownLatch> key2cdl = new ConcurrentHashMap<>();
-
 
     @PostMapping
     public void rec(@RequestBody String rdata) {
@@ -139,6 +139,7 @@ public class RecController {
     }
 
     @Autowired
+    @Lazy
     V11AutoService v11AutoService;
 
     @RequestMapping("/test")

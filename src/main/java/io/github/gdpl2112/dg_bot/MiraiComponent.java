@@ -30,6 +30,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import top.mrxiaom.overflow.contact.RemoteBot;
+import top.mrxiaom.overflow.event.UnsolvedOnebotEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -130,7 +131,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 
     @EventHandler
     public void onStartupEvent(net.mamoe.mirai.console.events.StartupEvent event) {
-        System.out.println("Q云代挂启动成功 compile at 2025/08/21");
+        System.out.println("Q云代挂启动成功 compile at 2025/09/02");
         Public.EXECUTOR_SERVICE1.submit(() -> {
             try {
                 TimeUnit.SECONDS.sleep(1);
@@ -161,6 +162,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 
         });
     }
+
 
     public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(15, 15,
             0, TimeUnit.MINUTES,

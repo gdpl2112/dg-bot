@@ -1,13 +1,16 @@
 package io.github.gdpl2112.dg_bot.service;
 
+import cn.evolvefield.onebot.client.connection.WSGolab;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
+import io.github.gdpl2112.dg_bot.controllers.RecController;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
+import io.github.kloping.common.Public;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
 import net.mamoe.mirai.Bot;
@@ -39,8 +42,21 @@ public class V11AutoService extends SimpleListenerHost {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    public V11AutoService() {
+    public V11AutoService(RecController controller) {
         super();
+        WSGolab.INSTANCE.getMsgReceiveList().add(msg -> {
+            if (msg.contains("profile_like")) {
+                MiraiComponent.EXECUTOR_SERVICE.submit(() -> {
+                    JSONObject jo = JSONObject.parseObject(msg);
+                    String subType = jo.getString("sub_type");
+                    if (subType.equals("profile_like")) {
+                        controller.rec(msg);
+                    }
+                });
+                return true;
+            }
+            return false;
+        });
     }
 
     public @NotNull V11Conf getV11Conf(String id) {
