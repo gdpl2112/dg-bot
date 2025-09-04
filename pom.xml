@@ -34,7 +34,6 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mirai-version>2.16.0</mirai-version>
-        <overflow-version>1.0.7-R2</overflow-version>
     </properties>
     <dependencies>
         <dependency>
@@ -60,8 +59,14 @@
         <dependency>
             <groupId>top.mrxiaom.mirai</groupId>
             <artifactId>overflow-core-all</artifactId>
-            <version>${overflow-version}</version>
+            <version>1.0.7</version>
         </dependency>
+        <dependency>
+            <groupId>top.mrxiaom.mirai</groupId>
+            <artifactId>overflow-core</artifactId>
+            <version>1.0.7-R2</version>
+        </dependency>
+
         <dependency>
             <groupId>net.mamoe</groupId>
             <artifactId>mirai-core-all</artifactId>
