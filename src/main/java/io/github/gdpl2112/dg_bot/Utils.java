@@ -36,6 +36,9 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.github.gdpl2112.dg_bot.compile.CompileRes.VERSION_DATE;
+import static io.github.gdpl2112.dg_bot.compile.CompileRes.isLinux;
+
 /**
  * @author github-kloping
  * @date 2023-07-20
@@ -106,20 +109,11 @@ public class Utils {
         Util.sleep(1000);
         double usage = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
         sb.append("\n" + String.format("CPU使用率: %.2f%%", usage));
-        sb.append("\nDG版本: v25.0902");
+        sb.append("\nDG版本: v" + VERSION_DATE);
         if (isLinux()) {
             sb.append("\nCPU温度: " + getCpuTemplate());
         }
         return sb.toString();
-    }
-
-    public static boolean isLinux() {
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (osName.contains("linux")) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     public static String getCpuTemplate() {
@@ -176,7 +170,6 @@ public class Utils {
         }
         return BP_SYNC_MAP.get(key);
     }
-
 
     public static String getExceptionLine(Throwable e) {
         try {

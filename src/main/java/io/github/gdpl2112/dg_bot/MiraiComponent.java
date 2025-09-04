@@ -11,7 +11,6 @@ import io.github.gdpl2112.dg_bot.service.*;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.file.FileUtils;
-import net.mamoe.mirai.console.MiraiConsole;
 import net.mamoe.mirai.console.command.CommandExecuteResult;
 import net.mamoe.mirai.console.command.CommandManager;
 import net.mamoe.mirai.console.command.ConsoleCommandSender;
@@ -22,7 +21,6 @@ import net.mamoe.mirai.event.GlobalEventChannel;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
 import net.mamoe.mirai.message.data.PlainText;
-import net.mamoe.mirai.utils.MiraiLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -30,11 +28,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import top.mrxiaom.overflow.contact.RemoteBot;
-import top.mrxiaom.overflow.event.UnsolvedOnebotEvent;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
+
+import static io.github.gdpl2112.dg_bot.compile.CompileRes.VERSION_DATE;
 
 /**
  * @author github-kloping
@@ -131,7 +130,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 
     @EventHandler
     public void onStartupEvent(net.mamoe.mirai.console.events.StartupEvent event) {
-        System.out.println("Q云代挂启动成功 compile at 2025/09/02");
+        System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
         Public.EXECUTOR_SERVICE1.submit(() -> {
             try {
                 TimeUnit.SECONDS.sleep(1);
@@ -141,8 +140,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
                         log.log("执行pre: " + line);
                         CountDownLatch cdl = new CountDownLatch(1);
                         EXECUTOR_SERVICE.submit(() -> {
-                            CommandExecuteResult result = CommandManager.INSTANCE.executeCommand(ConsoleCommandSender.INSTANCE,
-                                    new PlainText(line), false);
+                            CommandExecuteResult result = CommandManager.INSTANCE.executeCommand(ConsoleCommandSender.INSTANCE, new PlainText(line), false);
                             if (result instanceof CommandExecuteResult.Success) {
                                 log.info("执行成功:" + line);
                             }
@@ -164,9 +162,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     }
 
 
-    public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(15, 15,
-            0, TimeUnit.MINUTES,
-            new LinkedBlockingQueue<Runnable>());
+    public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(15, 15, 0, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
 
 
 }

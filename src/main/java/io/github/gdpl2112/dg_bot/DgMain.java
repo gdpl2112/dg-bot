@@ -3,8 +3,6 @@ package io.github.gdpl2112.dg_bot;
 import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.MySpringTool.interfaces.component.PackageScanner;
-import io.github.kloping.file.FileUtils;
-import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
 import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -23,7 +21,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
+import java.util.Properties;
+
+import static io.github.gdpl2112.dg_bot.compile.CompileRes.getCompileTime;
 
 /**
  * @author github-kloping
@@ -40,7 +43,7 @@ public class DgMain implements CommandLineRunner {
     public static ConfigurableApplicationContext applicationContext;
 
     public static void main(String[] args) throws Exception {
-        System.out.println("start pre build time on 25/09/02");
+        System.out.println("start pre build time on " + getCompileTime());
         HttpsUtils.trustAllHttpsCertificates();
         applicationContext = SpringApplication.run(DgMain.class, args);
     }

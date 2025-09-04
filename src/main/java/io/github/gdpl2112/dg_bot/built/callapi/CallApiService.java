@@ -79,8 +79,9 @@ public class CallApiService extends SimpleListenerHost {
         try {
             if (text == null || text.isEmpty()) return null;
             String[] oArgs = text.split("[\\s,，]+");
+            if (oArgs.length == 0) return null;
             String touch = oArgs[0];
-            if (touch.isEmpty()) return null;
+            if (touch == null || touch.isEmpty()) return null;
             String[] args = new String[oArgs.length - 1];
             System.arraycopy(oArgs, 1, args, 0, args.length);
             QueryWrapper<CallTemplate> qw = new QueryWrapper<>();
