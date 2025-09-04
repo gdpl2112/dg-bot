@@ -80,7 +80,7 @@ public class V11AutoService extends SimpleListenerHost {
     }
     //最后的处理
 
-    @Scheduled(cron = "00 58 23 * * ? ")
+    @Scheduled(cron = "00 59 23 * * ? ")
     public void autoLike() {
         component.log.info("最后点赞处理启动");
         for (Bot bot : Bot.getInstances()) {
@@ -153,7 +153,7 @@ public class V11AutoService extends SimpleListenerHost {
     public static boolean yesterdayLiking = false;
 
     // 回赞昨日
-    @Scheduled(cron = "00 01 00 * * ?")
+    @Scheduled(cron = "16 00 00 * * ?")
     public void yesterday() {
         try {
             yesterdayLiking = true;
