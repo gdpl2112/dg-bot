@@ -39,7 +39,7 @@
         <dependency>
             <groupId>com.github.oshi</groupId>
             <artifactId>oshi-core</artifactId>
-            <version>6.4.2</version> <!-- 2025年最新稳定版 -->
+            <version>6.4.2</version> <!-- 2025年最新稳定版 设备信息 -->
         </dependency>
         <dependency>
             <groupId>io.github.Kloping</groupId>
@@ -57,14 +57,19 @@
             <version>0.4.9-R3</version>
         </dependency>
         <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>1.7.20</version>
+        </dependency>
+        <dependency>
             <groupId>top.mrxiaom.mirai</groupId>
             <artifactId>overflow-core-all</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
         </dependency>
         <dependency>
             <groupId>top.mrxiaom.mirai</groupId>
             <artifactId>overflow-core</artifactId>
-            <version>1.0.7-R3</version>
+            <version>1.0.8-R</version>
         </dependency>
 
         <dependency>

@@ -45,6 +45,7 @@ public class DgMain implements CommandLineRunner {
     public static void main(String[] args) throws Exception {
         System.out.println("start pre build time on " + getCompileTime());
         HttpsUtils.trustAllHttpsCertificates();
+        System.setProperty("overflow.skip-token-security-check","I_KNOW_WHAT_I_AM_DOING");
         applicationContext = SpringApplication.run(DgMain.class, args);
     }
 
