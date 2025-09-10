@@ -14,6 +14,7 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,6 +49,8 @@ public class V11QzoneService {
 
     public void startQzoneWalkNow(long id, RemoteBot bot) {
         V11Conf v11Conf = likeService.getV11Conf(String.valueOf(id));
+        List<Long> zoneWalksIds = v11Conf.getZoneWalksIds();
+        if (zoneWalksIds.isEmpty()) return;
         String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"user.qzone.qq.com\"}");
         JSONObject data = JSONObject.parseObject(dataR0);
         data = data.getJSONObject("data");
@@ -68,7 +71,7 @@ public class V11QzoneService {
                 , id, cookiesMap.get("skey"), id, cookiesMap.get("pt4_token"), cookiesMap.get("p_skey")
         );
 
-        for (Long zoneWalksId : v11Conf.getZoneWalksIds()) {
+        for (Long zoneWalksId : zoneWalksIds) {
             String url = "https://user.qzone.qq.com/proxy/domain/g.qzone.qq.com/fcg-bin/cgi_emotion_list.fcg?uin=" +
                     zoneWalksId + "&loginUin=" + id + "&ver=1.0.3&g_tk=" + gtk;
             component.log.info("空间访问：b" + id + " u" + zoneWalksId);
