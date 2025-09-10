@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -85,6 +86,9 @@ public class RecController {
                 return;
             }
             V11Conf v11Conf = v11AutoService.getV11Conf(String.valueOf(bot.getId()));
+            //黑名单过滤
+            List<Long> likeBlackIds = v11Conf.getLikeBlackIds();
+            if (likeBlackIds.contains(tid)) return;
 
             if (bot != null && bot instanceof RemoteBot) {
                 RemoteBot remoteBot = null;

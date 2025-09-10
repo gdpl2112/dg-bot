@@ -25,7 +25,6 @@ public class CallApiServiceWorker {
     @Autowired
     RestTemplate restTemplate;
 
-
     public Message work(ConnectionContext connection, CallTemplate template, Bot bot, long gid, long qid, Contact subject) {
         if (jude(template, connection)) return null;
         Message message = null;

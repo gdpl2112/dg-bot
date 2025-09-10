@@ -10,7 +10,6 @@ import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
-import io.github.kloping.common.Public;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
 import net.mamoe.mirai.Bot;
@@ -23,6 +22,7 @@ import org.springframework.stereotype.Service;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author github.kloping
@@ -99,7 +99,7 @@ public class V11AutoService extends SimpleListenerHost {
             String bid = String.valueOf(bot.getId());
             V11Conf conf = getV11Conf(bid);
             if (!conf.getAutoLike()) return null;
-
+            List<Long> likeBlackIds = conf.getLikeBlackIds();
             int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
             RemoteBot remoteBot = ((RemoteBot) bot);
             try {
@@ -118,6 +118,9 @@ public class V11AutoService extends SimpleListenerHost {
                     e0:
                     for (Object vUserInfo : vUserInfos) {
                         ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
+                        // 黑名单过滤
+                        if (likeBlackIds.contains(pl.getVid())) continue;
+
                         if (pl.getDay() != dayN) {
                             break all;
                         } else {
@@ -140,6 +143,15 @@ public class V11AutoService extends SimpleListenerHost {
                         }
                     }
                     st += count;
+                }
+
+                List<Long> likeWhiteIds = conf.getLikeWhiteIds();
+                for (Long vid : likeWhiteIds) {
+                    if (ProfileLike.sendProfileLike(remoteBot, vid, max)) {
+                        applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), vid, max, true));
+                        if (sb == null) sb = new StringBuilder();
+                        sb.append("\n(成功)").append("给").append(vid).append("点赞").append(max).append("个");
+                    }
                 }
             } catch (Exception e) {
                 component.log.info("day通过ws获得点赞记录失败");
@@ -228,37 +240,40 @@ public class V11AutoService extends SimpleListenerHost {
         component.VIP_INFO.put(bid, isVip);
         return isVip;
     }
-    //自动打卡启动
 
     @Scheduled(cron = "01 00 00 * * ?")
+    //自动打卡启动
     public void autoSign() {
         component.log.info("自动打卡启动");
         for (Bot bot : Bot.getInstances()) {
+            signNow(bot);
+        }
+    }
+
+    public void signNow(Bot bot) {
+        MiraiComponent.EXECUTOR_SERVICE.submit(() -> {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
                     String bid = String.valueOf(bot.getId());
                     V11Conf conf = getV11Conf(bid);
                     component.log.info("自动打卡: " + bid + " conf-sign: " + conf.getSignGroups());
-                    if (Judge.isEmpty(conf.getSignGroups())) continue;
+                    if (Judge.isEmpty(conf.getSignGroups())) return;
                     String groups = conf.getSignGroups();
-                    String[] split = groups.split(",|;|\\s");
                     RemoteBot remoteBot = ((RemoteBot) bot);
-                    for (String group : split) {
-                        if (Judge.isEmpty(group)) continue;
-                        Long gid = Long.parseLong(group);
+                    for (Long gid : conf.getSignGroupIds()) {
                         String data0 = "{\"group_id\": \"" + gid + "\"}";
                         String data = remoteBot.executeAction("send_group_sign", data0);
                         JSONObject jsonObject = JSONObject.parseObject(data);
                         if (jsonObject.getInteger("retcode") != 0) {
-                            component.log.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, group, groups));
+                            component.log.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, gid, groups));
                         } else {
-                            component.log.info("自动打卡成功：b" + bid + " g" + group);
+                            component.log.info("自动打卡成功：b" + bid + " g" + gid);
                             applicationEventPublisher.publishEvent(new GroupSignEvent(gid, bot.getId(), bot.getId(), true));
                         }
                     }
                 }
             }
-        }
+        });
     }
 
     private static final String FORMAT_SIGN_DATA = "{\"action\": \"send_group_sign\",\"params\": {\"group_id\": \"%s\"}}";

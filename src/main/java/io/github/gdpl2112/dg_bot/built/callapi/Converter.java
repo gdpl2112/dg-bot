@@ -186,7 +186,7 @@ public class Converter {
                 else arg = arg.substring(len - 1);
             }
             if (o == null) return def;
-            if (arg.length() > 0) {
+            if (!arg.isEmpty()) {
                 return getOutEnd(JSON.toJSONString(o), arg);
             } else {
                 return o;

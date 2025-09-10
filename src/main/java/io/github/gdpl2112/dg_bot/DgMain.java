@@ -74,51 +74,28 @@ public class DgMain implements CommandLineRunner {
         logger.info("tables update");
 
         boolean k0 = false;
-        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('v11_conf')")) {
             String name = e0.get("name").toString();
-            if ("del0".equals(name)) {
+            if ("like_black".equals(name)) {
                 k0 = true;
             }
         }
         if (!k0) {
-            System.out.println("conf添加字段");
-            jdbcTemplate.update("alter table conf add del0 VARCHAR(40) default '删词';");
-        }
-        k0 = false;
-        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('conf')")) {
-            String name = e0.get("name").toString();
-            if ("status0".equals(name)) {
-                k0 = true;
-            }
-        }
-        if (!k0) {
-            System.out.println("conf添加字段");
-            jdbcTemplate.update("alter table conf add status0 VARCHAR(40) default '/状态';");
+            System.out.println("v11_conf添加字段");
+            jdbcTemplate.update("alter table v11_conf add like_black VARCHAR(255) default '';");
         }
         k0 = false;
         for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('v11_conf')")) {
             String name = e0.get("name").toString();
-            if ("need_max_like".equals(name)) {
+            if ("like_white".equals(name)) {
                 k0 = true;
             }
         }
         if (!k0) {
-            System.out.println("conf添加字段");
-            jdbcTemplate.update("alter table v11_conf add need_max_like BLOB default false;");
+            System.out.println("v11_conf添加字段");
+            jdbcTemplate.update("alter table v11_conf add like_white VARCHAR(255) default '';");
         }
         k0 = false;
-        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('group_conf')")) {
-            String name = e0.get("name").toString();
-            if ("k3".equals(name)) {
-                k0 = true;
-            }
-        }
-        if (!k0) {
-            System.out.println("group_conf添加字段");
-            jdbcTemplate.update("alter table group_conf add k3 BLOB;");
-        }
-        k0 = false;
-
     }
 
     /**
