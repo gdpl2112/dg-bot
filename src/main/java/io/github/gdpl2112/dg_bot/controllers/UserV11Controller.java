@@ -2,7 +2,7 @@ package io.github.gdpl2112.dg_bot.controllers;
 
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
-import io.github.gdpl2112.dg_bot.service.V11AutoService;
+import io.github.gdpl2112.dg_bot.service.v11s.V11AutoLikeService;
 import net.mamoe.mirai.Bot;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ import java.util.List;
 public class UserV11Controller {
     @Autowired
     @Lazy
-    V11AutoService v11;
+    V11AutoLikeService v11;
 
     @RequestMapping("/get-conf")
     public V11Conf getConf(@AuthenticationPrincipal UserDetails userDetails) {
@@ -60,6 +60,9 @@ public class UserV11Controller {
                 break;
             case "zoneComment":
                 v11Conf.setZoneComment(value);
+                break;
+            case "zoneWalks":
+                v11Conf.setZoneWalks(value);
                 break;
             case "likeBlack":
                 v11Conf.setLikeBlack(value);

@@ -33,6 +33,8 @@ public class V11Conf {
     private Boolean autoZoneLike;
     //空间自动评论
     private String zoneComment;
+    //空间自动访问
+    private String zoneWalks;
 
     public List<Long> getSignGroupIds() {
         String[] split = signGroups.split(",|;|\\s");
@@ -72,6 +74,17 @@ public class V11Conf {
                 }
         ).collect(Collectors.toList());
     }
-
-
+    // 空间自动访问
+    public List<Long> getZoneWalksIds() {
+        String[] split = zoneWalks.split(",|;|\\s");
+        return Arrays.stream(split).map(
+                s -> {
+                    try {
+                        return Long.parseLong(s);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                }
+        ).collect(Collectors.toList());
+    }
 }

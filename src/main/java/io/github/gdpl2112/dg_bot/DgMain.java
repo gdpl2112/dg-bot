@@ -96,6 +96,17 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("alter table v11_conf add like_white VARCHAR(255) default '';");
         }
         k0 = false;
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('v11_conf')")) {
+            String name = e0.get("name").toString();
+            if ("zone_walks".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            System.out.println("v11_conf添加字段");
+            jdbcTemplate.update("alter table v11_conf add zone_walks VARCHAR(255) default '';");
+        }
+        k0 = false;
     }
 
     /**

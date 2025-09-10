@@ -3,6 +3,7 @@ package io.github.gdpl2112.dg_bot;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import io.github.gdpl2112.dg_bot.built.callapi.Converter;
+import io.github.gdpl2112.dg_bot.compile.CompileRes;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.kloping.judge.Judge;
@@ -113,6 +114,7 @@ public class Utils {
         if (isLinux()) {
             sb.append("\nCPU温度: " + getCpuTemplate());
         }
+        sb.append("\n编译时间: " + CompileRes.getCompileTime());
         return sb.toString();
     }
 

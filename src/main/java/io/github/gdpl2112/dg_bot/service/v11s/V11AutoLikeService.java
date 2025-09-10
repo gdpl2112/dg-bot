@@ -1,4 +1,4 @@
-package io.github.gdpl2112.dg_bot.service;
+package io.github.gdpl2112.dg_bot.service.v11s;
 
 import cn.evolvefield.onebot.client.connection.WSGolab;
 import com.alibaba.fastjson.JSONArray;
@@ -28,7 +28,7 @@ import java.util.List;
  * @author github.kloping
  */
 @Service
-public class V11AutoService extends SimpleListenerHost {
+public class V11AutoLikeService extends SimpleListenerHost {
 
     @Autowired
     V11ConfMapper mapper;
@@ -36,13 +36,10 @@ public class V11AutoService extends SimpleListenerHost {
     @Autowired
     MiraiComponent component;
 
-//    @Autowired
-//    private LikeRecoMapper likeRecoMapper;
-
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    public V11AutoService(RecController controller) {
+    public V11AutoLikeService(RecController controller) {
         super();
         WSGolab.INSTANCE.getMsgReceiveList().add(msg -> {
             if (msg.contains("profile_like")) {
@@ -70,6 +67,9 @@ public class V11AutoService extends SimpleListenerHost {
             v11Conf.setAutoLikeYesterday(true);
             v11Conf.setSignGroups("");
             v11Conf.setZoneComment("");
+            v11Conf.setLikeBlack("");
+            v11Conf.setLikeWhite("");
+            v11Conf.setZoneWalks("");
             mapper.insert(v11Conf);
         }
         return v11Conf;

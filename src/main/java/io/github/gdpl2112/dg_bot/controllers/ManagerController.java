@@ -3,7 +3,7 @@ package io.github.gdpl2112.dg_bot.controllers;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
-import io.github.gdpl2112.dg_bot.service.V11AutoService;
+import io.github.gdpl2112.dg_bot.service.v11s.V11AutoLikeService;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -86,11 +86,11 @@ public class ManagerController {
 
     @Autowired
     @Lazy
-    V11AutoService v11AutoService;
+    V11AutoLikeService v11AutoLikeService;
 
     @RequestMapping("/autoLike")
     public String autoLike() {
-        v11AutoService.autoLike();
+        v11AutoLikeService.autoLike();
         return "OK";
     }
 }

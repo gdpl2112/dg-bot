@@ -9,7 +9,8 @@ import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.service.ScriptService;
-import io.github.gdpl2112.dg_bot.service.V11AutoService;
+import io.github.gdpl2112.dg_bot.service.v11s.V11AutoLikeService;
+import io.github.gdpl2112.dg_bot.service.v11s.V11QzoneService;
 import io.github.kloping.date.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
@@ -46,7 +47,7 @@ public class RecController {
 
     @PostMapping
     public void rec(@RequestBody String rdata) {
-        if (V11AutoService.yesterdayLiking) {
+        if (V11AutoLikeService.yesterdayLiking) {
             component.log.info("回赞昨日进行中..忽略点赞");
             return;
         }
@@ -85,7 +86,7 @@ public class RecController {
                 component.log.error("BOT b" + bot.getId() + "未初始化完成!");
                 return;
             }
-            V11Conf v11Conf = v11AutoService.getV11Conf(String.valueOf(bot.getId()));
+            V11Conf v11Conf = v11AutoLikeService.getV11Conf(String.valueOf(bot.getId()));
             //黑名单过滤
             List<Long> likeBlackIds = v11Conf.getLikeBlackIds();
             if (likeBlackIds.contains(tid)) return;
@@ -144,18 +145,31 @@ public class RecController {
 
     @Autowired
     @Lazy
-    V11AutoService v11AutoService;
+    V11AutoLikeService v11AutoLikeService;
+
+    @Autowired
+    @Lazy
+    V11QzoneService v11QzoneService;
 
     @RequestMapping("/test")
-    public String test(@RequestParam(name = "id") String bid) {
-        try {
-            Bot bot = Bot.getInstance(Long.parseLong(bid));
-            if (bot instanceof RemoteBot) {
-                RemoteBot remoteBot = (RemoteBot) bot;
-                return remoteBot.executeAction("get_status", "{}");
-            } else return "LOCAL_BOT:" + bot.isOnline();
-        } catch (Exception e) {
-            return e.getMessage();
-        }
+    public Object test(@RequestParam(name = "id") String bid) {
+//        Long bid0 = Long.parseLong(bid);
+//        try {
+//            RemoteBot bot = (RemoteBot) Bot.getInstanceOrNull(bid0);
+//            v11QzoneService.startQzoneWalkNow(bid0, bot);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return e.getMessage();
+//        }
+//        try {
+//            Bot bot = Bot.getInstance(Long.parseLong(bid));
+//            if (bot instanceof RemoteBot) {
+//                RemoteBot remoteBot = (RemoteBot) bot;
+//                return remoteBot.executeAction("get_status", "{}");
+//            } else return "LOCAL_BOT:" + bot.isOnline();
+//        } catch (Exception e) {
+//            return e.getMessage();
+//        }
+        return "ok";
     }
 }
