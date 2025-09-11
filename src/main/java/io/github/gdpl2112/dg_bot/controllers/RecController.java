@@ -153,14 +153,15 @@ public class RecController {
 
     @RequestMapping("/test")
     public Object test(@RequestParam(name = "id") String bid) {
-//        Long bid0 = Long.parseLong(bid);
-//        try {
-//            RemoteBot bot = (RemoteBot) Bot.getInstanceOrNull(bid0);
-//            v11QzoneService.startQzoneWalkNow(bid0, bot);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return e.getMessage();
-//        }
+        Long bid0 = Long.parseLong(bid);
+        try {
+            RemoteBot bot = (RemoteBot) Bot.getInstanceOrNull(bid0);
+            v11QzoneService.startQzoneWalkNow(bid0, bot);
+            v11QzoneService.autoComment();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
 //        try {
 //            Bot bot = Bot.getInstance(Long.parseLong(bid));
 //            if (bot instanceof RemoteBot) {

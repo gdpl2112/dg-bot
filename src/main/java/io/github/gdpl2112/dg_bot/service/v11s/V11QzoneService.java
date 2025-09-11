@@ -1,18 +1,20 @@
 package io.github.gdpl2112.dg_bot.service.v11s;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,7 @@ import java.util.Map;
  * @author github kloping
  * @date 2025/9/10-22:29
  */
+@Slf4j
 @Service
 public class V11QzoneService {
 
@@ -35,7 +38,7 @@ public class V11QzoneService {
     @Autowired
     V11AutoLikeService likeService;
 
-    @Scheduled(cron = "01 01 00 * * ? ")
+    @Scheduled(cron = "20 05 00 * * ? ")
     public void walksAll() {
         component.log.info("空间访问!启动");
         for (Bot bot : Bot.getInstances()) {
@@ -51,6 +54,137 @@ public class V11QzoneService {
         V11Conf v11Conf = likeService.getV11Conf(String.valueOf(id));
         List<Long> zoneWalksIds = v11Conf.getZoneWalksIds();
         if (zoneWalksIds.isEmpty()) return;
+        Map<String, String> cookiesMap = getCookiesMap(bot);
+        for (Long zoneWalksId : zoneWalksIds) {
+            component.log.info("空间访问：b" + id + " u" + zoneWalksId);
+            try {
+                String dataR1 = template.getForObject("https://kloping.top/api/qzone/one?qq=" + zoneWalksId, String.class);
+                String fid = JSONObject.parseObject(dataR1).getString("fid");
+                String ctime = JSONObject.parseObject(dataR1).getString("time");
+                String walkUrl = "https://kloping.top/api/qzone/walk" + getParmsStart(String.valueOf(id), cookiesMap)
+                        + "&qq=" + zoneWalksId;
+                ResponseEntity<String> entity = template.getForEntity(walkUrl, String.class);
+                if (entity.getStatusCode().is2xxSuccessful()) {
+                    log.info("空间访问成功：b{} u{}..继续", id, zoneWalksId);
+                    String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap)
+                            + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
+                    ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
+                    if (entity1.getStatusCode().is2xxSuccessful()) {
+                        log.info("取消点赞b{} u{}..完成..继续", id, zoneWalksId);
+                        //dolike
+                        String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
+                                + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
+                        ResponseEntity<String> entity2 = template.getForEntity(likeUrl, String.class);
+                        if (entity2.getStatusCode().is2xxSuccessful()) {
+                            log.info("点赞成功：b{} u{}..完成", id, zoneWalksId);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("空间访问异常", e);
+            }
+        }
+    }
+
+    public static final String getParmsStart(String id, Map<String, String> cookieMap) {
+        StringBuilder sb = new StringBuilder("?RK=");
+        sb.append(cookieMap.get("RK"));
+        sb.append("&skey=").append(cookieMap.get("skey"));
+        sb.append("&pt4_token=").append(cookieMap.get("pt4_token"));
+        sb.append("&p_skey=").append(cookieMap.get("p_skey"));
+        sb.append("&uin=").append(id);
+        return sb.toString();
+    }
+
+    @Autowired
+    RestTemplate template;
+    //以下是 自动评论/点赞功能
+
+    private LambdaQueryWrapper<V11Conf> queryWrapper = new LambdaQueryWrapper<>();
+
+    {
+        queryWrapper.ge(V11Conf::getZoneEvl, 1);
+    }
+
+    Map<String, Integer> evlMap = new HashMap<>();
+
+    @Scheduled(cron = "12 */1 * * * ? ")
+    public void autoComment() {
+        List<V11Conf> v11Confs = mapper.selectList(queryWrapper);
+        v11Confs.forEach(v -> {
+            Integer evl = evlMap.get(v.getQid());
+            if (evl == null) evl = 1;
+            evlMap.put(v.getQid(), evl + 1);
+            if (evl % v.getZoneEvl() == 0) {
+                Bot bot = Bot.getInstanceOrNull(Long.parseLong(v.getQid()));
+                if (bot != null && bot.isOnline()) {
+                    if (bot instanceof RemoteBot) {
+                        startCommentNow(bot.getId(), (RemoteBot) bot);
+                    }
+                }
+            }
+        });
+
+    }
+
+    private void startCommentNow(long id, RemoteBot bot) {
+        V11Conf v11Conf = likeService.getV11Conf(String.valueOf(id));
+        String comment = v11Conf.getZoneComment();
+        Boolean autoZoneLike = v11Conf.getAutoZoneLike();
+        if ((comment == null || comment.isEmpty()) && !autoZoneLike) return;
+        Map<String, String> cookiesMap = getCookiesMap(bot);
+        String uin = String.valueOf(id);
+        try {
+            component.log.info("空间评论/点赞：start-b" + uin);
+            String allUrl = "https://kloping.top/api/qzone/all" + getParmsStart(String.valueOf(id), cookiesMap);
+            ResponseEntity<String> entity = template.getForEntity(allUrl, String.class);
+            if (entity.getStatusCode().is2xxSuccessful()) {
+                JSONArray all = JSONArray.parseArray(entity.getBody());
+                for (int i = 0; i < all.size(); i++) {
+                    JSONObject data = all.getJSONObject(i);
+                    String qq = data.getString("uin");
+                    if (autoZoneLike) {
+                        JSONArray array = data.getJSONArray("likes");
+                        if (!array.contains(uin)) {
+                            String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
+                                    + "&fid=" + data.getString("tid")
+                                    + "&qq=" + qq
+                                    + "&ctime=" + data.getString("abstime");
+                            ResponseEntity<String> entity1 = template.getForEntity(likeUrl, String.class);
+                            if (entity1.getStatusCode().is2xxSuccessful()) {
+                                log.info("点赞成功：b{} u{}..完成", id, qq);
+                            }
+                        }
+                    }
+                    if (comment != null && !comment.isEmpty()) {
+                        JSONArray array = data.getJSONArray("comments");
+                        Boolean doit = true;
+                        for (Object o : array) {
+                            JSONObject o1 = (JSONObject) o;
+                            if (o1.getString("uin").equals(uin)) {
+                                doit = false;
+                            }
+                        }
+                        if (doit) {
+                            String commentUrl = "https://kloping.top/api/qzone/comment" + getParmsStart(String.valueOf(id), cookiesMap)
+                                    + "&fid=" + data.getString("tid")
+                                    + "&qq=" + qq
+                                    + "&text=" + comment;
+                            ResponseEntity<String> entity1 = template.getForEntity(commentUrl, String.class);
+                            if (entity1.getStatusCode().is2xxSuccessful()) {
+                                log.info("评论成功：b{} u{}..完成", id, qq);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("空间评论异常", e);
+        }
+        component.log.info("空间评论/点赞：end-b" + uin);
+    }
+
+    private static Map<String, String> getCookiesMap(RemoteBot bot) {
         String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"user.qzone.qq.com\"}");
         JSONObject data = JSONObject.parseObject(dataR0);
         data = data.getJSONObject("data");
@@ -63,30 +197,6 @@ public class V11QzoneService {
                 v0 = v0.substring(0, v0.length() - 1);
             cookiesMap.put(split[0], v0);
         }
-        String gtk = data.getString("bkn");
-        String cookiesStr = String.format(
-                "ptui_loginuin=%s; RK=%s; Loading=Yes; media_p_uin=%s; qz_screen=1536x864; QZ_FE_WEBP_SUPPORT=1; cpu_performance_v8=0; __Q_w_s_hat_seed=1; " +
-                        "uin=o0%s; skey=%s; p_uin=o0%s; pt4_token=%s; p_skey=%s;"
-                , id, cookiesMap.get("RK"), id
-                , id, cookiesMap.get("skey"), id, cookiesMap.get("pt4_token"), cookiesMap.get("p_skey")
-        );
-
-        for (Long zoneWalksId : zoneWalksIds) {
-            String url = "https://user.qzone.qq.com/proxy/domain/g.qzone.qq.com/fcg-bin/cgi_emotion_list.fcg?uin=" +
-                    zoneWalksId + "&loginUin=" + id + "&ver=1.0.3&g_tk=" + gtk;
-            component.log.info("空间访问：b" + id + " u" + zoneWalksId);
-            try {
-                Document doc0 = Jsoup.connect(url).ignoreHttpErrors(true).ignoreContentType(true)
-                        .header("accept", "*/*")
-                        .header("accept-language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
-                        .header("referer", "https://user.qzone.qq.com/" + zoneWalksId)
-                        .header("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0")
-                        .header("Cookie", cookiesStr)
-                        .get();
-                System.out.println(doc0);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        return cookiesMap;
     }
 }

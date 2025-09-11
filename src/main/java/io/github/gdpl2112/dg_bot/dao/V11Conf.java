@@ -29,6 +29,8 @@ public class V11Conf {
     private String likeWhite;
     //自动打卡群id
     private String signGroups;
+    //轮询频率
+    private Integer zoneEvl;
     //自动空间点赞
     private Boolean autoZoneLike;
     //空间自动评论

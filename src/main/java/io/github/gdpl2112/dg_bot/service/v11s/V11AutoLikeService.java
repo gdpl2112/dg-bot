@@ -65,10 +65,11 @@ public class V11AutoLikeService extends SimpleListenerHost {
             v11Conf.setNeedMaxLike(false);
             v11Conf.setAutoZoneLike(true);
             v11Conf.setAutoLikeYesterday(true);
-            v11Conf.setSignGroups("");
-            v11Conf.setZoneComment("");
             v11Conf.setLikeBlack("");
             v11Conf.setLikeWhite("");
+            v11Conf.setZoneEvl(10);
+            v11Conf.setSignGroups("");
+            v11Conf.setZoneComment("");
             v11Conf.setZoneWalks("");
             mapper.insert(v11Conf);
         }

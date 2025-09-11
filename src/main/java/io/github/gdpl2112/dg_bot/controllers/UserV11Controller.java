@@ -70,6 +70,9 @@ public class UserV11Controller {
             case "likeWhite":
                 v11Conf.setLikeWhite(value);
                 break;
+            case "zoneEvl":
+                v11Conf.setZoneEvl(Integer.valueOf(value));
+                break;
             default:
                 return null;
         }
