@@ -66,19 +66,19 @@ public class V11QzoneService {
                 ResponseEntity<String> entity = template.getForEntity(walkUrl, String.class);
                 if (entity.getStatusCode().is2xxSuccessful()) {
                     log.info("空间访问成功：b{} u{}..继续", id, zoneWalksId);
-                    String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap)
-                            + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
-                    ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
-                    if (entity1.getStatusCode().is2xxSuccessful()) {
-                        log.info("取消点赞b{} u{}..完成..继续", id, zoneWalksId);
-                        //dolike
-                        String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
-                                + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
-                        ResponseEntity<String> entity2 = template.getForEntity(likeUrl, String.class);
-                        if (entity2.getStatusCode().is2xxSuccessful()) {
-                            log.info("点赞成功：b{} u{}..完成", id, zoneWalksId);
-                        }
-                    }
+//                    String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap)
+//                            + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
+//                    ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
+//                    if (entity1.getStatusCode().is2xxSuccessful()) {
+//                        log.info("取消点赞b{} u{}..完成..继续", id, zoneWalksId);
+//                        //dolike
+//                        String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
+//                                + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
+//                        ResponseEntity<String> entity2 = template.getForEntity(likeUrl, String.class);
+//                        if (entity2.getStatusCode().is2xxSuccessful()) {
+//                            log.info("点赞成功：b{} u{}..完成", id, zoneWalksId);
+//                        }
+//                    }
                 }
             } catch (Exception e) {
                 log.error("空间访问异常", e);
@@ -131,7 +131,7 @@ public class V11QzoneService {
         V11Conf v11Conf = likeService.getV11Conf(String.valueOf(id));
         String comment = v11Conf.getZoneComment();
         Boolean autoZoneLike = v11Conf.getAutoZoneLike();
-        if ((comment == null || comment.isEmpty()) && !autoZoneLike) return;
+        if ((comment == null || comment.trim().isEmpty()) && !autoZoneLike) return;
         Map<String, String> cookiesMap = getCookiesMap(bot);
         String uin = String.valueOf(id);
         try {
