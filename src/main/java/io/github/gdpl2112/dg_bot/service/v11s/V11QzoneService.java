@@ -57,6 +57,7 @@ public class V11QzoneService {
         Map<String, String> cookiesMap = getCookiesMap(bot);
         for (Long zoneWalksId : zoneWalksIds) {
             component.log.info("空间访问：b" + id + " u" + zoneWalksId);
+            if (zoneWalksId == null) continue;
             try {
                 String dataR1 = template.getForObject("https://kloping.top/api/qzone/one?qq=" + zoneWalksId, String.class);
                 String fid = JSONObject.parseObject(dataR1).getString("fid");
