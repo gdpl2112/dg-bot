@@ -32,7 +32,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 //=============
                 .authorizeRequests()
                 .antMatchers(
-                        "/api/bot/list","/api/rec","/api/rec/test"
+                        "/api/bot/list",
+                        "/api/bot/alist",
+                        "/api/bot/avatar",
+                        "/api/rec","/api/rec/test"
                 )
                 .permitAll()
                 .anyRequest()
