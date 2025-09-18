@@ -3,8 +3,10 @@ package io.github.gdpl2112.dg_bot.controllers;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
+import io.github.gdpl2112.dg_bot.dao.Statistics;
 import io.github.gdpl2112.dg_bot.dto.BotInfo;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
+import io.github.gdpl2112.dg_bot.mapper.StatisticsMapper;
 import io.github.kloping.url.UrlUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
@@ -32,15 +34,22 @@ import java.util.Map;
 public class PreController {
 
     @Autowired
+    StatisticsMapper statisticsMapper;
+
+    @RequestMapping("/pre/statistics")
+    public Object statistics() {
+        int count0 = statisticsMapper.getTotalCountByType(Statistics.GROUP);
+        int count1 = statisticsMapper.getTotalCountByType(Statistics.PRIVATE);
+        return Map.of("group", count0, "private", count1, "all", count0 + count1);
+    }
+
+    @Autowired
     AuthMapper authMapper;
 
     private Map<String, String> t2url = new HashMap<>();
 
     @GetMapping("/bot/avatar")
-    public void avatar0(@RequestParam(name = "t") String t
-            , HttpServletRequest request
-            , HttpServletResponse response
-    ) {
+    public void avatar0(@RequestParam(name = "t") String t, HttpServletRequest request, HttpServletResponse response) {
         synchronized (t2url) {
             try {
                 String url = t2url.get(t);
@@ -61,17 +70,9 @@ public class PreController {
             BotInfo botInfo;
             Bot bot = Bot.getInstanceOrNull(Long.valueOf(auth.getQid()));
             if (bot != null) {
-                botInfo = new BotInfo()
-                        .setId(bot.getId())
-                        .setNick(bot.getNick())
-                        .setAvatar(bot.getAvatarUrl())
-                        .setOnline(bot.isOnline());
+                botInfo = new BotInfo().setId(bot.getId()).setNick(bot.getNick()).setAvatar(bot.getAvatarUrl()).setOnline(bot.isOnline());
             } else {
-                botInfo = new BotInfo()
-                        .setId(Long.valueOf(auth.getQid()))
-                        .setNick("离线")
-                        .setAvatar("https://q1.qlogo.cn/g?b=qq&nk=" + auth.getQid() + "&s=640")
-                        .setOnline(false);
+                botInfo = new BotInfo().setId(Long.valueOf(auth.getQid())).setNick("离线").setAvatar("https://q1.qlogo.cn/g?b=qq&nk=" + auth.getQid() + "&s=640").setOnline(false);
             }
             infos.add(botInfo);
         }

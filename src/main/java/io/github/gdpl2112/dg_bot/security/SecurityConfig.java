@@ -35,6 +35,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/api/bot/list",
                         "/api/bot/alist",
                         "/api/bot/avatar",
+                        "/api/pre/statistics",
                         "/api/rec","/api/rec/test"
                 )
                 .permitAll()

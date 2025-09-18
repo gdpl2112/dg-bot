@@ -3,11 +3,9 @@ package io.github.gdpl2112.dg_bot.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
-import io.github.gdpl2112.dg_bot.dao.Administrator;
-import io.github.gdpl2112.dg_bot.dao.Conf;
-import io.github.gdpl2112.dg_bot.dao.GroupConf;
-import io.github.gdpl2112.dg_bot.dao.Passive;
+import io.github.gdpl2112.dg_bot.dao.*;
 import io.github.gdpl2112.dg_bot.mapper.*;
+import io.github.gdpl2112.dg_bot.mapper.service.IStatisticsService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
@@ -56,7 +54,11 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
     AdministratorMapper administratorMapper;
 
     @Autowired
+    IStatisticsService statisticsService;
+
+    @Autowired
     PassiveService passiveService;
+
     @Autowired
     private AuthMapper authMapper;
 
@@ -82,7 +84,11 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         Long bid = event.getBot().getId();
         String tid = "g" + event.getSubject().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
+        statisticsService.statistics(Statistics.GROUP, bid.toString());
     }
+
+    @Autowired
+    StatisticsMapper statisticsMapper;
 
     @EventHandler
     public void onEvent(GroupMessageSyncEvent event) {
@@ -100,10 +106,18 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            builder.append(Utils.getAllStatus(bid, authMapper));
+            int grc = statisticsMapper.getTotalCount(bid.toString(), Statistics.GROUP);
+            int frc = statisticsMapper.getTotalCount(bid.toString(), Statistics.PRIVATE);
+            builder.append(Utils.getAllStatus(bid, authMapper)
+                    + "\n---------------"
+                    + "\n已处理群聊消息:" + grc + "条"
+                    + "\n已处理私聊消息:" + frc + "条"
+                    + "\n已处理总消息数:" + (grc + frc) + "条"
+            );
             event.getSubject().sendMessage(builder.build());
             return;
         }
+        statisticsService.statistics(Statistics.GROUP, bid.toString());
     }
 
     @EventHandler
@@ -113,6 +127,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         Long bid = event.getBot().getId();
         String tid = "f" + event.getSender().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
+        statisticsService.statistics(Statistics.PRIVATE, bid.toString());
     }
 
     @EventHandler
