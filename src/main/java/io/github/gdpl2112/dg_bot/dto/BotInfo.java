@@ -7,7 +7,7 @@ import lombok.experimental.Accessors;
 
 /**
  * @author github kloping
- * @date 2025/6/2-22:08
+ * @since 2025/6/2-22:08
  */
 @Data
 @Accessors(chain = true)

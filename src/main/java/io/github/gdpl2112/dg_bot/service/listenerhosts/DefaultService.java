@@ -1,4 +1,4 @@
-package io.github.gdpl2112.dg_bot.service;
+package io.github.gdpl2112.dg_bot.service.listenerhosts;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
@@ -6,6 +6,7 @@ import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.*;
 import io.github.gdpl2112.dg_bot.mapper.*;
 import io.github.gdpl2112.dg_bot.mapper.service.IStatisticsService;
+import io.github.gdpl2112.dg_bot.service.BotService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
@@ -30,7 +31,7 @@ import java.util.Map;
 
 /**
  * @author github-kloping
- * @date 2023-07-20
+ * @since 2023-07-20
  */
 @Service
 public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost implements CommandLineRunner {
@@ -100,20 +101,17 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             MessageChainBuilder builder = new MessageChainBuilder();
             builder.append(new At(event.getSender().getId()));
             try {
-                builder.append(Contact.uploadImage(event.getSubject(), new URL(
-                        String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=160", bid)
-                ).openStream()));
+                builder.append(Contact.uploadImage(event.getSubject(), new URL(String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=160", bid)).openStream()));
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            int grc = statisticsMapper.getTotalCount(bid.toString(), Statistics.GROUP);
-            int frc = statisticsMapper.getTotalCount(bid.toString(), Statistics.PRIVATE);
+            Integer grc = statisticsMapper.getTotalCount(bid.toString(), Statistics.GROUP);
+            Integer frc = statisticsMapper.getTotalCount(bid.toString(), Statistics.PRIVATE);
             builder.append(Utils.getAllStatus(bid, authMapper)
                     + "\n---------------"
                     + "\n已处理群聊消息:" + grc + "条"
                     + "\n已处理私聊消息:" + frc + "条"
-                    + "\n已处理总消息数:" + (grc + frc) + "条"
-            );
+                    + "\n已处理总消息数:" + (grc + frc) + "条");
             event.getSubject().sendMessage(builder.build());
             return;
         }

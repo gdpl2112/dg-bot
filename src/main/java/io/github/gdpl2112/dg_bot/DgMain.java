@@ -30,7 +30,7 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.getCompileTime;
 
 /**
  * @author github-kloping
- * @date 2023-07-17
+ * @since 2023-07-17
  */
 @SpringBootApplication
 @EnableAsync

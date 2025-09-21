@@ -8,7 +8,7 @@ import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
-import io.github.gdpl2112.dg_bot.service.ScriptService;
+import io.github.gdpl2112.dg_bot.service.listenerhosts.ScriptService;
 import io.github.gdpl2112.dg_bot.service.v11s.V11AutoLikeService;
 import io.github.gdpl2112.dg_bot.service.v11s.V11QzoneService;
 import io.github.kloping.date.DateUtils;
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author github kloping
- * @date 2025/7/17-00:34
+ * @since 2025/7/17-00:34
  */
 @Slf4j
 @RestController

@@ -42,7 +42,7 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.isLinux;
 
 /**
  * @author github-kloping
- * @date 2023-07-20
+ * @since 2023-07-20
  */
 public class Utils {
 
@@ -100,11 +100,8 @@ public class Utils {
         long totalPhysical = memory.getTotal();
         long availablePhysical = memory.getAvailable();
         long usedPhysical = totalPhysical - availablePhysical;
-
         sb.append("\n物理总占内存: " + (usedPhysical * 100 / totalPhysical) + "%");
-
         sb.append("\n物理总用内存: " + formatBytes(usedPhysical) + "/" + formatBytes(totalPhysical));
-
         CentralProcessor processor = systemInfo.getHardware().getProcessor();
         long[] prevTicks = processor.getSystemCpuLoadTicks();
         Util.sleep(1000);

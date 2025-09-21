@@ -10,11 +10,11 @@ import java.util.Properties;
 
 /**
  * @author github kloping
- * @date 2025/9/4-14:17
+ * @since 2025/9/4-14:17
  */
 public class CompileRes {
 
-    public static final String VERSION_DATE = "2025/0918";
+    public static final String VERSION_DATE = "2025/0921";
 
     public static boolean isLinux() {
         String osName = System.getProperty("os.name").toLowerCase();

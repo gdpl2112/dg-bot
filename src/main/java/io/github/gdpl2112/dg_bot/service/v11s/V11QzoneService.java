@@ -23,7 +23,7 @@ import java.util.Map;
  *
  *
  * @author github kloping
- * @date 2025/9/10-22:29
+ * @since 2025/9/10-22:29
  */
 @Slf4j
 @Service
@@ -39,18 +39,31 @@ public class V11QzoneService {
     V11AutoLikeService likeService;
 
     @Scheduled(cron = "20 05 00 * * ? ")
-    public void walksAll() {
+    public void walksAll0() {
+        qzoneWalksAll(false);
+    }
+
+    @Scheduled(cron = "20 25 12 * * ? ")
+    public void walksAll1() {
+        qzoneWalksAll(true);
+    }
+
+    /**
+     *
+     * @param k 是否点赞
+     */
+    private void qzoneWalksAll(boolean k) {
         component.log.info("空间访问!启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
-                    startQzoneWalkNow(bot.getId(), (RemoteBot) bot);
+                    startQzoneWalkNow(bot.getId(), (RemoteBot) bot, k);
                 }
             }
         }
     }
 
-    public void startQzoneWalkNow(long id, RemoteBot bot) {
+    public void startQzoneWalkNow(long id, RemoteBot bot, boolean like) {
         V11Conf v11Conf = likeService.getV11Conf(String.valueOf(id));
         List<Long> zoneWalksIds = v11Conf.getZoneWalksIds();
         if (zoneWalksIds.isEmpty()) return;
@@ -66,20 +79,22 @@ public class V11QzoneService {
                         + "&qq=" + zoneWalksId;
                 ResponseEntity<String> entity = template.getForEntity(walkUrl, String.class);
                 if (entity.getStatusCode().is2xxSuccessful()) {
-                    log.info("空间访问成功：b{} u{}..继续", id, zoneWalksId);
-//                    String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap)
-//                            + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
-//                    ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
-//                    if (entity1.getStatusCode().is2xxSuccessful()) {
-//                        log.info("取消点赞b{} u{}..完成..继续", id, zoneWalksId);
-//                        //dolike
-//                        String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
-//                                + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
-//                        ResponseEntity<String> entity2 = template.getForEntity(likeUrl, String.class);
-//                        if (entity2.getStatusCode().is2xxSuccessful()) {
-//                            log.info("点赞成功：b{} u{}..完成", id, zoneWalksId);
-//                        }
-//                    }
+                    log.info("空间访问成功：b{} walk u{}..继续:{}", id, zoneWalksId, like);
+                    if (like) {
+                        String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap)
+                                + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
+                        ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
+                        if (entity1.getStatusCode().is2xxSuccessful()) {
+                            log.info("取消点赞b{} u{}..完成..继续", id, zoneWalksId);
+                            //dolike
+                            String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
+                                    + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
+                            ResponseEntity<String> entity2 = template.getForEntity(likeUrl, String.class);
+                            if (entity2.getStatusCode().is2xxSuccessful()) {
+                                log.info("点赞成功：b{} u{}..完成", id, zoneWalksId);
+                            }
+                        }
+                    }
                 }
             } catch (Exception e) {
                 log.error("空间访问异常", e);

@@ -2,7 +2,7 @@ package io.github.gdpl2112.dg_bot.service;
 
 /**
  * @author github-kloping
- * @date 2023-07-17
+ * @since 2023-07-17
  */
 public interface BotService {
     /**

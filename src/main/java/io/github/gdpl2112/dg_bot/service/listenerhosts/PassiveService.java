@@ -1,4 +1,4 @@
-package io.github.gdpl2112.dg_bot.service;
+package io.github.gdpl2112.dg_bot.service.listenerhosts;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
@@ -8,6 +8,8 @@ import io.github.gdpl2112.dg_bot.dao.Passive;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
+import io.github.gdpl2112.dg_bot.service.BotService;
+import io.github.gdpl2112.dg_bot.service.ConfigService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
@@ -26,7 +28,7 @@ import java.util.Map;
 
 /**
  * @author github-kloping
- * @date 2023-07-20
+ * @since 2023-07-20
  */
 @Service
 public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {

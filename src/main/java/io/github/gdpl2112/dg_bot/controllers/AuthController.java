@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author github kloping
- * @date 2025/8/25-09:58
+ * @since 2025/8/25-09:58
  */
 @RequestMapping("/api")
 @RestController

@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
-import io.github.gdpl2112.dg_bot.service.ScriptService;
+import io.github.gdpl2112.dg_bot.service.listenerhosts.ScriptService;
 import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * @author github-kloping
- * @date 2023-07-19
+ * @since 2023-07-19
  */
 @RestController
 @PreAuthorize("hasAuthority('user')")

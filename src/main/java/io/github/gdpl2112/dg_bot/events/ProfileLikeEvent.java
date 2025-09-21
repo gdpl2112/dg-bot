@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 /**
  * 被点赞事件
  * @author github kloping
- * @date 2025/7/30-09:51
+ * @since 2025/7/30-09:51
  */
 @Data
 @AllArgsConstructor

@@ -4,7 +4,7 @@ import lombok.Data;
 
 /**
  * @author github-kloping
- * @date 2023-07-18
+ * @since 2023-07-18
  */
 @Data
 public class Administrator {

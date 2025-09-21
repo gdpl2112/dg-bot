@@ -5,7 +5,7 @@ import lombok.Data;
 
 /**
  * @author github kloping
- * @date 2025/7/20-17:10
+ * @since 2025/7/20-17:10
  */
 @TableName("like_reco")
 @Data

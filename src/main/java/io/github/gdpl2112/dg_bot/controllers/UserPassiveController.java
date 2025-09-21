@@ -22,7 +22,7 @@ import java.util.Map;
 
 /**
  * @author github-kloping
- * @date 2023-07-20
+ * @since 2023-07-20
  */
 @RestController
 @PreAuthorize("hasAuthority('user')")

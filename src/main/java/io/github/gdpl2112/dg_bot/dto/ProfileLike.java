@@ -1,7 +1,7 @@
 package io.github.gdpl2112.dg_bot.dto;
 
 import com.alibaba.fastjson.JSONObject;
-import io.github.gdpl2112.dg_bot.service.ScriptService;
+import io.github.gdpl2112.dg_bot.service.listenerhosts.ScriptService;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.mamoe.mirai.Bot;
@@ -13,7 +13,7 @@ import java.util.Date;
 
 /**
  * @author github kloping
- * @date 2025/7/17-22:31
+ * @since 2025/7/17-22:31
  */
 @Data
 @Accessors(chain = true)

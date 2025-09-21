@@ -1,4 +1,4 @@
-package io.github.gdpl2112.dg_bot.service;
+package io.github.gdpl2112.dg_bot.service.listenerhosts;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;

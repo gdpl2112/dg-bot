@@ -6,14 +6,13 @@ import io.github.gdpl2112.dg_bot.dao.Conf;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
+import io.github.gdpl2112.dg_bot.service.listenerhosts.ScriptService;
 import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.date.CronUtils;
 import io.github.kloping.judge.Judge;
-import kotlin.coroutines.CoroutineContext;
 import net.mamoe.mirai.Bot;
-import org.jetbrains.annotations.NotNull;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -31,7 +30,7 @@ import java.util.Map;
  * @author github.kloping
  */
 @Service
-public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implements CommandLineRunner {
+public class CronService implements CommandLineRunner {
     final CronMapper mapper;
     final BotService service;
     final Logger logger;
@@ -40,10 +39,6 @@ public class CronService extends net.mamoe.mirai.event.SimpleListenerHost implem
         this.mapper = mapper;
         this.service = service;
         this.logger = logger;
-    }
-
-    @Override
-    public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
     }
 
     private final Map<Integer, Integer> cmid2cronid = new HashMap<>();

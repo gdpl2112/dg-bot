@@ -6,7 +6,7 @@ import lombok.Data;
  *
  *
  * @author github kloping
- * @date 2025/9/18-14:31
+ * @since 2025/9/18-14:31
  */
 @Data
 public class Statistics {

@@ -19,7 +19,7 @@ import java.util.Date;
 
 /**
  * @author github-kloping
- * @date 2023-07-17
+ * @since 2023-07-17
  */
 @Configuration
 public class BaseComponent {

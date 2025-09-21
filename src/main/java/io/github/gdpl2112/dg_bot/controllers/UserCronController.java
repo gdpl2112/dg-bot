@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * @author github-kloping
- * @date 2023-07-19
+ * @since 2023-07-19
  */
 @RestController
 @PreAuthorize("hasAuthority('user')")

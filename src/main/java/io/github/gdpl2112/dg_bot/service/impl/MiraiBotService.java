@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * @author github-kloping
- * @date 2023-07-17
+ * @since 2023-07-17
  */
 @Service
 public class MiraiBotService implements BotService {

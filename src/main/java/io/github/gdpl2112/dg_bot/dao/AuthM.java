@@ -5,7 +5,7 @@ import lombok.Data;
 
 /**
  * @author github-kloping
- * @date 2023-07-17
+ * @since 2023-07-17
  */
 @Data
 public class AuthM {

@@ -1,4 +1,4 @@
-package io.github.gdpl2112.dg_bot.service;
+package io.github.gdpl2112.dg_bot.service.listenerhosts;
 
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.built.ScriptCompile;
@@ -8,6 +8,7 @@ import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
+import io.github.gdpl2112.dg_bot.service.ConfigService;
 import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import io.github.gdpl2112.dg_bot.service.script.impl.BaseScriptUtils;
 import io.github.kloping.common.Public;
@@ -51,7 +52,7 @@ public class ScriptService extends SimpleListenerHost {
 
     @Override
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
-        exception.printStackTrace();
+        log.error("script error: {}", exception.getMessage());
     }
 
     @Autowired

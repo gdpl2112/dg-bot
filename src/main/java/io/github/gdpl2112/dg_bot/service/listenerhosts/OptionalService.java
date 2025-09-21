@@ -1,9 +1,10 @@
-package io.github.gdpl2112.dg_bot.service;
+package io.github.gdpl2112.dg_bot.service.listenerhosts;
 
 import io.github.gdpl2112.dg_bot.DgMain;
 import io.github.gdpl2112.dg_bot.dao.Optional;
 import io.github.gdpl2112.dg_bot.dto.OptionalDto;
 import io.github.gdpl2112.dg_bot.mapper.OptionalMapper;
+import io.github.gdpl2112.dg_bot.service.ConfigService;
 import io.github.gdpl2112.dg_bot.service.optionals.BaseOptional;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.ListenerHost;
