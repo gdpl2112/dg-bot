@@ -110,7 +110,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         }
     }
 
-    public Map<Long, Boolean> VIP_INFO = new java.util.HashMap<>();
+    public static Map<Long, Boolean> VIP_INFO = new java.util.HashMap<>();
 
     @Autowired
     SaveMapper saveMapper;

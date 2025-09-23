@@ -32,7 +32,7 @@ public class OptionalService implements ListenerHost {
     }
 
     @Autowired
-    OptionalMapper optionalMapper;
+    public OptionalMapper optionalMapper;
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
@@ -62,7 +62,7 @@ public class OptionalService implements ListenerHost {
         touchEvent(event, id, tid);
     }
 
-    private synchronized Map<String, BaseOptional> getBos() {
+    public synchronized Map<String, BaseOptional> getBos() {
         if (!bos.isEmpty()) return bos;
         for (String beanName : DgMain.applicationContext.getBeanNamesForType(BaseOptional.class)) {
             BaseOptional bo = (BaseOptional) DgMain.applicationContext.getBean(beanName);
@@ -82,6 +82,7 @@ public class OptionalService implements ListenerHost {
                 one.setQid(id);
                 one.setOpt(k);
                 one.setOpen(false);
+                optionalMapper.insert(one);
             }
             dtos.add(OptionalDto.of(one, v.getName(), v.getDesc()));
         });

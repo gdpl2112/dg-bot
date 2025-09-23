@@ -3,10 +3,10 @@ package io.github.gdpl2112.dg_bot.dao;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author github kloping
@@ -40,53 +40,36 @@ public class V11Conf {
 
     public List<Long> getSignGroupIds() {
         String[] split = signGroups.split(",|;|\\s");
-        return Arrays.stream(split).map(
-                s -> {
-                    try {
-                        return Long.parseLong(s);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }
-        ).collect(Collectors.toList());
+        return getLongList(split);
     }
 
     public List<Long> getLikeBlackIds() {
         String[] split = likeBlack.split(",|;|\\s");
-        return Arrays.stream(split).map(
-                s -> {
-                    try {
-                        return Long.parseLong(s);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }
-        ).collect(Collectors.toList());
+        return getLongList(split);
     }
 
     public List<Long> getLikeWhiteIds() {
         String[] split = likeWhite.split(",|;|\\s");
-        return Arrays.stream(split).map(
-                s -> {
-                    try {
-                        return Long.parseLong(s);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }
-        ).collect(Collectors.toList());
+        return getLongList(split);
     }
+
     // 空间自动访问
     public List<Long> getZoneWalksIds() {
         String[] split = zoneWalks.split(",|;|\\s");
-        return Arrays.stream(split).map(
-                s -> {
-                    try {
-                        return Long.parseLong(s);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }
-        ).collect(Collectors.toList());
+        return getLongList(split);
+    }
+
+    @NotNull
+    private static List<Long> getLongList(String[] split) {
+        List<Long> list = new ArrayList<>();
+        for (String s : split) {
+            try {
+                Long l = Long.parseLong(s);
+                list.add(l);
+            } catch (NumberFormatException e) {
+                continue;
+            }
+        }
+        return list;
     }
 }

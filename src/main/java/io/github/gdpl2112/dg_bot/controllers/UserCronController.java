@@ -147,7 +147,6 @@ public class UserCronController {
 
     @RequestMapping("/cron-del")
     public List cronDel(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String id) {
-        cronMapper.deleteById(id);
         cronService.del(id);
         return cronList(userDetails);
     }

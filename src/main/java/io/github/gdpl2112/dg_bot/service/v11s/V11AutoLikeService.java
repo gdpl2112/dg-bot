@@ -10,6 +10,7 @@ import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
+import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
 import net.mamoe.mirai.Bot;
@@ -31,10 +32,10 @@ import java.util.List;
 public class V11AutoLikeService extends SimpleListenerHost {
 
     @Autowired
-    V11ConfMapper mapper;
+    public V11ConfMapper mapper;
 
     @Autowired
-    MiraiComponent component;
+    Logger logger;
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -83,11 +84,11 @@ public class V11AutoLikeService extends SimpleListenerHost {
 
     @Scheduled(cron = "00 59 23 * * ? ")
     public void autoLike() {
-        component.log.info("最后点赞处理启动");
+        logger.info("最后点赞处理启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
-                    component.log.info(likeNow(String.valueOf(bot.getId())));
+                    logger.info(likeNow(String.valueOf(bot.getId())));
                 }
             }
         }
@@ -101,7 +102,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
             V11Conf conf = getV11Conf(bid);
             if (!conf.getAutoLike()) return null;
             List<Long> likeBlackIds = conf.getLikeBlackIds();
-            int max = component.VIP_INFO.get(bot.getId()) ? 20 : 10;
+            int max = MiraiComponent.VIP_INFO.get(bot.getId()) ? 20 : 10;
             RemoteBot remoteBot = ((RemoteBot) bot);
             try {
                 int st = 0;
@@ -155,7 +156,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                     }
                 }
             } catch (Exception e) {
-                component.log.info("day通过ws获得点赞记录失败");
+                logger.info("day通过ws获得点赞记录失败");
                 System.err.println(e.getMessage());
             }
 
@@ -170,7 +171,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
     public void yesterday() {
         try {
             yesterdayLiking = true;
-            component.log.info("回赞昨日启动");
+            logger.info("回赞昨日启动");
             for (Bot bot : Bot.getInstances()) {
                 if (bot != null && bot.isOnline()) {
                     yesterdayLieNow(String.valueOf(bot.getId()));
@@ -178,7 +179,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
             }
         } finally {
             yesterdayLiking = false;
-            component.log.info("所有回赞结束");
+            logger.info("所有回赞结束");
             autoLike();
         }
     }
@@ -223,7 +224,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                         else break all;
                     }
                 } catch (Exception e) {
-                    component.log.info("通过ws获得点赞记录失败");
+                    logger.info("通过ws获得点赞记录失败");
                     System.err.println(e.getMessage());
                     break all;
                 }
@@ -238,14 +239,14 @@ public class V11AutoLikeService extends SimpleListenerHost {
         JSONObject jsonObject = JSONObject.parseObject(data);
         JSONObject jdata = jsonObject.getJSONObject("data");
         Boolean isVip = jdata.getBoolean("is_vip");
-        component.VIP_INFO.put(bid, isVip);
+        MiraiComponent.VIP_INFO.put(bid, isVip);
         return isVip;
     }
 
     @Scheduled(cron = "01 00 00 * * ?")
     //自动打卡启动
     public void autoSign() {
-        component.log.info("自动打卡启动");
+        logger.info("自动打卡启动");
         for (Bot bot : Bot.getInstances()) {
             signNow(bot);
         }
@@ -257,7 +258,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                 if (bot instanceof RemoteBot) {
                     String bid = String.valueOf(bot.getId());
                     V11Conf conf = getV11Conf(bid);
-                    component.log.info("自动打卡: " + bid + " conf-sign: " + conf.getSignGroups());
+                    logger.info("自动打卡: " + bid + " conf-sign: " + conf.getSignGroups());
                     if (Judge.isEmpty(conf.getSignGroups())) return;
                     String groups = conf.getSignGroups();
                     RemoteBot remoteBot = ((RemoteBot) bot);
@@ -266,9 +267,9 @@ public class V11AutoLikeService extends SimpleListenerHost {
                         String data = remoteBot.executeAction("send_group_sign", data0);
                         JSONObject jsonObject = JSONObject.parseObject(data);
                         if (jsonObject.getInteger("retcode") != 0) {
-                            component.log.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, gid, groups));
+                            logger.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, gid, groups));
                         } else {
-                            component.log.info("自动打卡成功：b" + bid + " g" + gid);
+                            logger.info("自动打卡成功：b" + bid + " g" + gid);
                             applicationEventPublisher.publishEvent(new GroupSignEvent(gid, bot.getId(), bot.getId(), true));
                         }
                     }

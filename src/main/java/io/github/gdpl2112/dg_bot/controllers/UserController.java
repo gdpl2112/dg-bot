@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.controllers;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.*;
 import io.github.gdpl2112.dg_bot.mapper.*;
@@ -98,17 +99,19 @@ public class UserController {
 
     @RequestMapping("mlist")
     public List<Administrator> mlist(@AuthenticationPrincipal UserDetails userDetails) {
-        QueryWrapper<Administrator> qw = new QueryWrapper<>();
-        qw.eq("qid", userDetails.getUsername());
-        return administratorMapper.selectList(qw);
+        return administratorMapper.selectList(new LambdaQueryWrapper<Administrator>()
+                .eq(Administrator::getQid, userDetails.getUsername()));
     }
 
     @RequestMapping("mdel")
     public Boolean mdel(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String id) {
-        QueryWrapper<Administrator> qw = new QueryWrapper<>();
-        qw.eq("qid", userDetails.getUsername());
-        qw.eq("target_id", id);
-        return administratorMapper.delete(qw) > 0;
+//        QueryWrapper<Administrator> qw = new QueryWrapper<>();
+//        qw.eq("qid", userDetails.getUsername());
+//        qw.eq("target_id", id);
+        return administratorMapper.delete(
+                new LambdaQueryWrapper<Administrator>()
+                        .eq(Administrator::getTargetId, id)
+                        .eq(Administrator::getQid, userDetails.getUsername())) > 0;
     }
 
     @RequestMapping("m_add")
@@ -131,8 +134,8 @@ public class UserController {
 
     @RequestMapping("glist")
     public List glist(@AuthenticationPrincipal UserDetails userDetails) {
-        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-        qw.eq("qid", userDetails.getUsername());
+        LambdaQueryWrapper<GroupConf> qw = new LambdaQueryWrapper<GroupConf>()
+                .eq(GroupConf::getQid, userDetails.getUsername());
         List<GroupConf> confs = groupConfMapper.selectList(qw);
         Map<String, GroupConf> tid2conf = new HashMap<>();
         for (GroupConf conf : confs) tid2conf.put(conf.getTid(), conf);
@@ -150,8 +153,8 @@ public class UserController {
 
     @RequestMapping("flist")
     public List flist(@AuthenticationPrincipal UserDetails userDetails) {
-        QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-        qw.eq("qid", userDetails.getUsername());
+        LambdaQueryWrapper<GroupConf> qw = new LambdaQueryWrapper<GroupConf>()
+                .eq(GroupConf::getQid, userDetails.getUsername());
         List<GroupConf> confs = groupConfMapper.selectList(qw);
         Map<String, GroupConf> tid2conf = new HashMap<>();
         for (GroupConf conf : confs) tid2conf.put(conf.getTid(), conf);
@@ -194,9 +197,9 @@ public class UserController {
     @RequestMapping("gc0")
     public Boolean change0(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String tid) {
         try {
-            QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-            qw.eq("qid", userDetails.getUsername());
-            qw.eq("tid", tid);
+            LambdaQueryWrapper<GroupConf> qw = new LambdaQueryWrapper<GroupConf>()
+                    .eq(GroupConf::getQid, userDetails.getUsername())
+                    .eq(GroupConf::getTid, tid);
             GroupConf groupConf = groupConfMapper.selectOne(qw);
             if (groupConf != null) {
                 groupConf.setK0(!groupConf.getK0());
@@ -217,9 +220,9 @@ public class UserController {
     @RequestMapping("gc1")
     public Boolean change1(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String tid) {
         try {
-            QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-            qw.eq("qid", userDetails.getUsername());
-            qw.eq("tid", tid);
+            LambdaQueryWrapper<GroupConf> qw = new LambdaQueryWrapper<GroupConf>()
+                    .eq(GroupConf::getQid, userDetails.getUsername())
+                    .eq(GroupConf::getTid, tid);
             GroupConf groupConf = groupConfMapper.selectOne(qw);
             if (groupConf != null) {
                 groupConf.setK1(!groupConf.getK1());
@@ -240,9 +243,9 @@ public class UserController {
     @RequestMapping("gc2")
     public Boolean change2(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String tid) {
         try {
-            QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-            qw.eq("qid", userDetails.getUsername());
-            qw.eq("tid", tid);
+            LambdaQueryWrapper<GroupConf> qw = new LambdaQueryWrapper<GroupConf>()
+                    .eq(GroupConf::getQid, userDetails.getUsername())
+                    .eq(GroupConf::getTid, tid);
             GroupConf groupConf = groupConfMapper.selectOne(qw);
             if (groupConf != null) {
                 groupConf.setK2(!groupConf.getK2());
@@ -263,9 +266,9 @@ public class UserController {
     @RequestMapping("gc3")
     public Boolean change3(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String tid) {
         try {
-            QueryWrapper<GroupConf> qw = new QueryWrapper<>();
-            qw.eq("qid", userDetails.getUsername());
-            qw.eq("tid", tid);
+            LambdaQueryWrapper<GroupConf> qw = new LambdaQueryWrapper<GroupConf>()
+                    .eq(GroupConf::getQid, userDetails.getUsername())
+                    .eq(GroupConf::getTid, tid);
             GroupConf groupConf = groupConfMapper.selectOne(qw);
             if (groupConf != null) {
                 groupConf.setK3(!groupConf.getK3());

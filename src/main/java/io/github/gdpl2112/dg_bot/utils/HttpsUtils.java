@@ -1,4 +1,4 @@
-package io.github.gdpl2112.dg_bot;
+package io.github.gdpl2112.dg_bot.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.service.listenerhosts;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.Utils;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
@@ -284,14 +285,10 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         return content;
     }
 
-    private boolean isAdmin(Long bid, Long sid) {
-        QueryWrapper<Administrator> qwa = new QueryWrapper<>();
-        qwa.eq("qid", bid);
-        for (Administrator administrator : administratorMapper.selectList(qwa)) {
-            if (administrator.getTargetId().equals(sid.toString())) {
-                return true;
-            }
-        }
-        return false;
+    public boolean isAdmin(Long bid, Long sid) {
+        LambdaQueryWrapper<Administrator> qwa = new LambdaQueryWrapper<>();
+        qwa.eq(Administrator::getQid, bid).eq(Administrator::getTargetId, sid);
+        Administrator administrator = administratorMapper.selectOne(qwa);
+        return administrator != null && administrator.getQid().equals(bid.toString());
     }
 }

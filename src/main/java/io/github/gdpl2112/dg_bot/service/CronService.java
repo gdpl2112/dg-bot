@@ -31,7 +31,7 @@ import java.util.Map;
  */
 @Service
 public class CronService implements CommandLineRunner {
-    final CronMapper mapper;
+    public final CronMapper mapper;
     final BotService service;
     final Logger logger;
 
@@ -61,6 +61,10 @@ public class CronService implements CommandLineRunner {
 
     @Autowired
     ConfMapper confMapper;
+
+    public List<CronMessage> getCronMessages(long bid) {
+        return mapper.selectList(new QueryWrapper<CronMessage>().eq("qid", bid));
+    }
 
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
@@ -102,6 +106,7 @@ public class CronService implements CommandLineRunner {
 
     public void del(String id) {
         try {
+            mapper.deleteById(id);
             Integer aid = Integer.parseInt(id);
             int cid = cmid2cronid.remove(aid);
             CronUtils.INSTANCE.stop(cid);
