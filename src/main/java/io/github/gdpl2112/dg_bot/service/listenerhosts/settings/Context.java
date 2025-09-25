@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.service.listenerhosts.settings;
 
 import lombok.Getter;
+import lombok.Setter;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.User;
 
@@ -12,6 +13,9 @@ public abstract class Context {
     private Deque<BotState> stateStack = new LinkedList<>(); // 使用栈记录状态历史
     @Getter
     private Bot bot;
+    @Setter
+    @Getter
+    private Long subjectId;
 
     public Context(Bot bot, BotState initialState) {
         this.bot = bot;

@@ -73,6 +73,9 @@ public class SettingService implements ListenerHost {
         if (!isAdmin && user.getId() != event.getBot().getId()) return;
         if (BID2CONTEXT.containsKey(event.getBot().getId())) {
             Context context = BID2CONTEXT.get(event.getBot().getId());
+            if(context.getSubjectId() != event.getSubject().getId()){
+                return;
+            }
             String handleInput = null;
             try {
                 handleInput = context.handleInput(user, command);
@@ -95,6 +98,7 @@ public class SettingService implements ListenerHost {
                     BID2CONTEXT.remove(event.getBot().getId());
                 }
             };
+            context.setSubjectId(event.getSubject().getId());
             BID2CONTEXT.put(event.getBot().getId(), context);
             event.getSubject().sendMessage(PREFIX + context.getCurrentState().getWelcomeMessage());
         }
