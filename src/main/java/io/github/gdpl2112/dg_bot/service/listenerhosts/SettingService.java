@@ -13,8 +13,11 @@ import net.mamoe.mirai.contact.User;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.ListenerHost;
 import net.mamoe.mirai.event.events.MessageEvent;
+import net.mamoe.mirai.message.data.At;
+import net.mamoe.mirai.message.data.MessageChain;
+import net.mamoe.mirai.message.data.PlainText;
+import net.mamoe.mirai.message.data.SingleMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -53,10 +56,10 @@ public class SettingService implements ListenerHost {
     @Autowired
     private V11AutoLikeService v11AutoLikeService;
 
-//    @EventHandler
-//    public void onEvent(net.mamoe.mirai.event.events.GroupMessageEvent event) {
-//        doEvent(event);
-//    }
+    @EventHandler
+    public void onEvent(net.mamoe.mirai.event.events.GroupMessageEvent event) {
+        doEvent(event);
+    }
 
     @EventHandler
     public void onEvent(net.mamoe.mirai.event.events.GroupMessageSyncEvent event) {
@@ -65,15 +68,15 @@ public class SettingService implements ListenerHost {
 
     private void doEvent(MessageEvent event) {
         User user = event.getSender();
-        String command = event.getMessage().contentToString();
+        String command = getCommandLine(event.getMessage(), event.getBot().getId());
         if (command == null || command.trim().isEmpty()) return;
-        command = command.trim();
+        command = command.replaceAll(" ", "");
         if (command.startsWith(PREFIX)) return;
         boolean isAdmin = defaultService.isAdmin(event.getBot().getId(), user.getId());
         if (!isAdmin && user.getId() != event.getBot().getId()) return;
         if (BID2CONTEXT.containsKey(event.getBot().getId())) {
             Context context = BID2CONTEXT.get(event.getBot().getId());
-            if(context.getSubjectId() != event.getSubject().getId()){
+            if (context.getSubjectId() != event.getSubject().getId()) {
                 return;
             }
             String handleInput = null;
@@ -102,5 +105,21 @@ public class SettingService implements ListenerHost {
             BID2CONTEXT.put(event.getBot().getId(), context);
             event.getSubject().sendMessage(PREFIX + context.getCurrentState().getWelcomeMessage());
         }
+    }
+
+    private String getCommandLine(MessageChain message, long bid) {
+        StringBuilder sb = new StringBuilder();
+        for (SingleMessage singleMessage : message) {
+            if (singleMessage instanceof PlainText) {
+                PlainText plainText = (PlainText) singleMessage;
+                sb.append(plainText.getContent().trim());
+            } else if (singleMessage instanceof At) {
+                At at = (At) singleMessage;
+                if (at.getTarget() == bid) {
+                    continue;
+                } else sb.append("[@").append(at.getTarget()).append("]");
+            }
+        }
+        return sb.toString();
     }
 }
