@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
+import io.github.kloping.common.Public;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,15 +73,16 @@ public class V11QzoneService {
             component.log.info("空间访问：b" + id + " u" + zoneWalksId);
             if (zoneWalksId == null) continue;
             try {
-                String dataR1 = template.getForObject("https://kloping.top/api/qzone/one?qq=" + zoneWalksId, String.class);
-                String fid = JSONObject.parseObject(dataR1).getString("fid");
-                String ctime = JSONObject.parseObject(dataR1).getString("time");
                 String walkUrl = "https://kloping.top/api/qzone/walk" + getParmsStart(String.valueOf(id), cookiesMap)
                         + "&qq=" + zoneWalksId;
                 ResponseEntity<String> entity = template.getForEntity(walkUrl, String.class);
                 if (entity.getStatusCode().is2xxSuccessful()) {
                     log.info("空间访问成功：b{} walk u{}..继续:{}", id, zoneWalksId, like);
                     if (like) {
+                        String dataR1 = template.getForObject("https://kloping.top/api/qzone/one?qq=" + zoneWalksId, String.class);
+                        String fid = JSONObject.parseObject(dataR1).getString("fid");
+                        String ctime = JSONObject.parseObject(dataR1).getString("time");
+
                         String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap)
                                 + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
                         ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
@@ -135,7 +137,9 @@ public class V11QzoneService {
                 Bot bot = Bot.getInstanceOrNull(Long.parseLong(v.getQid()));
                 if (bot != null && bot.isOnline()) {
                     if (bot instanceof RemoteBot) {
-                        startCommentNow(bot.getId(), (RemoteBot) bot);
+                        Public.EXECUTOR_SERVICE.submit(() -> {
+                            startCommentNow(bot.getId(), (RemoteBot) bot);
+                        });
                     }
                 }
             }
