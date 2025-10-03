@@ -137,7 +137,7 @@ public class V11QzoneService {
                 Bot bot = Bot.getInstanceOrNull(Long.parseLong(v.getQid()));
                 if (bot != null && bot.isOnline()) {
                     if (bot instanceof RemoteBot) {
-                        Public.EXECUTOR_SERVICE.submit(() -> {
+                        MiraiComponent.EXECUTOR_SERVICE.submit(() -> {
                             startCommentNow(bot.getId(), (RemoteBot) bot);
                         });
                     }

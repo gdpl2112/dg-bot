@@ -11,8 +11,10 @@ import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import io.github.kloping.common.Public;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +30,7 @@ import java.util.List;
 /**
  * @author github.kloping
  */
+@Slf4j
 @Service
 public class V11AutoLikeService extends SimpleListenerHost {
 
@@ -253,29 +256,37 @@ public class V11AutoLikeService extends SimpleListenerHost {
     }
 
     public void signNow(Bot bot) {
-        MiraiComponent.EXECUTOR_SERVICE.submit(() -> {
-            if (bot != null && bot.isOnline()) {
-                if (bot instanceof RemoteBot) {
-                    String bid = String.valueOf(bot.getId());
-                    V11Conf conf = getV11Conf(bid);
-                    logger.info("自动打卡: " + bid + " conf-sign: " + conf.getSignGroups());
-                    if (Judge.isEmpty(conf.getSignGroups())) return;
-                    String groups = conf.getSignGroups();
-                    RemoteBot remoteBot = ((RemoteBot) bot);
-                    for (Long gid : conf.getSignGroupIds()) {
-                        String data0 = "{\"group_id\": \"" + gid + "\"}";
-                        String data = remoteBot.executeAction("send_group_sign", data0);
-                        JSONObject jsonObject = JSONObject.parseObject(data);
-                        if (jsonObject.getInteger("retcode") != 0) {
-                            logger.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, gid, groups));
-                        } else {
-                            logger.info("自动打卡成功：b" + bid + " g" + gid);
-                            applicationEventPublisher.publishEvent(new GroupSignEvent(gid, bot.getId(), bot.getId(), true));
-                        }
-                    }
-                }
+        if (bot != null && bot.isOnline()) {
+            if (bot instanceof RemoteBot) {
+                MiraiComponent.EXECUTOR_SERVICE.submit(() -> {
+                    signNowOne(bot.getId(), (RemoteBot) bot);
+                });
             }
-        });
+        }
+    }
+
+    private void signNowOne(Long id, RemoteBot remoteBot) {
+        String bid = String.valueOf(id);
+        V11Conf conf = getV11Conf(bid);
+        logger.info("自动打卡: " + bid + " conf-sign: " + conf.getSignGroups());
+        if (Judge.isEmpty(conf.getSignGroups())) return;
+        String groups = conf.getSignGroups();
+        for (Long gid : conf.getSignGroupIds()) {
+            try {
+                String data0 = "{\"group_id\": \"" + gid + "\"}";
+                String data = remoteBot.executeAction("send_group_sign", data0);
+                JSONObject jsonObject = JSONObject.parseObject(data);
+                if (jsonObject.getInteger("retcode") != 0) {
+                    logger.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, gid, groups));
+                } else {
+                    logger.info("自动打卡成功：b" + bid + " g" + gid);
+                    applicationEventPublisher.publishEvent(new GroupSignEvent(gid, id, id, true));
+                }
+            } catch (Exception e) {
+                log.error("自动打卡失败", e);
+                continue;
+            }
+        }
     }
 
     private static final String FORMAT_SIGN_DATA = "{\"action\": \"send_group_sign\",\"params\": {\"group_id\": \"%s\"}}";
