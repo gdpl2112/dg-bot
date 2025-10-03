@@ -157,7 +157,6 @@ public class RecController {
         try {
             RemoteBot bot = (RemoteBot) Bot.getInstanceOrNull(bid0);
             v11QzoneService.startQzoneWalkNow(bid0, bot, true);
-            v11QzoneService.autoComment();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return e.getMessage();
