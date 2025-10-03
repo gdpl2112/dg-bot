@@ -9,7 +9,6 @@ import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.ProfileLikeEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.ScriptService;
-import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import io.github.gdpl2112.dg_bot.service.v11s.V11AutoLikeService;
 import io.github.gdpl2112.dg_bot.service.v11s.V11QzoneService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
@@ -40,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 public class RecController {
     @Autowired
     Logger logger;
-    
+
     @Autowired
     ApplicationEventPublisher eventPublisher;
 
@@ -154,24 +153,24 @@ public class RecController {
 
     @RequestMapping("/test")
     public Object test(@RequestParam(name = "id") String bid) {
-//        Long bid0 = Long.parseLong(bid);
-//        try {
-//            RemoteBot bot = (RemoteBot) Bot.getInstanceOrNull(bid0);
-//            v11QzoneService.startQzoneWalkNow(bid0, bot);
-//            v11QzoneService.autoComment();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return e.getMessage();
-//        }
-//        try {
-//            Bot bot = Bot.getInstance(Long.parseLong(bid));
-//            if (bot instanceof RemoteBot) {
-//                RemoteBot remoteBot = (RemoteBot) bot;
-//                return remoteBot.executeAction("get_status", "{}");
-//            } else return "LOCAL_BOT:" + bot.isOnline();
-//        } catch (Exception e) {
-//            return e.getMessage();
-//        }
-        return "ok";
+        Long bid0 = Long.parseLong(bid);
+        try {
+            RemoteBot bot = (RemoteBot) Bot.getInstanceOrNull(bid0);
+            v11QzoneService.startQzoneWalkNow(bid0, bot, true);
+            v11QzoneService.autoComment();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return e.getMessage();
+        }
+        try {
+            Bot bot = Bot.getInstance(Long.parseLong(bid));
+            if (bot instanceof RemoteBot) {
+                RemoteBot remoteBot = (RemoteBot) bot;
+                return remoteBot.executeAction("get_status", "{}");
+            } else return "LOCAL_BOT:" + bot.isOnline();
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+//        return "ok";
     }
 }
