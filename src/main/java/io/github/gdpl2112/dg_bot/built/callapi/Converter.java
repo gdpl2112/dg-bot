@@ -86,7 +86,6 @@ public class Converter {
             url = url.replaceAll(PAR_NUMBER0, String.valueOf(nums.toString()));
         } else if (url.contains(PAR_NUMBER_OR_SELF)) {
             StringBuilder nums = new StringBuilder();
-
             for (String arg : args) {
                 nums.append(NumberUtils.findNumberFromString(arg));
             }
@@ -105,8 +104,9 @@ public class Converter {
         }
         if (url.contains(MNAME)) {
             Member member = bot.getGroup(gid).getMembers().get(qid);
+            String mname = member.getNick();
             if (member != null)
-                url = url.replaceAll(MNAME0, member.getNameCard());
+                url = url.replaceAll(MNAME0, mname);
         }
         if (url.contains(GNAME)) {
             Group group = bot.getGroup(gid);
