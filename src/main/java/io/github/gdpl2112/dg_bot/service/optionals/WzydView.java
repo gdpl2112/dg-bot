@@ -1,7 +1,9 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
+import com.alibaba.fastjson.JSONArray;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.number.NumberUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.At;
@@ -14,12 +16,14 @@ import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * @author github kloping
  * @since 2025/7/19-20:11
  */
+@Slf4j
 @Component
 public class WzydView implements BaseOptional {
 
@@ -90,7 +94,42 @@ public class WzydView implements BaseOptional {
             }
             return doRequest("/bind/get", Map.of("sid", sid));
         }));
+        apis.put("查询UID", ((content, event) -> {
+            String name = content.substring(5);
+            if (Judge.isEmpty(name)) return "使用方式: 查询UID\"游戏昵称\" ";
+            java.lang.Object data = doRequest("/query/show", Map.of("name", name));
+            if (data != null) {
+                if (data instanceof String) {
+                    try {
+                        JSONArray array = JSONArray.parseArray(data.toString());
+                        List<UserData> users = array.toJavaList(UserData.class);
+                        StringBuilder sb = new StringBuilder("查询结果:\n");
+                        for (UserData user : users) {
+                            sb.append("----------------\n");
+                            sb.append("UID: ").append(user.uid).append("\n")
+                                    .append("昵称: ").append(user.name).append("\n")
+                                    .append("段位: ").append(user.dw).append("\n")
+                                    .append("分区: ").append(user.region).append("\n")
+                                    .append("头像: ").append(user.avatar).append("\n");
+                        }
+                        event.getSubject().sendMessage(sb.toString());
+                    } catch (Exception e) {
+                        log.error("wzry return String {}", e.getMessage(), e);
+                        return data.toString();
+                    }
+                }
+            } else return "未找到该玩家";
+            return null;
+        }));
+    }
 
+    public static class UserData {
+        public String uid;
+        public String name;
+        public String dw;
+        public String region;
+        public String level;
+        public String avatar;
     }
 
     @Override
@@ -116,7 +155,8 @@ public class WzydView implements BaseOptional {
                         event.getSubject().sendMessage(image);
                     } else if (data instanceof String) {
                         event.getSubject().sendMessage((String) data);
-                    } else System.err.println("wzry return 未知类型: " + data);
+                    }
+                    System.err.println("wzry return 未知类型: " + data);
                 }
                 return;
             }
