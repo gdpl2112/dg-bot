@@ -48,19 +48,19 @@ public class SongPoint implements BaseOptional {
         String out = io.github.gdpl2112.dg_bot.Utils.getLineString(event);
         String name = null;
         String type = null;
-        if (out.startsWith("点歌") && out.length() > 2) {
+        if (out.startsWith("点歌")) {
             name = out.substring(2);
             type = TYPE_WY;
-        } else if (out.startsWith("酷狗点歌") && out.length() > 4) {
+        } else if (out.startsWith("酷狗点歌")) {
             name = out.substring(4);
             type = TYPE_KUGOU;
-        } else if (out.startsWith("网易点歌") && out.length() > 4) {
+        } else if (out.startsWith("网易点歌")) {
             name = out.substring(4);
             type = TYPE_WY;
-        } else if (out.startsWith("QQ点歌") && out.length() > 4) {
+        } else if (out.startsWith("QQ点歌")) {
             name = out.substring(4);
             type = TYPE_QQ;
-        } else if (out.startsWith("抖音点歌") && out.length() > 4) {
+        } else if (out.startsWith("抖音点歌")) {
             name = out.substring(4);
             type = TYPE_DY;
         } else if (out.startsWith("取消点歌") || out.startsWith("取消选择")) {
