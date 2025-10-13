@@ -4,19 +4,19 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.github.kloping.date.FrameUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MusicKind;
 import net.mamoe.mirai.message.data.MusicShare;
+import net.mamoe.mirai.message.data.PlainText;
 import org.jetbrains.annotations.NotNull;
-import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,6 +27,7 @@ import static io.github.gdpl2112.dg_bot.Utils.getRedirectUrl;
 /**
  * @author github.kloping
  */
+@Slf4j
 @Component
 public class SongPoint implements BaseOptional {
     public static final String DESC = "包含[点歌,QQ点歌,酷狗点歌,网易点歌,取消点歌,取消选择] 功能";
@@ -59,6 +60,9 @@ public class SongPoint implements BaseOptional {
         } else if (out.startsWith("QQ点歌") && out.length() > 4) {
             name = out.substring(4);
             type = TYPE_QQ;
+        } else if (out.startsWith("抖音点歌") && out.length() > 4) {
+            name = out.substring(4);
+            type = TYPE_DY;
         } else if (out.startsWith("取消点歌") || out.startsWith("取消选择")) {
             SongData o = QID2DATA.remove(event.getSender().getId());
             event.getSubject().sendMessage("已取消.\n" + o.name);
@@ -71,14 +75,28 @@ public class SongPoint implements BaseOptional {
                     if (r == null) event.getSubject().sendMessage("翻页时异常!");
                     else event.getSubject().sendMessage(r);
                 } else {
-                    Message msg = pointSongs(e, n);
-                    if (msg == null) event.getSubject().sendMessage("选择时异常!");
-                    else event.getSubject().sendMessage(msg);
+                    Message msg = null;
+                    try {
+                        msg = pointSongs(e, n);
+                    } catch (Exception ex) {
+                        msg = new PlainText("选择时异常!\n" + ex.getMessage());
+                    }
+                    event.getSubject().sendMessage(msg);
                 }
             }
         }
-
-        if (name != null && type != null) {
+        if (name == null) return;
+        else if (name.trim().isEmpty()) {
+            event.getSubject().sendMessage("点歌功能:"
+                    + "\n- 点歌[歌名]    #默认网易点歌"
+                    + "\n- 网易点歌[歌名] #网易云音乐点歌"
+                    + "\n- QQ点歌[歌名]  #QQ音乐点歌"
+                    + "\n- 酷狗点歌[歌名] #酷狗音乐点歌"
+                    + "\n- 抖音点歌[歌名] #抖音音乐点歌"
+                    + "\n- 取消点歌   #点歌后取消选择"
+                    + "\n\ntips: 点歌后选择对应数字即可!"
+            );
+        } else if (type != null) {
             String r = listSongs(event.getSender().getId(), type, 1, name);
             if (r == null) event.getSubject().sendMessage("搜索时异常!");
             else event.getSubject().sendMessage(r);
@@ -89,6 +107,7 @@ public class SongPoint implements BaseOptional {
     public static final String TYPE_KUGOU = "kg";
     public static final String TYPE_QQ = "qq";
     public static final String TYPE_WY = "wy";
+    public static final String TYPE_DY = "dy";
 
     // id <type,data>
     public static final Map<Long, SongData> QID2DATA = new HashMap<>();
@@ -123,6 +142,26 @@ public class SongPoint implements BaseOptional {
         }
     }
 
+    public abstract static class PointInterface {
+        protected final String type;
+
+        public PointInterface(String type) {
+            this.type = type;
+        }
+
+        public String list0(Long qid, String name, Integer p) {
+            try {
+                return list(qid, name, p);
+            } catch (Exception e) {
+                log.error("point type({}) list error {}", type, e.getMessage(), e);
+                return null;
+            }
+        }
+
+        abstract Message point(Long qid, SongData data, Integer n);
+
+        abstract String list(Long qid, String name, Integer p);
+    }
 
     public static class SongData {
         public SongData(String type, String name, Long qid, Long time) {
@@ -161,49 +200,12 @@ public class SongPoint implements BaseOptional {
      * @return
      */
     public static String listSongs(Long qid, String type, Integer p, String name) {
-        try {
-            if (TYPE_QQ.equals(type)) return listQqSongs(qid, TYPE_QQ, p, name);
-            else if (TYPE_WY.equals(type)) return listWySongs(qid, TYPE_WY, p, name);
-            else if (TYPE_KUGOU.equals(type)) return listKgSongs(qid, TYPE_KUGOU, p, name);
-            else return "未知歌曲类型";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        PointInterface pi = POINT_INTERFACES.get(type);
+        if (pi == null) {
+            return "不支持的点歌类型";
+        } else {
+            return pi.list(qid, name, p);
         }
-    }
-
-    private static String listKgSongs(Long qid, String type, Integer p, String name) throws Exception {
-        Document doc0 = getDocument("https://www.hhlqilongzhu.cn/api/dg_kgmusic.php?n=&gm=" + name);
-        QID2DATA.put(qid, new SongData(p, name, type, doc0, qid, System.currentTimeMillis()));
-        return doc0.wholeText() + "\n使用'取消点歌'/'取消选择'来取消选择";
-    }
-
-    private static String listWySongs(Long qid, String type, Integer p, String name) throws Exception {
-        Document doc0 = getDocument(SERVER_HOST + "api/music/search?keyword=" + name);
-        String content = doc0.wholeText();
-        StringBuilder sb = new StringBuilder();
-        JSONArray arr = JSON.parseArray(content);
-        Integer index = 1;
-        for (Object o : arr) {
-            JSONObject e0 = (JSONObject) o;
-            sb.append(index++).append(".").append(e0.getString("name")).append("--").append(e0.getString("artist")).append("\n");
-        }
-        QID2DATA.put(qid, new SongData(p, name, type, doc0, qid, System.currentTimeMillis()));
-        return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
-    }
-
-    private static String listQqSongs(Long qid, String type, Integer p, String name) throws Exception {
-        Document doc0 = getDocument(String.format("https://zj.v.api.aa1.cn/api/qqmusic/demo.php?type=1&q=%s&p=%s&n=10", name, p));
-        JSONObject data = JSONObject.parseObject(doc0.body().text());
-        StringBuilder sb = new StringBuilder(String.format("歌名:%s,页数:%s,总数:%s\n", name, p, data.get("count")));
-        int n = 1;
-        for (Object o : data.getJSONArray("list")) {
-            JSONObject o1 = (JSONObject) o;
-            sb.append(n++ + ".").append(o1.getString("name")).append("--").append(o1.getString("singer")).append("\n");
-        }
-        sb.append("选择歌曲前数字.选择0时进入下一页");
-        QID2DATA.put(qid, new SongData(p, name, TYPE_QQ, doc0, qid, System.currentTimeMillis()));
-        return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
     }
 
     /**
@@ -214,49 +216,131 @@ public class SongPoint implements BaseOptional {
      * @return
      */
     public static Message pointSongs(SongData data, Integer n) {
-        try {
-            if (TYPE_QQ.equals(data.type)) return pointQqSong(data, n);
-            else if (TYPE_WY.equals(data.type)) return pointWySong(data, n);
-            else if (TYPE_KUGOU.equals(data.type)) return pointKgSong(data, n);
-            else return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        PointInterface pi = POINT_INTERFACES.get(data.type);
+        if (pi == null) {
+            return new PlainText("不支持的点歌类型");
+        } else {
+            return pi.point(data.qid, data, n);
         }
     }
 
+    private static final Map<String, PointInterface> POINT_INTERFACES = Map.of(
+            TYPE_QQ, new PointInterface(TYPE_QQ) {
+                @Override
+                String list(Long qid, String name, Integer p) {
+                    Document doc0 = getDocument(String.format("https://zj.v.api.aa1.cn/api/qqmusic/demo.php?type=1&q=%s&p=%s&n=10", name, p));
+                    JSONObject data = JSONObject.parseObject(doc0.body().text());
+                    StringBuilder sb = new StringBuilder(String.format("歌名:%s,页数:%s,总数:%s\n", name, p, data.get("count")));
+                    int n = 1;
+                    for (Object o : data.getJSONArray("list")) {
+                        JSONObject o1 = (JSONObject) o;
+                        sb.append(n++ + ".").append(o1.getString("name")).append("--").append(o1.getString("singer")).append("\n");
+                    }
+                    sb.append("选择歌曲前数字.选择0时进入下一页");
+                    QID2DATA.put(qid, new SongData(p, name, TYPE_QQ, doc0, qid, System.currentTimeMillis()));
+                    return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                }
 
-    private static Message pointKgSong(SongData e, Integer n) throws Exception {
-        Document doc0 = getDocument("https://www.hhlqilongzhu.cn/api/dg_kgmusic.php?type=json&n=" + n + "&gm=" + e.name);
-        JSONObject out = JSON.parseObject(doc0.body().text());
-        String url = out.getString("music_url");
-        MusicShare share = new MusicShare(MusicKind.QQMusic, out.getString("title"), out.getString("singer"), url, out.getString("cover"), url);
-        return share;
-    }
+                @Override
+                Message point(Long qid, SongData data, Integer n) {
+                    Document doc0 = (Document) data.data;
+                    String content = doc0.wholeText();
+                    JSONObject jo = JSON.parseObject(content);
+                    JSONArray arr0 = jo.getJSONArray("list");
+                    jo = arr0.getJSONObject(n - 1);
+                    String url = getRedirectUrl(jo.getString("url"));
+                    MusicShare share = new MusicShare(MusicKind.QQMusic, jo.getString("name"), jo.getString("singer"), url, jo.getString("cover"), url);
+                    return share;
+                }
+            }
+            , TYPE_KUGOU, new PointInterface(TYPE_KUGOU) {
+                @Override
+                Message point(Long qid, SongData data, Integer n) {
+                    Document doc0 = getDocument("https://api.yaohud.cn/api/music/migu?key=zn54xgS3NU0cOKEO0yQ" + n + "&gm=" + data.name);
+                    JSONObject out = JSON.parseObject(doc0.body().text());
+                    String url = out.getString("music_url");
+                    MusicShare share = new MusicShare(MusicKind.QQMusic, out.getString("title"), out.getString("singer"), url, out.getString("cover"), url);
+                    return share;
+                }
 
-    private static Message pointWySong(SongData data, Integer n) throws Exception {
-        Document doc0 = (Document) data.data;
-        String content = doc0.wholeText();
-        JSONArray arr = JSON.parseArray(content);
-        JSONObject jo = arr.getJSONObject(n - 1);
-        String id = jo.getString("id");
-        String url = getRedirectUrl(SERVER_HOST + "api/music/get-url-by-id?id=" + id);
-        String cover = getRedirectUrl(SERVER_HOST + "api/music/get-cover-by-id?id=" + id);
-        MusicShare share = new MusicShare(
-                MusicKind.QQMusic, jo.getString("name"),
-                jo.getString("artist"), "https://music.163.com/#/song?id=" + id,
-                cover, url);
-        return share;
-    }
+                @Override
+                String list(Long qid, String name, Integer p) {
+                    Document doc0 = getDocument("https://api.yaohud.cn/api/music/migu?key=zn54xgS3NU0cOKEO0yQ&n=&msg=" + name);
+                    String content = doc0.wholeText();
+                    JSONObject obj = JSON.parseObject(content);
+                    QID2DATA.put(qid, new SongData(p, name, type, doc0, qid, System.currentTimeMillis()));
+                    return doc0.wholeText() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                }
+            }
+            , TYPE_WY, new PointInterface(TYPE_WY) {
+                @Override
+                Message point(Long qid, SongData data, Integer n) {
+                    Document doc0 = (Document) data.data;
+                    String content = doc0.wholeText();
+                    JSONArray arr = JSON.parseArray(content);
+                    JSONObject jo = arr.getJSONObject(n - 1);
+                    String id = jo.getString("id");
+                    String url = getRedirectUrl(SERVER_HOST + "api/music/get-url-by-id?id=" + id);
+                    String cover = getRedirectUrl(SERVER_HOST + "api/music/get-cover-by-id?id=" + id);
+                    MusicShare share = new MusicShare(
+                            MusicKind.QQMusic, jo.getString("name"),
+                            jo.getString("artist"), "https://music.163.com/#/song?id=" + id,
+                            cover, url);
+                    return share;
+                }
 
-    private static MusicShare pointQqSong(SongData data, Integer n) throws Exception {
-        Document doc0 = (Document) data.data;
-        String content = doc0.wholeText();
-        JSONObject jo = JSON.parseObject(content);
-        JSONArray arr0 = jo.getJSONArray("list");
-        jo = arr0.getJSONObject(n - 1);
-        String url = getRedirectUrl(jo.getString("url"));
-        MusicShare share = new MusicShare(MusicKind.QQMusic, jo.getString("name"), jo.getString("singer"), url, jo.getString("cover"), url);
-        return share;
-    }
+                @Override
+                String list(Long qid, String name, Integer p) {
+                    Document doc0 = getDocument(SERVER_HOST + "api/music/search?keyword=" + name);
+                    String content = doc0.wholeText();
+                    StringBuilder sb = new StringBuilder();
+                    JSONArray arr = JSON.parseArray(content);
+                    Integer index = 1;
+                    for (Object o : arr) {
+                        JSONObject e0 = (JSONObject) o;
+                        sb.append(index++).append(".").append(e0.getString("name")).append("--").append(e0.getString("artist")).append("\n");
+                    }
+                    QID2DATA.put(qid, new SongData(p, name, type, doc0, qid, System.currentTimeMillis()));
+                    return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                }
+            }
+            , TYPE_DY, new PointInterface(TYPE_DY) {
+
+                @Override
+                Message point(Long qid, SongData data, Integer n) {
+                    Document doc0 = getDocument("https://api.cenguigui.cn/api/douyin/music/?msg="
+                            + data.name + "&page=" + data.p + "&limit=10&type=json&n=" + n);
+                    String content = doc0.wholeText();
+                    JSONObject jo = JSON.parseObject(content);
+                    JSONObject jd = jo.getJSONObject("data");
+                    String url = jd.getString("url");
+                    String cover = jd.getString("cover");
+                    String title = jd.getString("title");
+                    String singer = jd.getString("singer");
+                    MusicShare share = new MusicShare(MusicKind.QQMusic, title, singer, url, cover, url);
+                    return share;
+                }
+
+                @Override
+                String list(Long qid, String name, Integer p) {
+                    Document doc0 = getDocument("https://api.cenguigui.cn/api/douyin/music/?msg="
+                            + name + "&page=" + p + "&limit=10&type=json&n=");
+                    String content = doc0.wholeText();
+                    StringBuilder sb = new StringBuilder();
+                    JSONObject all = JSON.parseObject(content);
+                    JSONArray arr = all.getJSONArray("data");
+                    for (Object o : arr) {
+                        JSONObject e0 = (JSONObject) o;
+                        sb.append(e0.getInteger("n")).append(".")
+                                .append(e0.getString("title")).append("--")
+                                .append(e0.getString("singer")).append("\n");
+                    }
+                    QID2DATA.put(qid, new SongData(p, name, type, doc0, qid, System.currentTimeMillis()));
+                    sb.append("选择歌曲前数字.选择0时进入下一页");
+                    return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
+
+                }
+            }
+    );
+
 }

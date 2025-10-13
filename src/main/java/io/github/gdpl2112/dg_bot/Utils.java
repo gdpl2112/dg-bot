@@ -60,7 +60,8 @@ public class Utils {
                     .followRedirects(false)
                     .ignoreContentType(true).header("Connection", "Keep-Alive")
                     .header("User-Agent", "Apache-HttpClient/4.5.14 (Java/17.0.8.1)")
-                    .header("Accept-Encoding", "br,deflate,gzip,x-gzip").method(Connection.Method.HEAD).execute();
+                    .header("Accept-Encoding", "br,deflate,gzip,x-gzip")
+                    .method(Connection.Method.HEAD).execute();
         } catch (IOException e) {
             e.printStackTrace();
             return null;
