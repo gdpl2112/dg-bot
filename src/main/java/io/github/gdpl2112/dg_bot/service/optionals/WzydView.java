@@ -38,14 +38,17 @@ public class WzydView implements BaseOptional {
             long sid = event.getSender().getId();
             String uid = NumberUtils.findNumberFromString(content);
             if (Judge.isNotEmpty(uid))
-                if ((uid.length() < 8 || uid.length() > 9)) uid = "";
+                // 检测长度 7-10
+                if ((uid.length() < 7 || uid.length() > 10)) uid = "";
             for (SingleMessage singleMessage : event.getMessage()) {
                 if (singleMessage instanceof At) {
                     At at = (At) singleMessage;
                     sid = at.getTarget();
                 }
             }
-            content = content.replace("cry", "").replace("查荣耀", "");
+            content = content.replace("cry", "")
+                    .replace("CRY", "")
+                    .replace("查荣耀", "");
             content = content.replace(uid, "");
             return doRequest("/battle/history", Map.of("uid", uid, "sid", sid, "opt", content));
         };
