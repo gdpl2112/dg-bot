@@ -11,7 +11,6 @@ import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.kloping.MySpringTool.interfaces.Logger;
-import io.github.kloping.common.Public;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
 import lombok.extern.slf4j.Slf4j;
@@ -177,7 +176,10 @@ public class V11AutoLikeService extends SimpleListenerHost {
             logger.info("回赞昨日启动");
             for (Bot bot : Bot.getInstances()) {
                 if (bot != null && bot.isOnline()) {
-                    yesterdayLieNow(String.valueOf(bot.getId()));
+                    if (bot instanceof RemoteBot) {
+                        RemoteBot remoteBot = (RemoteBot) bot;
+                        MiraiComponent.EXECUTOR_SERVICE.submit(() -> yesterdayLieNow(bot.getId(), remoteBot));
+                    }
                 }
             }
         } finally {
@@ -187,52 +189,58 @@ public class V11AutoLikeService extends SimpleListenerHost {
         }
     }
 
-    public String yesterdayLieNow(String id) {
-        StringBuilder sb = null;
-        Bot bot = Bot.getInstance(Long.valueOf(id));
+    public String yesterdayLieNow(String qid) {
+        Long id = Long.valueOf(qid);
+        Bot bot = Bot.getInstance(id);
         if (bot instanceof RemoteBot) {
-            int yday = Integer.valueOf(ProfileLike.SF_DD.format(new Date(System.currentTimeMillis() - 1000 * 24 * 60 * 60L)));
-            int dayN = DateUtils.getDay();
+            RemoteBot remoteBot = (RemoteBot) bot;
+            return yesterdayLieNow(bot.getId(), remoteBot);
+        }
+        return null;
+    }
 
-            String bid = String.valueOf(bot.getId());
-            V11Conf conf = getV11Conf(bid);
-            if (!conf.getAutoLikeYesterday()) return null;
-            RemoteBot remoteBot = ((RemoteBot) bot);
-            Boolean isVip = getIsVip(bot.getId(), remoteBot);
-            int max = isVip ? 20 : 10;
+    public String yesterdayLieNow(Long bid, RemoteBot remoteBot) {
+        StringBuilder sb = null;
+        int yday = Integer.valueOf(ProfileLike.SF_DD.format(new Date(System.currentTimeMillis() - 1000 * 24 * 60 * 60L)));
+        int dayN = DateUtils.getDay();
 
-            int st = 0;
-            final int count = 10;
-            all:
-            while (true) {
-                try {
-                    JSONObject jsonObject = ProfileLike.getProfileLikePage(remoteBot, st, count);
-                    JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
-                    JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
-                    e:
-                    for (Object vUserInfo : vUserInfos) {
-                        ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
-                        if (pl.getDay() == yday) {
-                            if (conf.getNeedMaxLike()) {
-                                int fmax = pl.isSvip() ? 20 : 10;
-                                if (pl.getCount() < fmax) continue e;
-                            }
-                            if (pl.getBTodayVotedCnt() >= max) continue e;
-                            if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
-                                applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), pl.getVid(), max, true));
-                                if (sb == null) sb = new StringBuilder();
-                                sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
-                            }
-                        } else if (pl.getDay() == dayN) continue e;
-                        else break all;
-                    }
-                } catch (Exception e) {
-                    logger.info("通过ws获得点赞记录失败");
-                    System.err.println(e.getMessage());
-                    break all;
+        String id = bid.toString();
+        V11Conf conf = getV11Conf(id);
+        if (!conf.getAutoLikeYesterday()) return null;
+        Boolean isVip = getIsVip(bid, remoteBot);
+        int max = isVip ? 20 : 10;
+
+        int st = 0;
+        final int count = 10;
+        all:
+        while (true) {
+            try {
+                JSONObject jsonObject = ProfileLike.getProfileLikePage(remoteBot, st, count);
+                JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
+                JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
+                e:
+                for (Object vUserInfo : vUserInfos) {
+                    ProfileLike pl = new ProfileLike((JSONObject) vUserInfo);
+                    if (pl.getDay() == yday) {
+                        if (conf.getNeedMaxLike()) {
+                            int fmax = pl.isSvip() ? 20 : 10;
+                            if (pl.getCount() < fmax) continue e;
+                        }
+                        if (pl.getBTodayVotedCnt() >= max) continue e;
+                        if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
+                            applicationEventPublisher.publishEvent(new SendLikedEvent(bid, pl.getVid(), max, true));
+                            if (sb == null) sb = new StringBuilder();
+                            sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                        }
+                    } else if (pl.getDay() == dayN) continue e;
+                    else break all;
                 }
-                st += count;
+            } catch (Exception e) {
+                logger.info("通过ws获得点赞记录失败");
+                System.err.println(e.getMessage());
+                break all;
             }
+            st += count;
         }
         return sb != null ? sb.toString() : null;
     }
