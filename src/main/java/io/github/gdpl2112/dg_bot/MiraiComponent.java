@@ -120,7 +120,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 
     @Scheduled(cron = "0 */5 * * * ?")
     public void deleteMsg() {
-        long less = System.currentTimeMillis() - 1000L * 30 * 120;
+        long less = System.currentTimeMillis() - (1000L * 60 * 30 * 3);
         QueryWrapper<AllMessage> qw = new QueryWrapper<>();
         qw.le("time", less);
         jdbcTemplate.execute("VACUUM;");
