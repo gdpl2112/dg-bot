@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,19 +47,28 @@ public class ReportService {
             reportsMap.clear();
             return;
         }
-        Bot bot = Bot.getInstance(Long.parseLong(bid));
-        if (bot != null) {
-            Group group = bot.getGroup(Long.parseLong(gid));
-            if (group != null) {
-                reportsMap.forEach((k, v) -> {
-                    ForwardMessageBuilder builder = new ForwardMessageBuilder(group);
-                    builder.add(bot.getId(), "报错信息上报", new PlainText("用户：" + k));
-                    v.forEach(e -> {
-                        builder.add(bot.getId(), "报错信息上报", new PlainText(e));
+        try {
+            Bot bot = Bot.getInstance(Long.parseLong(bid));
+            if (bot != null) {
+                Group group = bot.getGroup(Long.parseLong(gid));
+                if (group != null) {
+                    reportsMap.forEach((k, v) -> {
+                        ForwardMessageBuilder builder = new ForwardMessageBuilder(group);
+                        builder.add(bot.getId(), "报错信息上报", new PlainText("用户：" + k));
+                        v.forEach(e -> {
+                            builder.add(bot.getId(), "报错信息上报", new PlainText(e));
+                        });
+                        group.sendMessage(builder.build());
                     });
-                    group.sendMessage(builder.build());
-                });
+                }
+                if (!reportsMap.isEmpty())
+                    group.sendMessage("报错信息上报完成,详细日志请查看" + SF_0.format(new Date()) + "的日志.");
             }
+        } finally {
+            reportsMap.clear();
         }
     }
+
+
+    private static final SimpleDateFormat SF_0 = new SimpleDateFormat("yyyy-MM-dd");
 }
