@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -223,6 +224,38 @@ public class SongPoint implements BaseOptional {
             return pi.point(data.qid, data, n);
         }
     }
+    public static Document getDocumentKugouList(String url) {
+        try {
+            return Jsoup.connect(url)
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
+                    .header("Host", "mobilecdn.kugou.com")
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
+                    .header("Accept-Encoding", "gzip, deflate")
+                    .header("Connection", "keep-alive")
+                    .header("Upgrade-Insecure-Requests", "1")
+                    .ignoreHttpErrors(true).timeout(5000).ignoreContentType(true).get();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public static Document getDocumentKugouUrl(String url) {
+        try {
+            return Jsoup.connect(url)
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
+                    .header("Host", "m.kugou.com")
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
+                    .header("Accept-Encoding", "gzip, deflate")
+                    .header("Connection", "keep-alive")
+                    .header("Upgrade-Insecure-Requests", "1")
+                    .ignoreHttpErrors(true).timeout(5000).ignoreContentType(true).get();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     private static final Map<String, PointInterface> POINT_INTERFACES = Map.of(
             TYPE_QQ, new PointInterface(TYPE_QQ) {
@@ -254,22 +287,40 @@ public class SongPoint implements BaseOptional {
                 }
             }
             , TYPE_KUGOU, new PointInterface(TYPE_KUGOU) {
+
                 @Override
                 Message point(Long qid, SongData data, Integer n) {
-                    Document doc0 = getDocument("https://api.yaohud.cn/api/music/migu?key=zn54xgS3NU0cOKEO0yQ" + n + "&gm=" + data.name);
+                    JSONObject r0 = (JSONObject) data.data;
+                    r0 = r0.getJSONObject("data");
+                    JSONArray infos = r0.getJSONArray("info");
+                    JSONObject info = infos.getJSONObject(n - 1);
+                    Document doc0 = getDocumentKugouUrl("http://m.kugou.com/app/i/getSongInfo.php?hash="+info.getString("hash")+"&cmd=playInfo");
                     JSONObject out = JSON.parseObject(doc0.body().text());
-                    String url = out.getString("music_url");
-                    MusicShare share = new MusicShare(MusicKind.QQMusic, out.getString("title"), out.getString("singer"), url, out.getString("cover"), url);
+                    String cover = out.getString("imgUrl");
+                    String url = out.getString("url");
+                    MusicShare share = new MusicShare(MusicKind.KugouMusic,
+                            out.getString("songName"), out.getString("author_name"), url, cover, url);
                     return share;
                 }
 
                 @Override
                 String list(Long qid, String name, Integer p) {
-                    Document doc0 = getDocument("https://api.yaohud.cn/api/music/migu?key=zn54xgS3NU0cOKEO0yQ&n=&msg=" + name);
+                    String url = String.format("http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=%s&page=%s&pagesize=%s", name, p, 10);
+                    Document doc0 = getDocumentKugouList(url);
+//                    Document doc0 = getDocument("https://api.yaohud.cn/api/music/migu?key=zn54xgS3NU0cOKEO0yQ&n=&msg=" + name);
                     String content = doc0.wholeText();
                     JSONObject obj = JSON.parseObject(content);
-                    QID2DATA.put(qid, new SongData(p, name, type, doc0, qid, System.currentTimeMillis()));
-                    return doc0.wholeText() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                    QID2DATA.put(qid, new SongData(p, name, type, obj, qid, System.currentTimeMillis()));
+                    obj= obj.getJSONObject("data");
+                    StringBuilder sb = new StringBuilder(String.format("歌名:%s,页数:%s,总数:%s\n", name, p, obj.getInteger("total")));
+                    int n = 1;
+                    JSONArray infos = obj.getJSONArray("info");
+                    for (Object o : infos) {
+                        JSONObject o1 = (JSONObject) o;
+                        sb.append(n++ + ".").append(o1.getString("songname")).append("--").append(o1.getString("singername")).append("\n");
+                    }
+                    sb.append("选择歌曲前数字.选择0时进入下一页");
+                    return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
                 }
             }
             , TYPE_WY, new PointInterface(TYPE_WY) {
