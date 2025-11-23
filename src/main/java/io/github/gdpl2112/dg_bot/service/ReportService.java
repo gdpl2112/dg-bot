@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.service;
 
+import io.github.kloping.date.DateUtils;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.message.data.ForwardMessageBuilder;
@@ -32,7 +33,7 @@ public class ReportService {
             reports = new java.util.ArrayList<>();
             reportsMap.put(bid, reports);
         }
-        reports.add(msg);
+        reports.add("[" + DateUtils.getFormat() + "] " + msg);
         return reports.size();
     }
 
