@@ -73,6 +73,9 @@ public class CronService implements CommandLineRunner {
         return conf.getCode();
     }
 
+    @Autowired
+    ReportService reportService;
+
     public int appendTask(CronMessage msg) {
         Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
             @Override
@@ -81,8 +84,9 @@ public class CronService implements CommandLineRunner {
                 if (msg.getTargetId().endsWith("FUNCTION") || msg.getTargetId().endsWith("function")) {
                     long bid = Long.parseLong(msg.getQid());
                     Bot bot = Bot.getInstanceOrNull(bid);
-                    if (bot == null) {
+                    if (bot == null || !bot.isOnline()) {
                         logger.waring(String.format("%s 用户实例获取失败! 可能掉线或未登录", bid));
+                        reportService.report(String.valueOf(bid), "cron任务执行失败! 用户实例获取失败! 可能掉线或未登录");
                     } else {
                         ScriptCompile scriptCompile = scriptService.getJsEngine(bid);
                         if (scriptCompile != null) Public.EXECUTOR_SERVICE.submit(() -> {

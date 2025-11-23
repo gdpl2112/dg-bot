@@ -1,10 +1,12 @@
 package io.github.gdpl2112.dg_bot.service.impl;
 
 import io.github.gdpl2112.dg_bot.service.BotService;
+import io.github.gdpl2112.dg_bot.service.ReportService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.message.code.MiraiCode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -20,16 +22,21 @@ public class MiraiBotService implements BotService {
         this.logger = logger;
     }
 
+    @Autowired
+    ReportService reportService;
+
     @Override
     public void send(String qid, String targetId, String msg) {
         Long bid = Long.valueOf(qid);
         Bot bot = Bot.getInstanceOrNull(bid);
         if (bot == null) {
             logger.waring(String.format("%s 用户实例获取失败! 可能掉线或未登录", qid));
+            reportService.report(String.valueOf(bid), "cron任务执行失败! 用户实例获取失败! 可能掉线或未登录");
         } else {
             Contact contact = getContact(bot, targetId);
             if (contact == null) {
                 logger.waring(String.format("%s 用户实例 cron 任务发送目标%s获取失败!", qid, targetId));
+                reportService.report(String.valueOf(bid), String.format("%s 用户实例 cron 任务发送目标%s获取失败!", qid, targetId));
             } else {
                 contact.sendMessage(MiraiCode.deserializeMiraiCode(msg));
             }
