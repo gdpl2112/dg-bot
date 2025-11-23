@@ -97,7 +97,7 @@ public class UserV11Controller {
     @RequestMapping("/autoLikeYesterdayNow")
     public String autoLikeYesterdayNow(@AuthenticationPrincipal UserDetails userDetails) {
         String qid = userDetails.getUsername();
-        return "已执行\n执行结果:" + v11.yesterdayLieNow(qid);
+        return "已执行\n执行结果:" + v11.yesterdayLikeNow(qid);
     }
 
     //获得所有群聊(ID,图标和名字)

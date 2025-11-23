@@ -306,28 +306,28 @@ public class V11SetState implements BotState {
 
     private void updateBlackList(List<Long> blackList) {
         StringBuilder blacks = new StringBuilder();
-        blackList.forEach(e -> blacks.append(e).append(","));
+        blackList.forEach(e -> blacks.append(e).append(";"));
         service.mapper.update(null, new LambdaUpdateWrapper<V11Conf>().eq(V11Conf::getQid, bot.getId())
                 .set(V11Conf::getLikeBlack, blacks.toString()));
     }
 
     private void updateWhiteList(List<Long> whiteList) {
         StringBuilder whites = new StringBuilder();
-        whiteList.forEach(e -> whites.append(e).append(","));
+        whiteList.forEach(e -> whites.append(e).append(";"));
         service.mapper.update(null, new LambdaUpdateWrapper<V11Conf>().eq(V11Conf::getQid, bot.getId())
                 .set(V11Conf::getLikeWhite, whites.toString()));
     }
 
     private void updateSignGroups(List<Long> signGroups) {
         StringBuilder groups = new StringBuilder();
-        signGroups.forEach(e -> groups.append(e).append(","));
+        signGroups.forEach(e -> groups.append(e).append(";"));
         service.mapper.update(null, new LambdaUpdateWrapper<V11Conf>().eq(V11Conf::getQid, bot.getId())
                 .set(V11Conf::getSignGroups, groups.toString()));
     }
 
     private void updateZoneWalks(List<Long> zoneWalks) {
         StringBuilder walks = new StringBuilder();
-        zoneWalks.forEach(e -> walks.append(e).append(","));
+        zoneWalks.forEach(e -> walks.append(e).append(";"));
         service.mapper.update(null, new LambdaUpdateWrapper<V11Conf>().eq(V11Conf::getQid, bot.getId())
                 .set(V11Conf::getZoneWalks, walks.toString()));
     }

@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
-import io.github.kloping.common.Public;
+import io.github.gdpl2112.dg_bot.service.ReportService;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +39,7 @@ public class V11QzoneService {
     @Autowired
     V11AutoLikeService likeService;
 
-    @Scheduled(cron = "20 05 00 * * ? ")
+    @Scheduled(cron = "20 06 00 * * ? ")
     public void walksAll0() {
         qzoneWalksAll(false);
     }
@@ -100,6 +100,7 @@ public class V11QzoneService {
                 }
             } catch (Exception e) {
                 log.error("空间访问异常", e);
+                reportService.report(String.valueOf(id), "空间访问异常,访问ID:" + zoneWalksId);
             }
         }
     }
@@ -200,9 +201,13 @@ public class V11QzoneService {
             }
         } catch (Exception e) {
             log.error("空间评论异常", e);
+            reportService.report(String.valueOf(id), "空间评论异常");
         }
         component.log.info("空间评论/点赞：end-b" + uin);
     }
+
+    @Autowired
+    ReportService reportService;
 
     private static Map<String, String> getCookiesMap(RemoteBot bot) {
         String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"user.qzone.qq.com\"}");

@@ -10,6 +10,7 @@ import io.github.gdpl2112.dg_bot.dto.ProfileLike;
 import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
+import io.github.gdpl2112.dg_bot.service.ReportService;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
@@ -178,7 +179,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                 if (bot != null && bot.isOnline()) {
                     if (bot instanceof RemoteBot) {
                         RemoteBot remoteBot = (RemoteBot) bot;
-                        MiraiComponent.EXECUTOR_SERVICE.submit(() -> yesterdayLieNow(bot.getId(), remoteBot));
+                        MiraiComponent.EXECUTOR_SERVICE.submit(() -> yesterdayLikeNow(bot.getId(), remoteBot));
                     }
                 }
             }
@@ -189,17 +190,17 @@ public class V11AutoLikeService extends SimpleListenerHost {
         }
     }
 
-    public String yesterdayLieNow(String qid) {
+    public String yesterdayLikeNow(String qid) {
         Long id = Long.valueOf(qid);
         Bot bot = Bot.getInstance(id);
         if (bot instanceof RemoteBot) {
             RemoteBot remoteBot = (RemoteBot) bot;
-            return yesterdayLieNow(bot.getId(), remoteBot);
+            return yesterdayLikeNow(bot.getId(), remoteBot);
         }
         return null;
     }
 
-    public String yesterdayLieNow(Long bid, RemoteBot remoteBot) {
+    public String yesterdayLikeNow(Long bid, RemoteBot remoteBot) {
         StringBuilder sb = null;
         int yday = Integer.valueOf(ProfileLike.SF_DD.format(new Date(System.currentTimeMillis() - 1000 * 24 * 60 * 60L)));
         int dayN = DateUtils.getDay();
@@ -227,16 +228,21 @@ public class V11AutoLikeService extends SimpleListenerHost {
                             if (pl.getCount() < fmax) continue e;
                         }
                         if (pl.getBTodayVotedCnt() >= max) continue e;
-                        if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
-                            applicationEventPublisher.publishEvent(new SendLikedEvent(bid, pl.getVid(), max, true));
-                            if (sb == null) sb = new StringBuilder();
-                            sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                        try {
+                            if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
+                                applicationEventPublisher.publishEvent(new SendLikedEvent(bid, pl.getVid(), max, true));
+                                if (sb == null) sb = new StringBuilder();
+                                sb.append("\n(成功)").append("给").append(pl.getVid()).append("点赞").append(max).append("个");
+                            }
+                        } catch (Exception e) {
+                            log.error("给{}点赞{}个失败", pl.getVid(), max, e);
+                            reportService.report(bid.toString(), "给" + pl.getVid() + "点赞" + max + "个失败");
                         }
                     } else if (pl.getDay() == dayN) continue e;
                     else break all;
                 }
             } catch (Exception e) {
-                logger.info("通过ws获得点赞记录失败");
+                logger.error("通过ws获得点赞记录失败");
                 System.err.println(e.getMessage());
                 break all;
             }
@@ -292,10 +298,14 @@ public class V11AutoLikeService extends SimpleListenerHost {
                 }
             } catch (Exception e) {
                 log.error("自动打卡失败", e);
+                reportService.report(id.toString(), "自动打卡失败:群ID->" + gid);
                 continue;
             }
         }
     }
+
+    @Autowired
+    ReportService reportService;
 
     private static final String FORMAT_SIGN_DATA = "{\"action\": \"send_group_sign\",\"params\": {\"group_id\": \"%s\"}}";
 }
