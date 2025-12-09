@@ -7,6 +7,7 @@ import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.gdpl2112.dg_bot.service.ReportService;
+import io.github.kloping.date.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +68,8 @@ public class V11QzoneService {
         }
     }
 
+    public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     public void startQzoneWalkNow(long id, RemoteBot bot, boolean like) {
         V11Conf v11Conf = likeService.getV11Conf(String.valueOf(id));
         List<Long> zoneWalksIds = v11Conf.getZoneWalksIds();
@@ -79,10 +85,20 @@ public class V11QzoneService {
                 if (entity.getStatusCode().is2xxSuccessful()) {
                     log.info("空间访问成功：b{} walk u{}..继续:{}", id, zoneWalksId, like);
                     if (like) {
-                        String dataR1 = template.getForObject("https://kloping.top/api/qzone/one?qq=" + zoneWalksId, String.class);
-                        String fid = JSONObject.parseObject(dataR1).getString("fid");
+                        String url0 = "https://api.s01s.cn/API/xiadan/?" +
+                                "xh=1&uin=" + zoneWalksId +
+                                "&qq=" + id +
+                                "&skey=" + cookiesMap.get("skey") +
+                                "&p_skey=" + cookiesMap.get("p_skey");
+                        String dataR1 = template.getForObject(url0, String.class);
+                        String fid = JSONObject.parseObject(dataR1).getString("id");
                         String ctime = JSONObject.parseObject(dataR1).getString("time");
-
+                        // 解析为 时间戳
+                        // 解析为LocalDateTime（无时区信息）
+                        LocalDateTime localDateTime = LocalDateTime.parse(ctime, formatter);
+                        // 转换为系统默认时区的时间戳
+                        long timestamp = localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+                        ctime = ctime.substring(0, 10);
                         String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap)
                                 + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
                         ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
@@ -210,7 +226,7 @@ public class V11QzoneService {
     ReportService reportService;
 
     private static Map<String, String> getCookiesMap(RemoteBot bot) {
-        String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"user.qzone.qq.com\"}");
+        String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"qzone.qq.com\"}");
         JSONObject data = JSONObject.parseObject(dataR0);
         data = data.getJSONObject("data");
         String cookies = data.getString("cookies");
