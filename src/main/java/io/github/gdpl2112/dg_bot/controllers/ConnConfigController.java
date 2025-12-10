@@ -27,11 +27,6 @@ import static io.github.gdpl2112.dg_bot.MiraiComponent.handleOneBot;
 @PreAuthorize("hasAuthority('user')")
 @RequestMapping("/api/conn-config")
 public class ConnConfigController {
-    public void init() {
-        System.setProperty("overflow.skip-token-security-check", "I_KNOW_WHAT_I_AM_DOING");
-        connConfigMapper.selectList(null).forEach(c -> MiraiComponent.EXECUTOR_SERVICE.submit(() -> handleOneBot(c)));
-    }
-
 
     @Autowired
     private ConnConfigMapper connConfigMapper;
