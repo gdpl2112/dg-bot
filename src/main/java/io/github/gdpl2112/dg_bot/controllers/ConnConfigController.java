@@ -8,7 +8,6 @@ import io.github.gdpl2112.dg_bot.mapper.ConnConfigMapper;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import top.mrxiaom.overflow.BotBuilder;
@@ -27,16 +26,11 @@ import java.util.Map;
 @RestController
 @PreAuthorize("hasAuthority('user')")
 @RequestMapping("/api/conn-config")
-public class ConnConfigController implements CommandLineRunner {
-    @Override
-    public void run(String... args) throws Exception {
-        connConfigMapper.selectList(null)
-                .forEach(c -> MiraiComponent.EXECUTOR_SERVICE.submit(() -> handleOneBot(c)));
-    }
-
-    @PostConstruct
+public class ConnConfigController {
     public void init() {
         System.setProperty("overflow.skip-token-security-check", "I_KNOW_WHAT_I_AM_DOING");
+        connConfigMapper.selectList(null)
+                .forEach(c -> MiraiComponent.EXECUTOR_SERVICE.submit(() -> handleOneBot(c)));
     }
 
     public static void handleOneBot(ConnConfig connConfig) {

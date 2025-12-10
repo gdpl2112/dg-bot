@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot;
 
+import io.github.gdpl2112.dg_bot.controllers.ConnConfigController;
 import io.github.gdpl2112.dg_bot.utils.HttpsUtils;
 import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
 import io.github.kloping.MySpringTool.interfaces.Logger;
@@ -43,7 +44,7 @@ public class DgMain implements CommandLineRunner {
     public static void main(String[] args) throws Exception {
         System.out.println("start pre build time on " + getCompileTime());
         HttpsUtils.trustAllHttpsCertificates();
-        System.setProperty("overflow.skip-token-security-check","I_KNOW_WHAT_I_AM_DOING");
+        System.setProperty("overflow.skip-token-security-check", "I_KNOW_WHAT_I_AM_DOING");
         applicationContext = SpringApplication.run(DgMain.class, args);
     }
 
@@ -116,7 +117,11 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("alter table v11_conf add zone_evl INTEGER default 10;");
         }
         k0 = false;
+        connConfigController.init();
     }
+
+    @Autowired
+    ConnConfigController connConfigController;
 
     /**
      * 解决异常信息：
