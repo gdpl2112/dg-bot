@@ -7,7 +7,6 @@ import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.gdpl2112.dg_bot.service.ReportService;
-import io.github.kloping.date.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +57,7 @@ public class V11QzoneService {
      * @param k 是否点赞
      */
     private void qzoneWalksAll(boolean k) {
-        component.log.info("空间访问!启动");
+        component.logger.info("空间访问!启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
@@ -76,7 +75,7 @@ public class V11QzoneService {
         if (zoneWalksIds.isEmpty()) return;
         Map<String, String> cookiesMap = getCookiesMap(bot);
         for (Long zoneWalksId : zoneWalksIds) {
-            component.log.info("空间访问：b" + id + " u" + zoneWalksId);
+            component.logger.info("空间访问：b" + id + " u" + zoneWalksId);
             if (zoneWalksId == null) continue;
             try {
                 String walkUrl = "https://kloping.top/api/qzone/walk" + getParmsStart(String.valueOf(id), cookiesMap)
@@ -172,7 +171,7 @@ public class V11QzoneService {
         Map<String, String> cookiesMap = getCookiesMap(bot);
         String uin = String.valueOf(id);
         try {
-            component.log.info("空间评论/点赞：start-b" + uin);
+            component.logger.info("空间评论/点赞：start-b" + uin);
             String allUrl = "https://kloping.top/api/qzone/all" + getParmsStart(String.valueOf(id), cookiesMap);
             ResponseEntity<String> entity = template.getForEntity(allUrl, String.class);
             if (entity.getStatusCode().is2xxSuccessful()) {
@@ -219,7 +218,7 @@ public class V11QzoneService {
             log.error("空间评论异常", e);
             reportService.report(String.valueOf(id), "空间评论异常");
         }
-        component.log.info("空间评论/点赞：end-b" + uin);
+        component.logger.info("空间评论/点赞：end-b" + uin);
     }
 
     @Autowired

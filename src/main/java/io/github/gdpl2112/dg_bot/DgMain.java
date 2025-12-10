@@ -117,11 +117,7 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("alter table v11_conf add zone_evl INTEGER default 10;");
         }
         k0 = false;
-        connConfigController.init();
     }
-
-    @Autowired
-    ConnConfigController connConfigController;
 
     /**
      * 解决异常信息：

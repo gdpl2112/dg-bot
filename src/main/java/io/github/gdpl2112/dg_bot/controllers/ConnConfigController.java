@@ -6,15 +6,15 @@ import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.ConnConfig;
 import io.github.gdpl2112.dg_bot.mapper.ConnConfigMapper;
 import lombok.extern.slf4j.Slf4j;
-import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import top.mrxiaom.overflow.BotBuilder;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
+
+import static io.github.gdpl2112.dg_bot.MiraiComponent.closeOneBot;
+import static io.github.gdpl2112.dg_bot.MiraiComponent.handleOneBot;
 
 /**
  * 连接配置管理接口
@@ -29,46 +29,12 @@ import java.util.Map;
 public class ConnConfigController {
     public void init() {
         System.setProperty("overflow.skip-token-security-check", "I_KNOW_WHAT_I_AM_DOING");
-        connConfigMapper.selectList(null)
-                .forEach(c -> MiraiComponent.EXECUTOR_SERVICE.submit(() -> handleOneBot(c)));
+        connConfigMapper.selectList(null).forEach(c -> MiraiComponent.EXECUTOR_SERVICE.submit(() -> handleOneBot(c)));
     }
 
-    public static void handleOneBot(ConnConfig connConfig) {
-        BotBuilder builder = null;
-        if (connConfig.getType().equalsIgnoreCase("ws")) {
-            builder = BotBuilder.positive(connConfig.getIp())
-                    .retryTimes(0);
-        } else {
-            builder = BotBuilder.reversed(connConfig.getPort());
-        }
-        builder.overrideLogger(log);
-        builder.token(connConfig.getToken());
-        builder.heartbeatCheckSeconds(connConfig.getHeart());
-
-        if (builder != null) {
-            try {
-                Bot bot = builder.connect();
-            } catch (Throwable e) {
-                e.printStackTrace();
-                log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage());
-            }
-        }
-    }
 
     @Autowired
     private ConnConfigMapper connConfigMapper;
-
-    public static void closeOneBot(ConnConfig connConfig) {
-        Bot bot = Bot.getInstanceOrNull(Long.valueOf(connConfig.getQid()));
-        if (bot != null) {
-            try {
-                bot.close();
-            } catch (Throwable e) {
-                log.error("on bot.{} close error:{}", connConfig.getQid(), e.getMessage());
-            }
-        }
-    }
-
 
     /**
      * 分页获取连接配置列表

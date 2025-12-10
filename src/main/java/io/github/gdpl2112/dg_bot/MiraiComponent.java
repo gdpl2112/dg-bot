@@ -4,10 +4,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
+import io.github.gdpl2112.dg_bot.dao.ConnConfig;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
+import io.github.gdpl2112.dg_bot.mapper.ConnConfigMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.*;
 import io.github.kloping.MySpringTool.interfaces.Logger;
+import lombok.extern.slf4j.Slf4j;
+import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.GlobalEventChannel;
 import net.mamoe.mirai.event.SimpleListenerHost;
@@ -18,6 +22,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
+import top.mrxiaom.overflow.BotBuilder;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Map;
@@ -34,11 +39,12 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.VERSION_DATE;
  * @since 2023-07-17
  */
 @Component
+@Slf4j
 public class MiraiComponent extends SimpleListenerHost implements CommandLineRunner {
     @Autowired
     AuthMapper authMapper;
     @Autowired
-    public Logger log;
+    public Logger logger;
     @Autowired
     ThreadPoolTaskExecutor executor;
     @Autowired
@@ -68,30 +74,34 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(settingService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
+        connConfigMapper.selectList(null).forEach(MiraiComponent::handleOneBot);
         System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
     }
+
+    @Autowired
+    ConnConfigMapper connConfigMapper;
 
     @EventHandler
     public void onBotOnline(BotOnlineEvent event) {
         Long bid = event.getBot().getId();
         AuthM auth = authMapper.selectById(bid);
         if (auth == null) {
-            log.info(String.format("%s登录成功,正在生成管理秘钥", bid));
+            logger.info(String.format("%s登录成功,正在生成管理秘钥", bid));
             auth = new AuthM();
             auth.setQid(bid.toString());
             auth.setAuth(UUID.randomUUID().toString());
             auth.setExp(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30);
             auth.setT0(System.currentTimeMillis());
             authMapper.insert(auth);
-            log.info(String.format("%s管理秘钥生成完成:%s", bid, auth.getAuth()));
+            logger.info(String.format("%s管理秘钥生成完成:%s", bid, auth.getAuth()));
         } else {
             if (auth.getExp() < System.currentTimeMillis()) {
                 event.getBot().close();
-                log.error(String.format("%s已到期,强制下线", bid));
+                logger.error(String.format("%s已到期,强制下线", bid));
             } else {
                 auth.setT0(System.currentTimeMillis());
                 authMapper.updateById(auth);
-                log.info(String.format("%s登录成功,管理秘钥:%s", bid, auth.getAuth()));
+                logger.info(String.format("%s登录成功,管理秘钥:%s", bid, auth.getAuth()));
             }
         }
         if (event.getBot() instanceof RemoteBot) {
@@ -118,9 +128,43 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         QueryWrapper<AllMessage> qw = new QueryWrapper<>();
         qw.le("time", less);
         jdbcTemplate.execute("VACUUM;");
-        log.info("释放db存储并删除消息记录: " + saveMapper.delete(qw));
+        logger.info("释放db存储并删除消息记录: " + saveMapper.delete(qw));
     }
 
 
     public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(15, 15, 5, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+
+
+    public static void handleOneBot(ConnConfig connConfig) {
+        BotBuilder builder = null;
+        if (connConfig.getType().equalsIgnoreCase("ws")) {
+            builder = BotBuilder.positive(connConfig.getIp())
+                    .retryTimes(0);
+        } else {
+            builder = BotBuilder.reversed(connConfig.getPort());
+        }
+        builder.overrideLogger(log);
+        builder.token(connConfig.getToken());
+        builder.heartbeatCheckSeconds(connConfig.getHeart());
+
+        if (builder != null) {
+            try {
+                Bot bot = builder.connect();
+            } catch (Throwable e) {
+                e.printStackTrace();
+                log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage());
+            }
+        }
+    }
+
+    public static void closeOneBot(ConnConfig connConfig) {
+        Bot bot = Bot.getInstanceOrNull(Long.valueOf(connConfig.getQid()));
+        if (bot != null) {
+            try {
+                bot.close();
+            } catch (Throwable e) {
+                log.error("on bot.{} close error:{}", connConfig.getQid(), e.getMessage());
+            }
+        }
+    }
 }
