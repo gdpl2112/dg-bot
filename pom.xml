@@ -64,11 +64,6 @@
         </dependency>
         <dependency>
             <groupId>top.mrxiaom.mirai</groupId>
-            <artifactId>overflow-core-all</artifactId>
-            <version>1.0.8</version>
-        </dependency>
-        <dependency>
-            <groupId>top.mrxiaom.mirai</groupId>
             <artifactId>overflow-core</artifactId>
             <version>1.0.8-R</version>
         </dependency>
@@ -84,22 +79,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>net.mamoe</groupId>
-            <artifactId>mirai-console</artifactId>
-            <version>2.16.0</version>
-        </dependency>
-        <dependency>
-            <groupId>net.mamoe</groupId>
-            <artifactId>mirai-console-terminal</artifactId>
-            <version>${mirai-version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.mamoe</groupId>
-                    <artifactId>mirai-core-jvm</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+
         <!--sqlite-->
         <dependency>
             <groupId>org.xerial</groupId>

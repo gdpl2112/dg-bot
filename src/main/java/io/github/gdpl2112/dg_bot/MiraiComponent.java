@@ -8,18 +8,10 @@ import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.*;
 import io.github.kloping.MySpringTool.interfaces.Logger;
-import io.github.kloping.common.Public;
-import io.github.kloping.file.FileUtils;
-import net.mamoe.mirai.console.command.CommandExecuteResult;
-import net.mamoe.mirai.console.command.CommandManager;
-import net.mamoe.mirai.console.command.ConsoleCommandSender;
-import net.mamoe.mirai.console.terminal.MiraiConsoleImplementationTerminal;
-import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.GlobalEventChannel;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotOnlineEvent;
-import net.mamoe.mirai.message.data.PlainText;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -30,7 +22,10 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static io.github.gdpl2112.dg_bot.compile.CompileRes.VERSION_DATE;
 
@@ -61,12 +56,10 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     SettingService settingService;
 
-    private MiraiConsoleImplementationTerminal terminal = new MiraiConsoleImplementationTerminal();
-
     @Override
     public void run(String... args) throws Exception {
-        System.setProperty("overflow.timeout", "20000");
-        MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(terminal);
+//        System.setProperty("overflow.timeout", "20000");
+//        MiraiConsoleTerminalLoader.INSTANCE.startAsDaemon(terminal);
         GlobalEventChannel.INSTANCE.registerListenerHost(passiveService);
         GlobalEventChannel.INSTANCE.registerListenerHost(defaultService);
         GlobalEventChannel.INSTANCE.registerListenerHost(saveService);
@@ -75,6 +68,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(settingService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
+        System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
     }
 
     @EventHandler
@@ -125,39 +119,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         qw.le("time", less);
         jdbcTemplate.execute("VACUUM;");
         log.info("释放db存储并删除消息记录: " + saveMapper.delete(qw));
-    }
-
-    @EventHandler
-    public void onStartupEvent(net.mamoe.mirai.console.events.StartupEvent event) {
-        System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
-        Public.EXECUTOR_SERVICE1.submit(() -> {
-            try {
-                TimeUnit.SECONDS.sleep(1);
-                String[] lines = FileUtils.getStringsFromFile("./after.line");
-                if (lines != null) {
-                    for (String line : lines) {
-                        log.log("执行pre: " + line);
-                        CountDownLatch cdl = new CountDownLatch(1);
-                        EXECUTOR_SERVICE.submit(() -> {
-                            CommandExecuteResult result = CommandManager.INSTANCE.executeCommand(ConsoleCommandSender.INSTANCE, new PlainText(line), false);
-                            if (result instanceof CommandExecuteResult.Success) {
-                                log.info("执行成功:" + line);
-                            }
-                            cdl.countDown();
-                        });
-                        try {
-                            boolean k = cdl.await(75, TimeUnit.SECONDS);
-                            if (!k) log.error("执行等待超时: " + line);
-                        } catch (InterruptedException e) {
-                            log.waring("执行等待报错:" + e.getMessage());
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        });
     }
 
 

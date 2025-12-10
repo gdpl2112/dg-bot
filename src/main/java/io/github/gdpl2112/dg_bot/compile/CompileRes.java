@@ -14,7 +14,7 @@ import java.util.Properties;
  */
 public class CompileRes {
 
-    public static final String VERSION_DATE = "2025/1209";
+    public static final String VERSION_DATE = "2025/1210";
 
     public static boolean isLinux() {
         String osName = System.getProperty("os.name").toLowerCase();
