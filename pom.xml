@@ -65,8 +65,7 @@
         <dependency>
             <groupId>top.mrxiaom.mirai</groupId>
             <artifactId>overflow-core</artifactId>
-            <version>1.0.8-R</version>
-            <type>jar</type>
+            <version>1.0.8</version>
         </dependency>
 
         <dependency>
