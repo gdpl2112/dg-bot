@@ -29,6 +29,10 @@ public class ScriptCompile {
     public CompiledScript initScript(String scriptText, Map<String, Object> initParams) {
         CompiledScript script = null;
         ScriptEngine engine = new ScriptEngineManager().getEngineByExtension("js");
+        // 检查JavaScript引擎是否可用
+        if (engine == null) {
+            throw new RuntimeException("无法获取JavaScript引擎，请确认Java环境支持JavaScript");
+        }
         if (initParams != null && !initParams.isEmpty()) {
             initParams.forEach(engine::put);
         }
@@ -38,7 +42,7 @@ public class ScriptCompile {
             try {
                 script = ((Compilable) engine).compile(scriptText);
             } catch (ScriptException e) {
-                e.printStackTrace();
+                throw new RuntimeException("脚本编译失败: " + e.getMessage(), e);
             }
         }
         return script;
@@ -52,6 +56,9 @@ public class ScriptCompile {
      * @throws ScriptException
      */
     public Object execute(Map<String, Object> bindingsMap) throws ScriptException {
+        if (script == null) {
+            throw new RuntimeException("脚本未成功编译，无法执行");
+        }
         if (bindingsMap != null && !bindingsMap.isEmpty()) {
             Bindings bindings = new SimpleBindings();
             for (Map.Entry<String, Object> entry : bindingsMap.entrySet()) {
@@ -77,6 +84,9 @@ public class ScriptCompile {
      * @throws Exception
      */
     public Object executeFuc(Map<String, Object> bindingsMap, String fucName, Object... args) throws Exception {
+        if (script == null) {
+            throw new RuntimeException("脚本未成功编译，无法执行函数");
+        }
         execute(bindingsMap);
         Invocable inv2 = (Invocable) engine;
         return inv2.invokeFunction(fucName, args);

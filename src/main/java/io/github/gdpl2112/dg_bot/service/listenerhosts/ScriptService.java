@@ -116,6 +116,7 @@ public class ScriptService extends SimpleListenerHost {
                     scriptCompile = new ScriptCompile(code, objectMap);
                 } catch (Exception e) {
                     onException(bid, e, "初始化JS脚本时报错");
+                    return null; // 发生异常时返回null而不是继续处理
                 }
                 BID2ENGINE.put(bid, scriptCompile);
                 return scriptCompile;
