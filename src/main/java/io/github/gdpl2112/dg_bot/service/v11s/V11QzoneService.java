@@ -85,8 +85,7 @@ public class V11QzoneService {
                     log.info("空间访问成功：b{} walk u{}..继续:{}", id, zoneWalksId, like);
                     if (like) {
                         String url0 = "https://api.s01s.cn/API/xiadan/?" +
-                                "xh=1&uin=" + zoneWalksId +
-                                "&qq=" + id +
+                                "xh=1&uin=" + zoneWalksId + "&qq=" + id +
                                 "&skey=" + cookiesMap.get("skey") +
                                 "&p_skey=" + cookiesMap.get("p_skey");
                         String dataR1 = template.getForObject(url0, String.class);
@@ -183,8 +182,7 @@ public class V11QzoneService {
                         JSONArray array = data.getJSONArray("likes");
                         if (!array.contains(uin)) {
                             String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
-                                    + "&fid=" + data.getString("tid")
-                                    + "&qq=" + qq
+                                    + "&fid=" + data.getString("tid") + "&qq=" + qq
                                     + "&ctime=" + data.getString("abstime");
                             ResponseEntity<String> entity1 = template.getForEntity(likeUrl, String.class);
                             if (entity1.getStatusCode().is2xxSuccessful()) {
@@ -204,8 +202,7 @@ public class V11QzoneService {
                         if (doit) {
                             String commentUrl = "https://kloping.top/api/qzone/comment" + getParmsStart(String.valueOf(id), cookiesMap)
                                     + "&fid=" + data.getString("tid")
-                                    + "&qq=" + qq
-                                    + "&text=" + comment;
+                                    + "&qq=" + qq + "&text=" + comment;
                             ResponseEntity<String> entity1 = template.getForEntity(commentUrl, String.class);
                             if (entity1.getStatusCode().is2xxSuccessful()) {
                                 log.info("评论成功：b{} u{}..完成", id, qq);
