@@ -61,7 +61,13 @@ public class V11QzoneService {
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
-                    startQzoneWalkNow(bot.getId(), (RemoteBot) bot, k);
+                    MiraiComponent.EXECUTOR_SERVICE.submit(()->{
+                        try {
+                            startQzoneWalkNow(bot.getId(), (RemoteBot) bot, k);
+                        } catch (Exception e) {
+                            log.error(e.getMessage(), e);
+                        }
+                    });
                 }
             }
         }
