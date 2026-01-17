@@ -132,8 +132,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     }
 
 
-    public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(15, 15, 5, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
-
+    public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(20, 20, 10, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
 
     public static void handleOneBot(ConnConfig connConfig) {
         BotBuilder builder = null;

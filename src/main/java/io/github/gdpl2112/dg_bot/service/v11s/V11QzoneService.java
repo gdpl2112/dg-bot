@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -42,12 +43,12 @@ public class V11QzoneService {
     @Autowired
     V11AutoLikeService likeService;
 
-    @Scheduled(cron = "20 06 00 * * ? ")
+    @Scheduled(cron = "10 07 00 * * ? ")
     public void walksAll0() {
         qzoneWalksAll(false);
     }
 
-    @Scheduled(cron = "20 25 12 * * ? ")
+    @Scheduled(cron = "24 04 12 * * ? ")
     public void walksAll1() {
         qzoneWalksAll(true);
     }
@@ -61,7 +62,7 @@ public class V11QzoneService {
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
-                    MiraiComponent.EXECUTOR_SERVICE.submit(()->{
+                    MiraiComponent.EXECUTOR_SERVICE.submit(() -> {
                         try {
                             startQzoneWalkNow(bot.getId(), (RemoteBot) bot, k);
                         } catch (Exception e) {
@@ -192,7 +193,7 @@ public class V11QzoneService {
                                     + "&ctime=" + data.getString("abstime");
                             ResponseEntity<String> entity1 = template.getForEntity(likeUrl, String.class);
                             if (entity1.getStatusCode().is2xxSuccessful()) {
-                                log.info("点赞成功：b{} u{}..完成", id, qq);
+                                log.info("cm点赞成功：b{} u{}..完成", id, qq);
                             }
                         }
                     }
@@ -228,10 +229,29 @@ public class V11QzoneService {
     ReportService reportService;
 
     private static Map<String, String> getCookiesMap(RemoteBot bot) {
-        String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"qzone.qq.com\"}");
-        JSONObject data = JSONObject.parseObject(dataR0);
-        data = data.getJSONObject("data");
-        String cookies = data.getString("cookies");
+        return getCookiesMap(bot, true);
+    }
+
+    private static Map<String, String> getCookiesMap(RemoteBot bot, boolean force) {
+        int i = 0;
+        String cookies = null;
+        while (i < 3) {
+            String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"qzone.qq.com\"}");
+            JSONObject data = JSONObject.parseObject(dataR0);
+            String error = data.getString("error");
+            if (error != null && !error.isEmpty()) {
+                log.error("获取cookies异常 '{}' retry,{}", error, i);
+                i++;
+                try {
+                    TimeUnit.SECONDS.sleep(5);
+                } catch (InterruptedException e) {
+                    log.error("{}", e.getMessage(), e);
+                }
+                continue;
+            }
+            data = data.getJSONObject("data");
+            cookies = data.getString("cookies");
+        }
         Map<String, String> cookiesMap = new HashMap<>();
         for (String s : cookies.split(" ")) {
             String[] split = s.split("=");
