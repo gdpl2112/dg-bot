@@ -6,6 +6,7 @@ import io.github.gdpl2112.dg_bot.dto.OptionalDto;
 import io.github.gdpl2112.dg_bot.mapper.OptionalMapper;
 import io.github.gdpl2112.dg_bot.service.ConfigService;
 import io.github.gdpl2112.dg_bot.service.optionals.BaseOptional;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.ListenerHost;
 import net.mamoe.mirai.event.events.*;
@@ -20,11 +21,15 @@ import java.util.Map;
 /**
  * @author github.kloping
  */
+@Slf4j
 @Service
 public class OptionalService implements ListenerHost {
     private void touchEvent(MessageEvent event, String bid, String tid) {
         if (configService.isNotOpenK3(event.getBot().getId(), tid)) return;
-        getBos().forEach((k, v) -> {
+        Map<String, BaseOptional> bos = getBos();
+        if (bos == null || bos.isEmpty()) {
+            log.warn("no optional,waiting server started!");
+        } else bos.forEach((k, v) -> {
             if (isOpen(bid, k)) {
                 v.run(event);
             }
