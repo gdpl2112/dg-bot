@@ -15,6 +15,10 @@
     </parent>
     <repositories>
         <repository>
+            <id>kloping-repo</id>
+            <url>https://file.kloping.top/amvnlibs/</url>
+        </repository>
+        <repository>
             <id>ali-m</id>
             <url>https://maven.aliyun.com/repository/public</url>
         </repository>
@@ -55,7 +59,7 @@
         <dependency>
             <groupId>io.github.Kloping</groupId>
             <artifactId>JvUtils</artifactId>
-            <version>0.4.9-R3</version>
+            <version>0.4.9-Beta2</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
