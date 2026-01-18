@@ -81,6 +81,7 @@ public class V11QzoneService {
         List<Long> zoneWalksIds = v11Conf.getZoneWalksIds();
         if (zoneWalksIds.isEmpty()) return;
         Map<String, String> cookiesMap = getCookiesMap(bot);
+        log.warn("get cookies：b{},map{}", id, cookiesMap);
         for (Long zoneWalksId : zoneWalksIds) {
             component.logger.info("空间访问：b" + id + " u" + zoneWalksId);
             if (zoneWalksId == null) continue;
