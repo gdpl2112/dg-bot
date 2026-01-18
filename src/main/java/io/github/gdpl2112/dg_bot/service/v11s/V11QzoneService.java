@@ -240,7 +240,8 @@ public class V11QzoneService {
             String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"qzone.qq.com\"}");
             JSONObject data = JSONObject.parseObject(dataR0);
             String error = data.getString("error");
-            if (error != null && !error.isEmpty()) {
+            data = data.getJSONObject("data");
+            if (data == null || (error != null && !error.isEmpty())) {
                 log.error("获取cookies异常 '{}' retry,{}", error, i);
                 i++;
                 try {
@@ -250,7 +251,6 @@ public class V11QzoneService {
                 }
                 continue;
             }
-            data = data.getJSONObject("data");
             cookies = data.getString("cookies");
         }
         Map<String, String> cookiesMap = new HashMap<>();
