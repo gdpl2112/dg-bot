@@ -69,6 +69,7 @@ public class OptionalService implements ListenerHost {
 
     public synchronized Map<String, BaseOptional> getBos() {
         if (!bos.isEmpty()) return bos;
+        if (DgMain.applicationContext == null) return null;
         for (String beanName : DgMain.applicationContext.getBeanNamesForType(BaseOptional.class)) {
             BaseOptional bo = (BaseOptional) DgMain.applicationContext.getBean(beanName);
             bos.put(beanName, bo);
@@ -80,7 +81,9 @@ public class OptionalService implements ListenerHost {
 
     public List<OptionalDto> getOptionalDtos(String id) {
         List<OptionalDto> dtos = new LinkedList<>();
-        getBos().forEach((k, v) -> {
+        Map<String, BaseOptional> bos = getBos();
+        if (bos == null || bos.isEmpty()) return dtos;
+        bos.forEach((k, v) -> {
             Optional one = optionalMapper.selectByQidAndOpt(id, k);
             if (one == null) {
                 one = new Optional();
