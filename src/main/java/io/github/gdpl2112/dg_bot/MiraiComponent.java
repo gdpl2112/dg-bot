@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
@@ -74,7 +75,9 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(settingService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
-        connConfigMapper.selectList(null).forEach(MiraiComponent::handleOneBot);
+        QueryWrapper<ConnConfig> qw = new QueryWrapper<>();
+        qw.orderByDesc("qid");
+        connConfigMapper.selectList(qw).forEach(MiraiComponent::handleOneBot);
         System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
     }
 
