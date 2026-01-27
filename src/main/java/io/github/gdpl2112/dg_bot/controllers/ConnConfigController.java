@@ -2,7 +2,6 @@ package io.github.gdpl2112.dg_bot.controllers;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.ConnConfig;
 import io.github.gdpl2112.dg_bot.mapper.ConnConfigMapper;
 import lombok.extern.slf4j.Slf4j;

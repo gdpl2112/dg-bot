@@ -25,6 +25,7 @@ wzry:
   api: http://192.168.1.11:8080
 
 report:
+  point-gid: 943648151
   bid: 291841860
   gid: 1041541077
 

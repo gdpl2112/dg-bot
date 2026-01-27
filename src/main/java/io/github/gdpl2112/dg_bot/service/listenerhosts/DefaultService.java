@@ -13,19 +13,23 @@ import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
 import io.github.kloping.url.UrlUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Contact;
+import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.*;
 import net.mamoe.mirai.message.data.At;
 import net.mamoe.mirai.message.data.MessageChain;
 import net.mamoe.mirai.message.data.MessageChainBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +38,7 @@ import java.util.Map;
  * @author github-kloping
  * @since 2023-07-20
  */
+@Slf4j
 @Service
 public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost implements CommandLineRunner {
 
@@ -87,7 +92,26 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         String tid = "g" + event.getSubject().getId();
         step(bid, event.getSender().getId(), tid, content.trim(), event.getSubject());
         statisticsService.statistics(Statistics.GROUP, bid.toString());
+        ifispg(event.getSubject().getId(), event.getSender().getId(), content, event.getSubject());
     }
+
+    @Value("${super.qid:3474006766}")
+    Long superQid;
+
+    private void ifispg(long id, long sid, String content, Group subject) {
+        try {
+            if (id == reportPointGid && sid == superQid) {
+                if ("#1".equalsIgnoreCase(content)) {
+                    subject.sendMessage(LocalDateTime.now().toString());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error in ifispg method", e);
+        }
+    }
+
+    @Value("${report.point-gid}")
+    private Long reportPointGid;
 
     @Autowired
     StatisticsMapper statisticsMapper;
@@ -117,6 +141,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             return;
         }
         statisticsService.statistics(Statistics.GROUP, bid.toString());
+        ifispg(event.getSubject().getId(), event.getSender().getId(), content, event.getSubject());
     }
 
     @EventHandler

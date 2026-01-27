@@ -1,18 +1,13 @@
 package io.github.gdpl2112.dg_bot;
 
-import io.github.gdpl2112.dg_bot.controllers.ConnConfigController;
 import io.github.gdpl2112.dg_bot.utils.HttpsUtils;
 import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
 import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.MySpringTool.interfaces.component.PackageScanner;
-import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
-import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
-import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -117,25 +112,6 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("alter table v11_conf add zone_evl INTEGER default 10;");
         }
         k0 = false;
-    }
-
-    /**
-     * 解决异常信息：
-     * java.lang.IllegalArgumentException:
-     * Invalid character found in the request target. The valid characters are defined in RFC 7230 and RFC 3986
-     *
-     * @return
-     */
-    @Bean
-    public ConfigurableServletWebServerFactory webServerFactory() {
-        TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory();
-        factory.addConnectorCustomizers(new TomcatConnectorCustomizer() {
-            @Override
-            public void customize(Connector connector) {
-                connector.setProperty("relaxedQueryChars", "//\\|{}[]");
-            }
-        });
-        return factory;
     }
 
     @Bean
