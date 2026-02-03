@@ -189,7 +189,9 @@ public class WzydView implements BaseOptional {
                 } else {
                     return response.body();
                 }
-            } else {
+            } else if (response.statusCode() == 400){
+                return response.body();
+            }else {
                 System.err.println("wzry return " + response.statusCode() + "\nbody:" + response.body());
                 return ("请求失败: code." + response.statusCode());
             }
