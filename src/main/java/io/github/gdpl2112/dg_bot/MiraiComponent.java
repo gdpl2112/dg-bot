@@ -28,8 +28,10 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static io.github.gdpl2112.dg_bot.compile.CompileRes.VERSION_DATE;
 
@@ -75,20 +77,27 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
         QueryWrapper<ConnConfig> qw = new QueryWrapper<>();
         qw.orderByAsc("qid");
-        AtomicInteger i = new AtomicInteger(1);
         List<ConnConfig> connConfigs = connConfigMapper.selectList(qw);
-        CountDownLatch cdl = new CountDownLatch(connConfigs.size());
-        connConfigs.forEach(r -> EXECUTOR_SERVICE.execute(() -> {
+//        AtomicInteger i = new AtomicInteger(1);
+//        CountDownLatch cdl = new CountDownLatch(connConfigs.size());
+//        connConfigs.forEach(r -> EXECUTOR_SERVICE.execute(() -> {
+//            try {
+//                TimeUnit.SECONDS.sleep(i.getAndIncrement());
+//                handleOneBot(r);
+//            } catch (Exception e) {
+//                log.error("handle bot {} error", r.getQid(), e);
+//            } finally {
+//                cdl.countDown();
+//            }
+//        }));
+//        cdl.await();
+        connConfigs.forEach(r -> {
             try {
-                TimeUnit.SECONDS.sleep(i.getAndIncrement());
                 handleOneBot(r);
             } catch (Exception e) {
                 log.error("handle bot {} error", r.getQid(), e);
-            } finally {
-                cdl.countDown();
             }
-        }));
-        cdl.await();
+        });
         System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
     }
 
