@@ -76,13 +76,13 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
         QueryWrapper<ConnConfig> qw = new QueryWrapper<>();
         qw.orderByAsc("qid");
-        connConfigMapper.selectList(qw).forEach(r -> {
+        connConfigMapper.selectList(qw).forEach(r -> EXECUTOR_SERVICE.execute(() -> {
             try {
                 handleOneBot(r);
             } catch (Exception e) {
                 log.error("handle bot {} error", r.getQid(), e);
             }
-        });
+        }));
         System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
     }
 
