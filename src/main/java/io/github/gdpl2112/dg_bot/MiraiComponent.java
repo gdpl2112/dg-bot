@@ -146,7 +146,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         BotBuilder builder = null;
         if (connConfig.getType().equalsIgnoreCase("ws")) {
             builder = BotBuilder.positive(connConfig.getIp())
-                    .retryTimes(0);
+                    .retryTimes(3).retryWaitMills(7000).retryRestMills(-1);
         } else {
             builder = BotBuilder.reversed(connConfig.getPort());
         }

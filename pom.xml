@@ -69,7 +69,7 @@
         <dependency>
             <groupId>top.mrxiaom.mirai</groupId>
             <artifactId>overflow-core</artifactId>
-            <version>1.0.8-R</version>
+            <version>1.0.9-R</version>
         </dependency>
 
         <dependency>
