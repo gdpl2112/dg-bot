@@ -9,6 +9,18 @@ spring:
       hibernate:
         cache:
           use-second-level-cache: false
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 5
+    timeout: 60000
+    jedis:
+      pool:
+        max-active: 20
+        max-wait: -1
+        max-idle: 5
+        min-idle: 0
+
 mybatis:
   configuration:
     cache-enabled: false
@@ -34,17 +46,15 @@ logging:
     console: "%clr([%thread]){blue} %clr(%-32.32logger{32}){magenta} %clr(%d{yyyy-MM-dd HH:mm:ss}){red} %clr(%-5p): %msg%n"
     file: "[%thread] %-32.32logger{32} %d{yyyy-MM-dd HH:mm:ss} %-5p: %msg%n"
   file:
-    # 输出的log文件名
     name: ./logs/slf4j.log
-    # 输出的文件的路径
     path: logs
-    # 限制日志文件的大小
-    max-size: 10MB
-    # 日志的保存天数
-    max-history: 7
   level:
     root: info
     org.quartz.impl.StdSchedulerFactory: error
     org.quartz.core.QuartzScheduler: error
     org.quartz.core.SchedulerSignalerImpl: error
     org.quartz.simpl.RAMJobStore: error
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7

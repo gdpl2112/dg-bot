@@ -11,7 +11,6 @@ import io.github.gdpl2112.dg_bot.events.GroupSignEvent;
 import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.gdpl2112.dg_bot.service.ReportService;
-import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.date.DateUtils;
 import io.github.kloping.judge.Judge;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +35,6 @@ public class V11AutoLikeService extends SimpleListenerHost {
 
     @Autowired
     public V11ConfMapper mapper;
-
-    @Autowired
-    Logger logger;
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -87,11 +83,11 @@ public class V11AutoLikeService extends SimpleListenerHost {
 
     @Scheduled(cron = "00 59 23 * * ? ")
     public void autoLike() {
-        logger.info("最后点赞处理启动");
+        log.info("最后点赞处理启动");
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
-                    logger.info(likeNow(String.valueOf(bot.getId())));
+                    log.info(likeNow(String.valueOf(bot.getId())));
                 }
             }
         }
@@ -159,8 +155,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                     }
                 }
             } catch (Exception e) {
-                logger.info("day通过ws获得点赞记录失败");
-                System.err.println(e.getMessage());
+                log.error("day通过ws获得点赞记录失败", e);
             }
 
         }
@@ -174,7 +169,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
     public void yesterday() {
         try {
             yesterdayLiking = true;
-            logger.info("回赞昨日启动");
+            log.info("回赞昨日启动");
             for (Bot bot : Bot.getInstances()) {
                 if (bot != null && bot.isOnline()) {
                     if (bot instanceof RemoteBot) {
@@ -185,7 +180,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
             }
         } finally {
             yesterdayLiking = false;
-            logger.info("所有回赞结束");
+            log.info("所有回赞结束");
             autoLike();
         }
     }
@@ -242,8 +237,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                     else break all;
                 }
             } catch (Exception e) {
-                logger.error("通过ws获得点赞记录失败");
-                System.err.println(e.getMessage());
+                log.error("通过ws获得点赞记录失败,{}", bid, e);
                 break all;
             }
             st += count;
@@ -263,7 +257,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
     @Scheduled(cron = "01 00 00 * * ?")
     //自动打卡启动
     public void autoSign() {
-        logger.info("自动打卡启动");
+        log.info("自动打卡启动");
         for (Bot bot : Bot.getInstances()) {
             signNow(bot);
         }
@@ -282,7 +276,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
     private void signNowOne(Long id, RemoteBot remoteBot) {
         String bid = String.valueOf(id);
         V11Conf conf = getV11Conf(bid);
-        logger.info("自动打卡: " + bid + " conf-sign: " + conf.getSignGroups());
+        log.info("自动打卡: {} conf-sign: {}", bid, conf.getSignGroups());
         if (Judge.isEmpty(conf.getSignGroups())) return;
         String groups = conf.getSignGroups();
         for (Long gid : conf.getSignGroupIds()) {
@@ -291,13 +285,13 @@ public class V11AutoLikeService extends SimpleListenerHost {
                 String data = remoteBot.executeAction("send_group_sign", data0);
                 JSONObject jsonObject = JSONObject.parseObject(data);
                 if (jsonObject.getInteger("retcode") != 0) {
-                    logger.error(String.format("sign group Failed %s -> b%s g%s o%s", jsonObject, bid, gid, groups));
+                    log.error("sign group Failed {} -> b{} g{} o{}", jsonObject, bid, gid, groups);
                 } else {
-                    logger.info("自动打卡成功：b" + bid + " g" + gid);
+                    log.info("自动打卡成功：b{} g{}", bid, gid);
                     applicationEventPublisher.publishEvent(new GroupSignEvent(gid, id, id, true));
                 }
             } catch (Exception e) {
-                log.error("自动打卡失败", e);
+                log.error("自动打卡失败{}", bid, e);
                 reportService.report(id.toString(), "自动打卡失败:群ID->" + gid);
                 continue;
             }

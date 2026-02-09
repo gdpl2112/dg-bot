@@ -8,10 +8,10 @@ import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.ScriptService;
 import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
-import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.date.CronUtils;
 import io.github.kloping.judge.Judge;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -30,27 +30,26 @@ import java.util.Map;
  * @author github.kloping
  */
 @Service
+@Slf4j
 public class CronService implements CommandLineRunner {
     public final CronMapper mapper;
     final BotService service;
-    final Logger logger;
 
-    public CronService(CronMapper mapper, BotService service, Logger logger) {
+    public CronService(CronMapper mapper, BotService service) {
         this.mapper = mapper;
         this.service = service;
-        this.logger = logger;
     }
 
     private final Map<Integer, Integer> cmid2cronid = new HashMap<>();
 
     @Override
     public void run(String... args) throws Exception {
-        logger.info("正在加载cron任务");
+        log.info("正在加载cron任务");
         List<CronMessage> msgs = mapper.selectList(new QueryWrapper<>());
         for (CronMessage msg : msgs) {
             appendTask(msg);
         }
-        logger.info("cron任务加载完成");
+        log.info("cron任务加载完成");
     }
 
     @Autowired
@@ -80,12 +79,12 @@ public class CronService implements CommandLineRunner {
         Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
             @Override
             public void execute(JobExecutionContext context) throws JobExecutionException {
-                logger.log(String.format("开始执行%s => %s cron任务", msg.getQid(), msg.getTargetId()));
+                log.info("开始执行{} => {} cron任务", msg.getQid(), msg.getTargetId());
                 if (msg.getTargetId().endsWith("FUNCTION") || msg.getTargetId().endsWith("function")) {
                     long bid = Long.parseLong(msg.getQid());
                     Bot bot = Bot.getInstanceOrNull(bid);
                     if (bot == null || !bot.isOnline()) {
-                        logger.waring(String.format("%s 用户实例获取失败! 可能掉线或未登录", bid));
+                        log.warn("{} 用户实例获取失败! 可能掉线或未登录", bid);
                         reportService.report(String.valueOf(bid), "cron任务执行失败! 用户实例获取失败! 可能掉线或未登录");
                     } else {
                         ScriptCompile scriptCompile = scriptService.getJsEngine(bid);
@@ -100,11 +99,11 @@ public class CronService implements CommandLineRunner {
                 } else {
                     service.send(msg.getQid(), msg.getTargetId(), msg.getMsg());
                 }
-                logger.log(String.format("执行%s => %s cron任务结束", msg.getQid(), msg.getTargetId()));
+                log.info("执行{} => {} cron任务结束", msg.getQid(), msg.getTargetId());
             }
         });
         cmid2cronid.put(msg.getId(), id);
-        logger.info(String.format("(id.%s)添加%s => %s cron任务 (%s)", id, msg.getQid(), msg.getTargetId(), msg.getCron()));
+        log.info("(id.{})添加{} => {} cron任务 ({})", id, msg.getQid(), msg.getTargetId(), msg.getCron());
         return id;
     }
 
@@ -114,9 +113,9 @@ public class CronService implements CommandLineRunner {
             Integer aid = Integer.parseInt(id);
             int cid = cmid2cronid.remove(aid);
             CronUtils.INSTANCE.stop(cid);
-            logger.waring(String.format("删除并停止cron任务(id.%s)", cid));
+            log.warn("删除并停止cron任务(id.{})", cid);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("删除cron任务时出错", e);
         }
     }
 }

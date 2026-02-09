@@ -9,7 +9,6 @@ import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.ConnConfigMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.*;
-import io.github.kloping.MySpringTool.interfaces.Logger;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.EventHandler;
@@ -44,8 +43,6 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.VERSION_DATE;
 public class MiraiComponent extends SimpleListenerHost implements CommandLineRunner {
     @Autowired
     AuthMapper authMapper;
-    @Autowired
-    public Logger logger;
     @Autowired
     ThreadPoolTaskExecutor executor;
     @Autowired
@@ -109,22 +106,22 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         Long bid = event.getBot().getId();
         AuthM auth = authMapper.selectById(bid);
         if (auth == null) {
-            logger.info(String.format("%s登录成功,正在生成管理秘钥", bid));
+            log.info("{}登录成功,正在生成管理秘钥", bid);
             auth = new AuthM();
             auth.setQid(bid.toString());
             auth.setAuth(UUID.randomUUID().toString());
             auth.setExp(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30);
             auth.setT0(System.currentTimeMillis());
             authMapper.insert(auth);
-            logger.info(String.format("%s管理秘钥生成完成:%s", bid, auth.getAuth()));
+            log.info("{}管理秘钥生成完成:{}", bid, auth.getAuth());
         } else {
             if (auth.getExp() < System.currentTimeMillis()) {
                 event.getBot().close();
-                logger.error(String.format("%s已到期,强制下线", bid));
+                log.error("{}已到期,强制下线", bid);
             } else {
                 auth.setT0(System.currentTimeMillis());
                 authMapper.updateById(auth);
-                logger.info(String.format("%s登录成功,管理秘钥:%s", bid, auth.getAuth()));
+                log.info("{}登录成功,管理秘钥:{}", bid, auth.getAuth());
             }
         }
         if (event.getBot() instanceof RemoteBot) {
@@ -151,7 +148,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         QueryWrapper<AllMessage> qw = new QueryWrapper<>();
         qw.le("time", less);
         jdbcTemplate.execute("VACUUM;");
-        logger.info("释放db存储并删除消息记录: " + saveMapper.delete(qw));
+        log.info("释放db存储并删除消息记录: {}", saveMapper.delete(qw));
     }
 
 
@@ -160,8 +157,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     public static void handleOneBot(ConnConfig connConfig) {
         BotBuilder builder = null;
         if (connConfig.getType().equalsIgnoreCase("ws")) {
-            builder = BotBuilder.positive(connConfig.getIp())
-                    .retryTimes(3).retryWaitMills(7000).retryRestMills(-1);
+            builder = BotBuilder.positive(connConfig.getIp()).retryTimes(3).retryWaitMills(7000).retryRestMills(-1);
         } else {
             builder = BotBuilder.reversed(connConfig.getPort());
         }
@@ -173,8 +169,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             try {
                 Bot bot = builder.connect();
             } catch (Throwable e) {
-                e.printStackTrace();
-                log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage());
+                log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
             }
         }
     }

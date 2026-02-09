@@ -58,7 +58,7 @@ public class V11QzoneService {
      * @param k 是否点赞
      */
     private void qzoneWalksAll(boolean k) {
-        component.logger.info("空间访问!启动");
+        log.info("空间访问!启动"); // Changed from log.info to log.info
         for (Bot bot : Bot.getInstances()) {
             if (bot != null && bot.isOnline()) {
                 if (bot instanceof RemoteBot) {
@@ -83,14 +83,14 @@ public class V11QzoneService {
         Map<String, String> cookiesMap = getCookiesMap(bot);
         log.warn("get cookies：b{},map{}", id, cookiesMap);
         for (Long zoneWalksId : zoneWalksIds) {
-            component.logger.info("空间访问：b" + id + " u" + zoneWalksId);
+            log.info("空间访问：b{} u{}", id, zoneWalksId);
             if (zoneWalksId == null) continue;
             try {
                 String walkUrl = "https://kloping.top/api/qzone/walk" + getParmsStart(String.valueOf(id), cookiesMap)
                         + "&qq=" + zoneWalksId;
                 ResponseEntity<String> entity = template.getForEntity(walkUrl, String.class);
                 if (entity.getStatusCode().is2xxSuccessful()) {
-                    log.info("空间访问成功：b{} walk u{}..继续:{}", id, zoneWalksId, like);
+                    log.info("空间访问成功：b{} walk u{}.继续:{}", id, zoneWalksId, like);
                     if (like) {
                         String url0 = "https://api.s01s.cn/API/xiadan/?" +
                                 "xh=1&uin=" + zoneWalksId + "&qq=" + id +
@@ -109,19 +109,19 @@ public class V11QzoneService {
                                 + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
                         ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
                         if (entity1.getStatusCode().is2xxSuccessful()) {
-                            log.info("取消点赞b{} u{}..完成..继续", id, zoneWalksId);
+                            log.info("取消点赞b{} u{}.完成.继续", id, zoneWalksId);
                             //dolike
                             String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
                                     + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
                             ResponseEntity<String> entity2 = template.getForEntity(likeUrl, String.class);
                             if (entity2.getStatusCode().is2xxSuccessful()) {
-                                log.info("点赞成功：b{} u{}..完成", id, zoneWalksId);
+                                log.info("点赞成功：b{} u{}.完成", id, zoneWalksId);
                             }
                         }
                     }
                 }
             } catch (Exception e) {
-                log.error("空间访问异常", e);
+                log.error("空间访问异常-{}", id, e);
                 reportService.report(String.valueOf(id), "空间访问异常,访问ID:" + zoneWalksId);
             }
         }
@@ -178,7 +178,7 @@ public class V11QzoneService {
         Map<String, String> cookiesMap = getCookiesMap(bot);
         String uin = String.valueOf(id);
         try {
-            component.logger.info("空间评论/点赞：start-b" + uin);
+            log.info("空间评论/点赞：start-b{}", uin);
             String allUrl = "https://kloping.top/api/qzone/all" + getParmsStart(String.valueOf(id), cookiesMap);
             ResponseEntity<String> entity = template.getForEntity(allUrl, String.class);
             if (entity.getStatusCode().is2xxSuccessful()) {
@@ -194,7 +194,7 @@ public class V11QzoneService {
                                     + "&ctime=" + data.getString("abstime");
                             ResponseEntity<String> entity1 = template.getForEntity(likeUrl, String.class);
                             if (entity1.getStatusCode().is2xxSuccessful()) {
-                                log.info("cm点赞成功：b{} u{}..完成", id, qq);
+                                log.info("cm点赞成功：b{} u{}.完成", id, qq);
                             }
                         }
                     }
@@ -213,7 +213,7 @@ public class V11QzoneService {
                                     + "&qq=" + qq + "&text=" + comment;
                             ResponseEntity<String> entity1 = template.getForEntity(commentUrl, String.class);
                             if (entity1.getStatusCode().is2xxSuccessful()) {
-                                log.info("评论成功：b{} u{}..完成", id, qq);
+                                log.info("评论成功：b{} u{}.完成", id, qq);
                             }
                         }
                     }
@@ -223,7 +223,7 @@ public class V11QzoneService {
             log.error("空间评论异常", e);
             reportService.report(String.valueOf(id), "空间评论异常");
         }
-        component.logger.info("空间评论/点赞：end-b" + uin);
+        log.info("空间评论/点赞：end-b{}", uin);
     }
 
     @Autowired

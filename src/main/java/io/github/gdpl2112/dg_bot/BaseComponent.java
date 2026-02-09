@@ -2,8 +2,6 @@ package io.github.gdpl2112.dg_bot;
 
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
-import io.github.kloping.MySpringTool.h1.impl.LoggerImpl;
-import io.github.kloping.MySpringTool.interfaces.Logger;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -24,16 +22,6 @@ import java.util.Date;
 @Configuration
 public class BaseComponent {
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy年MM月dd日");
-
-    @Bean
-    public Logger getLogger() {
-        Logger l = new LoggerImpl();
-        String path = String.format("logs/%s.log", SIMPLE_DATE_FORMAT.format(new Date()));
-        new File(path).getParentFile().mkdirs();
-        l.setOutFile(path);
-        l.info("================logger=create===================");
-        return l;
-    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

@@ -10,9 +10,9 @@ import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
 import io.github.gdpl2112.dg_bot.service.BotService;
 import io.github.gdpl2112.dg_bot.service.ConfigService;
-import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.events.FriendMessageEvent;
@@ -31,12 +31,11 @@ import java.util.Map;
  * @since 2023-07-20
  */
 @Service
-public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
+@Slf4j
+public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost {
 
     @Autowired
     BotService service;
-    @Autowired
-    Logger logger;
     @Autowired
     PassiveMapper passiveMapper;
     @Autowired
@@ -83,6 +82,7 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost  {
                             contact.sendMessage(msg);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            log.error("发送被动消息时失败qid:{}", bid, e);
                         }
                         Conf conf = confMapper.selectById(bid);
                         Long c0 = 1000L;

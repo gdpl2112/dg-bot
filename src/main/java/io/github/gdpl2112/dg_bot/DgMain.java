@@ -1,9 +1,7 @@
 package io.github.gdpl2112.dg_bot;
 
 import io.github.gdpl2112.dg_bot.utils.HttpsUtils;
-import io.github.kloping.MySpringTool.h1.impl.component.PackageScannerImpl;
-import io.github.kloping.MySpringTool.interfaces.Logger;
-import io.github.kloping.MySpringTool.interfaces.component.PackageScanner;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -32,6 +30,7 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.getCompileTime;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @EnableScheduling
+@Slf4j
 public class DgMain implements CommandLineRunner {
 
     public static ConfigurableApplicationContext applicationContext;
@@ -46,26 +45,24 @@ public class DgMain implements CommandLineRunner {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    Logger logger;
 
     @Override
     public void run(String... args) throws Exception {
-        logger.info("start auto create need tables;");
-        PackageScanner scanner = new PackageScannerImpl(true);
-        for (Class<?> dclass : scanner.scan(DgMain.class, DgMain.class.getClassLoader(), "io.github.gdpl2112.dg_bot.dao")) {
-            String sql = Utils.CreateTable.createTable(dclass);
-            try {
-                int state = jdbcTemplate.update(sql);
-                if (state > 0) System.out.println(sql);
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.error(sql);
-            }
-        }
-        logger.info("tables create finished");
-
-        logger.info("tables update");
+//        log.info("start auto create need tables;");
+//        PackageScanner scanner = new PackageScannerImpl(true);
+//        for (Class<?> dclass : scanner.scan(DgMain.class, DgMain.class.getClassLoader(), "io.github.gdpl2112.dg_bot.dao")) {
+//            String sql = Utils.CreateTable.createTable(dclass);
+//            try {
+//                int state = jdbcTemplate.update(sql);
+//                if (state > 0) System.out.println(sql);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                log.error(sql);
+//            }
+//        }
+//        log.info("tables create finished");
+//
+        log.info("tables update");
 
         boolean k0 = false;
         for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('v11_conf')")) {

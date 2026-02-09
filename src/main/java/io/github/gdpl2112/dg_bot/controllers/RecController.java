@@ -11,7 +11,6 @@ import io.github.gdpl2112.dg_bot.events.SendLikedEvent;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.ScriptService;
 import io.github.gdpl2112.dg_bot.service.v11s.V11AutoLikeService;
 import io.github.gdpl2112.dg_bot.service.v11s.V11QzoneService;
-import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.date.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
@@ -37,8 +36,6 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequestMapping("/api/rec")
 public class RecController {
-    @Autowired
-    Logger logger;
 
     @Autowired
     ApplicationEventPublisher eventPublisher;
@@ -48,7 +45,7 @@ public class RecController {
     @PostMapping
     public void rec(@RequestBody String rdata) {
         if (V11AutoLikeService.yesterdayLiking) {
-            logger.info("回赞昨日进行中..忽略点赞");
+            log.info("回赞昨日进行中..忽略点赞");
             return;
         }
         JSONObject jo = JSON.parseObject(rdata);
@@ -69,11 +66,11 @@ public class RecController {
                 }
                 boolean k = cdl.await(333, TimeUnit.MILLISECONDS);
                 if (k) {
-                    logger.info("已忽略重复: " + key);
+                    log.info("已忽略重复: {}", key);
                     return;
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("await error", e);
             }
             // 开始处理
             Integer times = jo.getInteger("times");
@@ -83,7 +80,7 @@ public class RecController {
             int dayN = DateUtils.getDay();
             Bot bot = Bot.getInstanceOrNull(bid);
             if (bot == null) {
-                logger.error("BOT b" + bot.getId() + "未初始化完成!");
+                log.error("BOT b{}未初始化完成!", bot.getId());
                 return;
             }
             V11Conf v11Conf = v11AutoLikeService.getV11Conf(String.valueOf(bot.getId()));
@@ -117,7 +114,7 @@ public class RecController {
                         if (v11Conf.getNeedMaxLike()) {
                             int fmax = pl.isSvip() ? 20 : 10;
                             if (pl.getCount() < fmax) {
-                                logger.waring(String.format("B%s开启满赞回赞,当前f%s点赞%s次,返回", bid, pl.getVid(), pl.getCount()));
+                                log.warn("B{}开启满赞回赞,当前f{}点赞{}次,返回", bid, pl.getVid(), pl.getCount());
                                 return;
                             }
                         }
@@ -128,14 +125,14 @@ public class RecController {
                         if (pl.getBTodayVotedCnt() < max) {
                             Boolean ok = ProfileLike.sendProfileLike(remoteBot, tid, max);
                             eventPublisher.publishEvent(new SendLikedEvent(bid, tid, max, ok));
-                        } else logger.waring("跳过b" + bid + "已满赞t" + tid + "C:" + pl.getBTodayVotedCnt());
+                        } else log.warn("跳过b{}已满赞t{}C:{}", bid, tid, pl.getBTodayVotedCnt());
                         return;
                     } else {
-                        logger.info("未找到该用户的点赞信息:" + tid);
+                        log.info("未找到该用户的点赞信息:{}", tid);
                     }
                 } catch (Exception e) {
                     String msg = "收到点赞时获取点赞[列表失败]: " + e.getMessage();
-                    logger.error(msg);
+                    log.error(msg, e);
                     ScriptService.offerLogMsg0(bid.toString(), msg);
                 }
             }

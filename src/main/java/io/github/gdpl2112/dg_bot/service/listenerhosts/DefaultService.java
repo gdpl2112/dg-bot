@@ -8,7 +8,6 @@ import io.github.gdpl2112.dg_bot.dao.*;
 import io.github.gdpl2112.dg_bot.mapper.*;
 import io.github.gdpl2112.dg_bot.mapper.service.IStatisticsService;
 import io.github.gdpl2112.dg_bot.service.BotService;
-import io.github.kloping.MySpringTool.interfaces.Logger;
 import io.github.kloping.common.Public;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.map.MapUtils;
@@ -44,9 +43,6 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @Autowired
     BotService service;
-
-    @Autowired
-    Logger logger;
 
     @Autowired
     PassiveMapper passiveMapper;
