@@ -108,7 +108,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                 final int count = 10;
                 all:
                 while (true) {
-                    JSONObject jsonData = ProfileLike.getProfileLikePage(remoteBot, st, count);
+                    JSONObject jsonData = ProfileLike.getProfileLikePage(id ,remoteBot, st, count);
 
                     JSONObject voteInfo = jsonData.getJSONObject("voteInfo");
                     JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
@@ -211,7 +211,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
         all:
         while (true) {
             try {
-                JSONObject jsonObject = ProfileLike.getProfileLikePage(remoteBot, st, count);
+                JSONObject jsonObject = ProfileLike.getProfileLikePage(id, remoteBot, st, count);
                 JSONObject voteInfo = jsonObject.getJSONObject("voteInfo");
                 JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
                 e:

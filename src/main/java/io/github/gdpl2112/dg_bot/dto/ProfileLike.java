@@ -69,9 +69,9 @@ public class ProfileLike {
     }
 
     // 分页 鞋带VIP信息
-    public static JSONObject getProfileLikePage(RemoteBot remoteBot, int st, int count) {
+    public static JSONObject getProfileLikePage(String id, RemoteBot remoteBot, int st, int count) {
         String data = remoteBot.executeAction(ActionContext.build("get_profile_like", b -> b.throwExceptions(true)),
-                String.format("{\"user_id\": 0,\"start\": %s, \"count\": %s}", st, count)
+                String.format("{\"user_id\": %s,\"start\": %s, \"count\": %s}", id, st, count)
         );
         JSONObject jsonObject = JSONObject.parseObject(data);
         jsonObject = jsonObject.getJSONObject("data");
