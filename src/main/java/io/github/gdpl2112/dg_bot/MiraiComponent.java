@@ -166,11 +166,14 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         builder.heartbeatCheckSeconds(connConfig.getHeart());
 
         if (builder != null) {
-            try {
-                Bot bot = builder.connect();
-            } catch (Throwable e) {
-                log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
-            }
+            BotBuilder finalBuilder = builder;
+            EXECUTOR_SERVICE.execute(() -> {
+                try {
+                    Bot bot = finalBuilder.connect();
+                } catch (Throwable e) {
+                    log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
+                }
+            });
         }
     }
 
