@@ -190,9 +190,8 @@ public class WzydView implements BaseOptional {
                     } else if (data instanceof String) {
                         mcb.append(new PlainText((String) data));
                         event.getSubject().sendMessage(mcb.build());
-                    }
-                    System.err.println("wzry return 未知类型: " + data);
-                }
+                    }else log.error("wzry return 未知类型: {}", data);
+                } else log.error("wzry return null");
                 return;
             }
         }
