@@ -88,13 +88,14 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 //            }
 //        }));
 //        cdl.await();
-        connConfigs.forEach(r -> {
+        for (int i = 0; i < connConfigs.size(); i++) {
+            ConnConfig r = connConfigs.get(i);
             try {
-                handleOneBot(r);
+                handleOneBot(r, i != 0);
             } catch (Exception e) {
                 log.error("handle bot {} error", r.getQid(), e);
             }
-        });
+        }
         System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
     }
 
@@ -155,6 +156,10 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(20, 20, 10, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
 
     public static void handleOneBot(ConnConfig connConfig) {
+        handleOneBot(connConfig, false);
+    }
+
+    public static void handleOneBot(ConnConfig connConfig, boolean tread) {
         BotBuilder builder = null;
         if (connConfig.getType().equalsIgnoreCase("ws")) {
             builder = BotBuilder.positive(connConfig.getIp()).retryTimes(3).retryWaitMills(7000).retryRestMills(-1);
@@ -166,14 +171,22 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         builder.heartbeatCheckSeconds(connConfig.getHeart());
 
         if (builder != null) {
-            BotBuilder finalBuilder = builder;
-            EXECUTOR_SERVICE.execute(() -> {
+            if (tread) {
+                BotBuilder finalBuilder = builder;
+                EXECUTOR_SERVICE.execute(() -> {
+                    try {
+                        Bot bot = finalBuilder.connect();
+                    } catch (Throwable e) {
+                        log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
+                    }
+                });
+            } else {
                 try {
-                    Bot bot = finalBuilder.connect();
+                    Bot bot = builder.connect();
                 } catch (Throwable e) {
                     log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
                 }
-            });
+            }
         }
     }
 
