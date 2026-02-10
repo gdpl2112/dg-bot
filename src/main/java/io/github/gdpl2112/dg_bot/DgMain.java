@@ -38,6 +38,10 @@ public class DgMain implements CommandLineRunner {
     public static void main(String[] args) throws Exception {
         System.out.println("start pre build time on " + getCompileTime());
         HttpsUtils.trustAllHttpsCertificates();
+        // System.getProperty("overflow.timeout")?.toLongOrNull() ?: 10000L
+        //System.getProperty("overflow.timeout-process")?.toLongOrNull() ?: 20000L
+        System.setProperty("overflow.timeout-process", "120000");
+        System.setProperty("overflow.timeout", "90000");
         System.setProperty("overflow.skip-token-security-check", "I_KNOW_WHAT_I_AM_DOING");
         applicationContext = SpringApplication.run(DgMain.class, args);
     }
