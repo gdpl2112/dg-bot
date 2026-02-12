@@ -88,6 +88,12 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
 //            }
 //        }));
 //        cdl.await();
+        // 排序 configs
+        // 优先将189开头的排在前面,其他按id升序
+        connConfigs.sort((o1, o2) -> {
+            if (o1.getQid().startsWith("189") && !o2.getQid().startsWith("189")) return -1;
+            return o1.getQid().compareTo(o2.getQid());
+        });
         for (int i = 0; i < connConfigs.size(); i++) {
             ConnConfig r = connConfigs.get(i);
             try {
