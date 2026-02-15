@@ -34,7 +34,7 @@ server:
       timeout: 680400
 
 wzry:
-  api: http://192.168.1.11:8080
+  api: http://127.0.0.1:8181
 
 report:
   point-gid: 943648151
