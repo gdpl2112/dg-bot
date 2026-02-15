@@ -32,5 +32,5 @@ public class Conf {
     //脚本代码
     private String code = "";
     //状态触发
-    private String status0;
+    private String status0 = "查看状态";
 }
