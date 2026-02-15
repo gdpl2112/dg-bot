@@ -50,22 +50,36 @@ public class DgMain implements CommandLineRunner {
     private JdbcTemplate jdbcTemplate;
 
 
+    // 该包下所有类，会自动创建表
+    private Class<?>[] DbClasses = {
+            io.github.gdpl2112.dg_bot.dao.Administrator.class,
+            io.github.gdpl2112.dg_bot.dao.AllMessage.class,
+            io.github.gdpl2112.dg_bot.dao.AuthM.class,
+            io.github.gdpl2112.dg_bot.dao.CallTemplate.class,
+            io.github.gdpl2112.dg_bot.dao.Conf.class,
+            io.github.gdpl2112.dg_bot.dao.ConnConfig.class,
+            io.github.gdpl2112.dg_bot.dao.CronMessage.class,
+            io.github.gdpl2112.dg_bot.dao.GroupConf.class,
+            io.github.gdpl2112.dg_bot.dao.LikeReco.class,
+            io.github.gdpl2112.dg_bot.dao.Optional.class,
+            io.github.gdpl2112.dg_bot.dao.Passive.class,
+            io.github.gdpl2112.dg_bot.dao.Statistics.class,
+            io.github.gdpl2112.dg_bot.dao.V11Conf.class
+    };
+
     @Override
     public void run(String... args) throws Exception {
-//        log.info("start auto create need tables;");
-//        PackageScanner scanner = new PackageScannerImpl(true);
-//        for (Class<?> dclass : scanner.scan(DgMain.class, DgMain.class.getClassLoader(), "io.github.gdpl2112.dg_bot.dao")) {
-//            String sql = Utils.CreateTable.createTable(dclass);
-//            try {
-//                int state = jdbcTemplate.update(sql);
-//                if (state > 0) System.out.println(sql);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                log.error(sql);
-//            }
-//        }
-//        log.info("tables create finished");
-//
+        for (Class<?> dclass : DbClasses) {
+            String sql = Utils.CreateTable.createTable(dclass);
+            try {
+                int state = jdbcTemplate.update(sql);
+                if (state > 0) System.out.println(sql);
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error(sql);
+            }
+        }
+        log.info("tables create finished");
         log.info("tables update");
 
         boolean k0 = false;
