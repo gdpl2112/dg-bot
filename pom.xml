@@ -15,10 +15,6 @@
     </parent>
     <repositories>
         <repository>
-            <id>kloping-repo</id>
-            <url>https://file.kloping.top/amvnlibs/</url>
-        </repository>
-        <repository>
             <id>ali-m</id>
             <url>https://maven.aliyun.com/repository/public</url>
         </repository>
