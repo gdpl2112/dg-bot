@@ -213,12 +213,16 @@ public class WzydView implements BaseOptional {
             }
             if (url.endsWith("&")) url = url.substring(0, url.length() - 1);
             Connection.Response response = Jsoup.connect(url).ignoreHttpErrors(true)
-                    .ignoreContentType(true).method(Connection.Method.GET).timeout(90 * 1000).execute();
+                    .ignoreContentType(true).method(Connection.Method.GET).timeout(getTimeOutMillis()).execute();
             return response;
         } catch (Exception e) {
             log.error("doRequest0 wzry request error", e);
             return e.getMessage();
         }
+    }
+
+    private static int getTimeOutMillis() {
+        return 100000;
     }
 
     public Object doRequest(String url, Map<String, Object> args) {
@@ -234,7 +238,7 @@ public class WzydView implements BaseOptional {
             }
             if (url.endsWith("&")) url = url.substring(0, url.length() - 1);
             Connection.Response response = Jsoup.connect(url).ignoreHttpErrors(true)
-                    .ignoreContentType(true).method(Connection.Method.GET).timeout(90 * 1000).execute();
+                    .ignoreContentType(true).method(Connection.Method.GET).timeout(getTimeOutMillis()).execute();
             if (response.statusCode() == 200) {
                 if (response.contentType().equalsIgnoreCase("image/png")) {
                     return response.bodyAsBytes();

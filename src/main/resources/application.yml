@@ -34,7 +34,7 @@ server:
       timeout: 680400
 
 wzry:
-  api: http://127.0.0.1:8181
+  api: http://wv.kloping.top
 
 report:
   point-gid: 943648151
