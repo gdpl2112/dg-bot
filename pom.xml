@@ -53,7 +53,7 @@
             <version>1.17.2</version>
         </dependency>
         <dependency>
-            <groupId>io.github.Kloping</groupId>
+            <groupId>io.github.kloping</groupId>
             <artifactId>JvUtils</artifactId>
             <version>0.4.9-Beta2</version>
         </dependency>
