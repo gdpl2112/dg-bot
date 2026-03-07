@@ -11,6 +11,8 @@ import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.message.data.*;
 import net.mamoe.mirai.utils.ExternalResource;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
@@ -174,7 +176,16 @@ public class DgSerializer {
     public static final RestTemplate TEMPLATE = new RestTemplate();
 
     public static byte[] getImageFromUrl(String url) {
-        return TEMPLATE.getForEntity(url, byte[].class).getBody();
+        try {
+            Connection.Response response = Jsoup.connect(url).ignoreHttpErrors(true).ignoreContentType(true)
+                    .header("Accept", "*/*")
+                    .header("Accept-Encoding", "gzip, deflate, br")
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0")
+                    .method(Connection.Method.GET).execute();
+            return response.bodyAsBytes();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static Message createImage(Contact contact, Bot bot, String path) {
