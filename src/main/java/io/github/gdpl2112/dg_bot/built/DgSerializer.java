@@ -3,8 +3,8 @@ package io.github.gdpl2112.dg_bot.built;
 import com.alibaba.fastjson.JSON;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.kloping.arr.ArrSerializer;
-import io.github.kloping.io.ReadUtils;
 import io.github.kloping.url.UrlUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Friend;
@@ -16,7 +16,6 @@ import org.springframework.web.client.RestTemplate;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,6 +24,7 @@ import java.util.regex.Pattern;
 /**
  * @author github.kloping
  */
+@Slf4j
 public class DgSerializer {
     private static final Pattern PATTER_FACE = Pattern.compile("<face:.*?>");
     private static final Pattern PATTER_PIC = Pattern.compile("<pic:.*?>");
@@ -173,11 +173,15 @@ public class DgSerializer {
 
     public static final RestTemplate TEMPLATE = new RestTemplate();
 
+    public static byte[] getImageFromUrl(String url) {
+        return TEMPLATE.getForEntity(url, byte[].class).getBody();
+    }
+
     public static Message createImage(Contact contact, Bot bot, String path) {
         Message image = null;
         try {
             if (path.startsWith("http")) {
-                image = Contact.uploadImage(bot.getAsFriend(), new ByteArrayInputStream(ReadUtils.readAll(new URL(path).openStream())));
+                image = Contact.uploadImage(bot.getAsFriend(), new ByteArrayInputStream(getImageFromUrl(path)));
             } else if (path.startsWith("{")) {
                 image = Image.fromId(path);
             } else if (path.contains(BASE64)) {
@@ -188,7 +192,7 @@ public class DgSerializer {
                 image = Contact.uploadImage(bot.getAsFriend(), new File(path));
             }
         } catch (Exception e) {
-            System.err.println(path + "加载失败");
+            log.error("图片创建失败:url:{},", path, e);
             e.printStackTrace();
         }
         if (image != null) return image;
