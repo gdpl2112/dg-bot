@@ -23,7 +23,7 @@ import java.util.Map;
  * @since 2025/7/19-20:11
  */
 @Slf4j
-@Component
+//@Component
 public class WzydView implements BaseOptional {
 
     public Map<String, OneApi> apis = new HashMap<>();

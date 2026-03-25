@@ -62,7 +62,7 @@ public class ShortVideoParse implements BaseOptional {
         private Object data;
     }
 
-    public static final String regx = "(https?|http|ftp|file):\\/\\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]";
+    public static final String regx = "(https?|http|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]";
     public static final Pattern pattern = Pattern.compile(regx);
 
     public static final String KS_LINK = "v.kuaishou.com";
