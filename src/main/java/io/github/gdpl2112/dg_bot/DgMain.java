@@ -40,8 +40,8 @@ public class DgMain implements CommandLineRunner {
         HttpsUtils.trustAllHttpsCertificates();
         // System.getProperty("overflow.timeout")?.toLongOrNull() ?: 10000L
         //System.getProperty("overflow.timeout-process")?.toLongOrNull() ?: 20000L
-        System.setProperty("overflow.timeout-process", "150000");
-        System.setProperty("overflow.timeout", "95000");
+        System.setProperty("overflow.timeout-process", "180000");
+        System.setProperty("overflow.timeout", "180000");
         System.setProperty("overflow.skip-token-security-check", "I_KNOW_WHAT_I_AM_DOING");
         applicationContext = SpringApplication.run(DgMain.class, args);
     }

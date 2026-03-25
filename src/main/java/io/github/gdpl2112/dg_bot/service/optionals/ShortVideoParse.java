@@ -68,6 +68,7 @@ public class ShortVideoParse implements BaseOptional {
     public static final String KS_LINK = "v.kuaishou.com";
     public static final String DY_LINK = "v.douyin.com";
 
+    public static final int BATCH_SIZE = 16;
 
     public static final RestTemplate TEMPLATE = new RestTemplate();
 
@@ -103,8 +104,7 @@ public class ShortVideoParse implements BaseOptional {
         if (jxData.getFormat().equals("image")) {
             List<String> images = (List<String>) dataMap.get("images");
             int totalImages = images.size();
-            int batchSize = 20;
-            int totalBatches = (totalImages + batchSize - 1) / batchSize;
+            int totalBatches = (totalImages + BATCH_SIZE - 1) / BATCH_SIZE;
 
             if (totalBatches > 1) {
                 builder.append("\n图片数量:" + totalImages + "/分" + totalBatches + "批发送,请稍等...");
@@ -114,8 +114,8 @@ public class ShortVideoParse implements BaseOptional {
             event.getSubject().sendMessage(builder.build());
 
             for (int batch = 0; batch < totalBatches; batch++) {
-                int start = batch * batchSize;
-                int end = Math.min(start + batchSize, totalImages);
+                int start = batch * BATCH_SIZE;
+                int end = Math.min(start + BATCH_SIZE, totalImages);
                 List<String> batchImages = images.subList(start, end);
 
                 var fbuilder = new ForwardMessageBuilder(event.getSubject());
