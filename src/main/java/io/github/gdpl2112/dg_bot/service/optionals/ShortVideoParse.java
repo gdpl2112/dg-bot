@@ -102,23 +102,40 @@ public class ShortVideoParse implements BaseOptional {
 
         if (jxData.getFormat().equals("image")) {
             List<String> images = (List<String>) dataMap.get("images");
-            builder.append("\n图片数量:" + images.size() + "/正在发送,请稍等...");
+            int totalImages = images.size();
+            int batchSize = 25;
+            int totalBatches = (totalImages + batchSize - 1) / batchSize;
+
+            if (totalBatches > 1) {
+                builder.append("\n图片数量:" + totalImages + "/分" + totalBatches + "批发送,请稍等...");
+            } else {
+                builder.append("\n图片数量:" + totalImages + "/正在发送,请稍等...");
+            }
             event.getSubject().sendMessage(builder.build());
 
-            var fbuilder = new ForwardMessageBuilder(event.getSubject());
-            if (dataMap.containsKey("music"))
-                fbuilder.add(bot, new PlainText("音频直链:" + dataMap.get("music")));
-            for (String s : images) {
-                try {
-                    byte[] bytes = UrlUtils.getBytesFromHttpUrl(s);
-                    Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
-                    fbuilder.add(bot, image);
-                } catch (Exception ex) {
-                    fbuilder.add(bot, new PlainText("[图片加载失败;" + s + "]"));
-                }
-            }
+            for (int batch = 0; batch < totalBatches; batch++) {
+                int start = batch * batchSize;
+                int end = Math.min(start + batchSize, totalImages);
+                List<String> batchImages = images.subList(start, end);
 
-            event.getSubject().sendMessage(fbuilder.build());
+                var fbuilder = new ForwardMessageBuilder(event.getSubject());
+                if (batch == 0 && dataMap.containsKey("music")) {
+                    fbuilder.add(bot, new PlainText("音频直链:" + dataMap.get("music")));
+                }
+                if (totalBatches > 1) {
+                    fbuilder.add(bot, new PlainText("第" + (batch + 1) + "/" + totalBatches + "批 (图片" + (start + 1) + "-" + end + ")"));
+                }
+                for (String s : batchImages) {
+                    try {
+                        byte[] bytes = UrlUtils.getBytesFromHttpUrl(s);
+                        Image image = Contact.uploadImage(event.getSubject(), new ByteArrayInputStream(bytes), "jpg");
+                        fbuilder.add(bot, image);
+                    } catch (Exception ex) {
+                        fbuilder.add(bot, new PlainText("[图片加载失败;" + s + "]"));
+                    }
+                }
+                event.getSubject().sendMessage(fbuilder.build());
+            }
         } else {
             String u0 = dataMap.get("url").toString();
             byte[] bytes = UrlUtils.getBytesFromHttpUrl(u0);
