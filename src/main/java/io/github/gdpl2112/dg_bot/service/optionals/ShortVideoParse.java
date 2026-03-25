@@ -103,7 +103,7 @@ public class ShortVideoParse implements BaseOptional {
         if (jxData.getFormat().equals("image")) {
             List<String> images = (List<String>) dataMap.get("images");
             int totalImages = images.size();
-            int batchSize = 25;
+            int batchSize = 20;
             int totalBatches = (totalImages + batchSize - 1) / batchSize;
 
             if (totalBatches > 1) {
