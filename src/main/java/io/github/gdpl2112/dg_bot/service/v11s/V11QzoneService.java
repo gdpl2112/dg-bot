@@ -7,6 +7,7 @@ import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
 import io.github.gdpl2112.dg_bot.mapper.V11ConfMapper;
 import io.github.gdpl2112.dg_bot.service.ReportService;
+import io.github.kloping.judge.Judge;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,16 +87,12 @@ public class V11QzoneService {
             log.info("空间访问：b{} u{}", id, zoneWalksId);
             if (zoneWalksId == null) continue;
             try {
-                String walkUrl = "https://kloping.top/api/qzone/walk" + getParmsStart(String.valueOf(id), cookiesMap)
-                        + "&qq=" + zoneWalksId;
+                String walkUrl = "https://kloping.top/api/qzone/walk" + getParmsStart(String.valueOf(id), cookiesMap) + "&qq=" + zoneWalksId;
                 ResponseEntity<String> entity = template.getForEntity(walkUrl, String.class);
                 if (entity.getStatusCode().is2xxSuccessful()) {
                     log.info("空间访问成功：b{} walk u{}.继续:{}", id, zoneWalksId, like);
                     if (like) {
-                        String url0 = "https://api.s01s.cn/API/xiadan/?" +
-                                "xh=1&uin=" + zoneWalksId + "&qq=" + id +
-                                "&skey=" + cookiesMap.get("skey") +
-                                "&p_skey=" + cookiesMap.get("p_skey");
+                        String url0 = "https://api.s01s.cn/API/xiadan/?" + "xh=1&uin=" + zoneWalksId + "&qq=" + id + "&skey=" + cookiesMap.get("skey") + "&p_skey=" + cookiesMap.get("p_skey");
                         String dataR1 = template.getForObject(url0, String.class);
                         String fid = JSONObject.parseObject(dataR1).getString("id");
                         String ctime = JSONObject.parseObject(dataR1).getString("time");
@@ -105,14 +102,12 @@ public class V11QzoneService {
                         // 转换为系统默认时区的时间戳
                         long timestamp = localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
                         ctime = ctime.substring(0, 10);
-                        String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap)
-                                + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
+                        String unlikeUrl = "https://kloping.top/api/qzone/unlike" + getParmsStart(String.valueOf(id), cookiesMap) + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
                         ResponseEntity<String> entity1 = template.getForEntity(unlikeUrl, String.class);
                         if (entity1.getStatusCode().is2xxSuccessful()) {
                             log.info("取消点赞b{} u{}.完成.继续", id, zoneWalksId);
                             //dolike
-                            String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
-                                    + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
+                            String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap) + "&fid=" + fid + "&qq=" + zoneWalksId + "&ctime=" + ctime;
                             ResponseEntity<String> entity2 = template.getForEntity(likeUrl, String.class);
                             if (entity2.getStatusCode().is2xxSuccessful()) {
                                 log.info("点赞成功：b{} u{}.完成", id, zoneWalksId);
@@ -153,6 +148,7 @@ public class V11QzoneService {
     public void autoComment() {
         List<V11Conf> v11Confs = mapper.selectList(queryWrapper);
         v11Confs.forEach(v -> {
+            if (Judge.isEmpty(v.getZoneComment())) return;
             Integer evl = evlMap.get(v.getQid());
             if (evl == null) evl = 1;
             evlMap.put(v.getQid(), evl + 1);
@@ -189,9 +185,7 @@ public class V11QzoneService {
                     if (autoZoneLike) {
                         JSONArray array = data.getJSONArray("likes");
                         if (!array.contains(uin)) {
-                            String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap)
-                                    + "&fid=" + data.getString("tid") + "&qq=" + qq
-                                    + "&ctime=" + data.getString("abstime");
+                            String likeUrl = "https://kloping.top/api/qzone/dolike" + getParmsStart(String.valueOf(id), cookiesMap) + "&fid=" + data.getString("tid") + "&qq=" + qq + "&ctime=" + data.getString("abstime");
                             ResponseEntity<String> entity1 = template.getForEntity(likeUrl, String.class);
                             if (entity1.getStatusCode().is2xxSuccessful()) {
                                 log.info("cm点赞成功：b{} u{}.完成", id, qq);
@@ -208,9 +202,7 @@ public class V11QzoneService {
                             }
                         }
                         if (doit) {
-                            String commentUrl = "https://kloping.top/api/qzone/comment" + getParmsStart(String.valueOf(id), cookiesMap)
-                                    + "&fid=" + data.getString("tid")
-                                    + "&qq=" + qq + "&text=" + comment;
+                            String commentUrl = "https://kloping.top/api/qzone/comment" + getParmsStart(String.valueOf(id), cookiesMap) + "&fid=" + data.getString("tid") + "&qq=" + qq + "&text=" + comment;
                             ResponseEntity<String> entity1 = template.getForEntity(commentUrl, String.class);
                             if (entity1.getStatusCode().is2xxSuccessful()) {
                                 log.info("评论成功：b{} u{}.完成", id, qq);
@@ -236,29 +228,30 @@ public class V11QzoneService {
     private static Map<String, String> getCookiesMap(RemoteBot bot, boolean force) {
         int i = 0;
         String cookies = null;
-        while (i < 3) {
-            String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"qzone.qq.com\"}");
-            JSONObject data = JSONObject.parseObject(dataR0);
-            String error = data.getString("error");
-            data = data.getJSONObject("data");
-            if (data == null || (error != null && !error.isEmpty())) {
-                log.error("获取cookies异常 '{}' retry,{}", error, i);
-                i++;
-                try {
-                    TimeUnit.SECONDS.sleep(5);
-                } catch (InterruptedException e) {
-                    log.error("{}", e.getMessage(), e);
+        if (force) {
+            while (i < 3) {
+                String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"qzone.qq.com\"}");
+                JSONObject data = JSONObject.parseObject(dataR0);
+                String error = data.getString("error");
+                data = data.getJSONObject("data");
+                if (data == null || (error != null && !error.isEmpty())) {
+                    log.error("获取cookies异常 '{}' retry,{}", error, i);
+                    i++;
+                    try {
+                        TimeUnit.SECONDS.sleep(5);
+                    } catch (InterruptedException e) {
+                        log.error("{}", e.getMessage(), e);
+                    }
+                    continue;
                 }
-                continue;
+                cookies = data.getString("cookies");
             }
-            cookies = data.getString("cookies");
         }
         Map<String, String> cookiesMap = new HashMap<>();
         for (String s : cookies.split(" ")) {
             String[] split = s.split("=");
             String v0 = split[1];
-            if (v0.endsWith(";"))
-                v0 = v0.substring(0, v0.length() - 1);
+            if (v0.endsWith(";")) v0 = v0.substring(0, v0.length() - 1);
             cookiesMap.put(split[0], v0);
         }
         return cookiesMap;
