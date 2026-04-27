@@ -26,9 +26,12 @@ public class ScriptCompile {
         this.script = initScript(scriptText, initParams);
     }
 
+    private final ScriptEngineManager manager = new ScriptEngineManager();
+
     public CompiledScript initScript(String scriptText, Map<String, Object> initParams) {
         CompiledScript script = null;
-        ScriptEngine engine = new ScriptEngineManager().getEngineByExtension("js");
+        ScriptEngine engine = manager.getEngineByName("nashorn");
+        if (engine == null) engine = manager.getEngineByName("JavaScript");
         // 检查JavaScript引擎是否可用
         if (engine == null) {
             throw new RuntimeException("无法获取JavaScript引擎，请确认Java环境支持JavaScript");
@@ -95,6 +98,7 @@ public class ScriptCompile {
     public Object executeFuc(String fucName, Object... args) throws Exception {
         return executeFuc(null, fucName, args);
     }
+
     // 存储所有提取的函数名
     private Set<String> functionNames = new HashSet<>();
 
