@@ -46,10 +46,6 @@ import static io.github.gdpl2112.dg_bot.service.script.ScriptManager.*;
 @Slf4j
 @Service
 public class ScriptService extends SimpleListenerHost {
-    public ScriptService() {
-        System.setProperty("nashorn.args", "--no-deprecation-warning");
-    }
-
     @Override
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
         log.error("script error: {}", exception.getMessage());
