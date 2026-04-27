@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.built;
 
 import lombok.Getter;
+import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
 
 import javax.script.*;
 import java.util.HashSet;
@@ -26,12 +27,13 @@ public class ScriptCompile {
         this.script = initScript(scriptText, initParams);
     }
 
-    private final ScriptEngineManager manager = new ScriptEngineManager();
+    private final NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
 
     public CompiledScript initScript(String scriptText, Map<String, Object> initParams) {
         CompiledScript script = null;
-        ScriptEngine engine = manager.getEngineByName("nashorn");
-        if (engine == null) engine = manager.getEngineByName("JavaScript");
+        ScriptEngine engine = factory.getScriptEngine();
+//       engine = manager.getEngineByName("nashorn");
+//        if (engine == null) engine = manager.getEngineByName("JavaScript");
         // 检查JavaScript引擎是否可用
         if (engine == null) {
             throw new RuntimeException("无法获取JavaScript引擎，请确认Java环境支持JavaScript");
