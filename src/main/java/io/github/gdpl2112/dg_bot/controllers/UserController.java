@@ -53,6 +53,10 @@ public class UserController {
             jo.put("qid", authM.getQid());
             jo.put("icon", String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", qid));
             jo.put("expire", authM.getExp());
+            // 判断最高权限: admin > user
+            boolean isAdmin = userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("admin"));
+            jo.put("role", isAdmin ? "admin" : "user");
             return jo.toString();
         }
         return null;
