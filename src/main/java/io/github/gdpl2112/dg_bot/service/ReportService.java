@@ -25,6 +25,11 @@ import java.util.Map;
 @Component
 public class ReportService {
 
+    private static final SimpleDateFormat SF_0 = new SimpleDateFormat("yyyy-MM-dd");
+    @Value("${report.bid:null}")
+    String bid;
+    @Value("${report.gid:null}")
+    String gid;
     private Map<String, List<String>> reportsMap = new HashMap<>();
 
     public int report(String bid, String msg) {
@@ -36,11 +41,6 @@ public class ReportService {
         reports.add("[" + DateUtils.getFormat() + "] " + msg);
         return reports.size();
     }
-
-    @Value("${report.bid:null}")
-    String bid;
-    @Value("${report.gid:null}")
-    String gid;
 
     @Scheduled(cron = "30 10 0 * * ?")
     public void reportTo() {
@@ -69,7 +69,4 @@ public class ReportService {
             reportsMap.clear();
         }
     }
-
-
-    private static final SimpleDateFormat SF_0 = new SimpleDateFormat("yyyy-MM-dd");
 }

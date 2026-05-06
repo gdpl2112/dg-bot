@@ -34,22 +34,8 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.getCompileTime;
 public class DgMain implements CommandLineRunner {
 
     public static ConfigurableApplicationContext applicationContext;
-
-    public static void main(String[] args) throws Exception {
-        System.out.println("start pre build time on " + getCompileTime());
-        HttpsUtils.trustAllHttpsCertificates();
-        // System.getProperty("overflow.timeout")?.toLongOrNull() ?: 10000L
-        //System.getProperty("overflow.timeout-process")?.toLongOrNull() ?: 20000L
-        System.setProperty("overflow.timeout-process", "180000");
-        System.setProperty("overflow.timeout", "180000");
-        System.setProperty("overflow.skip-token-security-check", "I_KNOW_WHAT_I_AM_DOING");
-        applicationContext = SpringApplication.run(DgMain.class, args);
-    }
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-
     // 该包下所有类，会自动创建表
     private Class<?>[] DbClasses = {
             io.github.gdpl2112.dg_bot.dao.Administrator.class,
@@ -67,6 +53,17 @@ public class DgMain implements CommandLineRunner {
             io.github.gdpl2112.dg_bot.dao.V11Conf.class
     };
 
+    public static void main(String[] args) throws Exception {
+        System.out.println("start pre build time on " + getCompileTime());
+        HttpsUtils.trustAllHttpsCertificates();
+        // System.getProperty("overflow.timeout")?.toLongOrNull() ?: 10000L
+        //System.getProperty("overflow.timeout-process")?.toLongOrNull() ?: 20000L
+        System.setProperty("overflow.timeout-process", "180000");
+        System.setProperty("overflow.timeout", "180000");
+        System.setProperty("overflow.skip-token-security-check", "I_KNOW_WHAT_I_AM_DOING");
+        applicationContext = SpringApplication.run(DgMain.class, args);
+    }
+
     @Override
     public void run(String... args) throws Exception {
         for (Class<?> dclass : DbClasses) {
@@ -75,8 +72,7 @@ public class DgMain implements CommandLineRunner {
                 int state = jdbcTemplate.update(sql);
                 if (state > 0) System.out.println(sql);
             } catch (Exception e) {
-                e.printStackTrace();
-                log.error(sql);
+                log.error("update sql error: {}", sql, e);
             }
         }
         log.info("tables create finished");

@@ -17,6 +17,7 @@ public class ConfSetState implements BotState {
 
     private Bot bot;
     private ConfMapper confMapper;
+    private int setState = 0;
 
     public ConfSetState(Bot bid, ConfMapper confMapper) {
         this.bot = bid;
@@ -53,8 +54,6 @@ public class ConfSetState implements BotState {
         sb.append("\n12. 状态查看: ").append(conf.getStatus0());
         return sb.toString();
     }
-
-    private int setState = 0;
 
     @Override
     public String handleInput(User user, String input, Context context) {

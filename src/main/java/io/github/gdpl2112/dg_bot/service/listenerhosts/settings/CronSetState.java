@@ -21,6 +21,9 @@ public class CronSetState implements BotState {
     private CronService service;
     private Bot bot;
     private List<CronMessage> list;
+    private String nid;
+    private String cron;
+    private String desc;
 
     public CronSetState(CronService service, Bot bot) {
         this.service = service;
@@ -46,10 +49,6 @@ public class CronSetState implements BotState {
         }
         return sb.toString();
     }
-
-    private String nid;
-    private String cron;
-    private String desc;
 
     @Override
     public String handleInput(User user, String input, Context context) {

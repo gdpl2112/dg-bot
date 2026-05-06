@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.service.v11s.V11AutoLikeService;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -22,14 +23,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/m")
 @PreAuthorize("hasAuthority('admin')")
+@Slf4j
 public class ManagerController {
-
-    @Autowired
-    AuthMapper authMapper;
 
     private static final SimpleDateFormat SF_DD = new SimpleDateFormat("dd");
     private static final SimpleDateFormat SF_MM = new SimpleDateFormat("MM");
     private static final SimpleDateFormat SF_YY = new SimpleDateFormat("yyyy");
+    private static final SimpleDateFormat SF_0 = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ss");
+    @Autowired
+    AuthMapper authMapper;
+    @Autowired
+    @Lazy
+    V11AutoLikeService v11AutoLikeService;
 
     @RequestMapping("list")
     public List<AuthM> list() {
@@ -64,14 +69,12 @@ public class ManagerController {
         return list();
     }
 
-    private static final SimpleDateFormat SF_0 = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ss");
-
     @RequestMapping("get-exp")
     public Long getExp(@RequestParam("y") Integer y, @RequestParam("m") Integer m, @RequestParam("d") Integer d) {
         try {
             return SF_0.parse(String.format("%s-%s-%s:12:01:00", y, m, d)).getTime();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("parse date error", e);
             return 0L;
         }
     }
@@ -83,10 +86,6 @@ public class ManagerController {
                 SF_MM.format(exp),
                 SF_DD.format(exp)};
     }
-
-    @Autowired
-    @Lazy
-    V11AutoLikeService v11AutoLikeService;
 
     @RequestMapping("/autoLike")
     public String autoLike() {

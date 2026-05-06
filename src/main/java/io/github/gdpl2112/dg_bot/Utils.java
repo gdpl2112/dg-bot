@@ -8,6 +8,7 @@ import io.github.gdpl2112.dg_bot.dao.AuthM;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.kloping.judge.Judge;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.PlainText;
@@ -16,8 +17,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.jetbrains.annotations.NotNull;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
@@ -37,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,12 +47,24 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.isLinux;
  * @author github-kloping
  * @since 2023-07-20
  */
+@Slf4j
 public class Utils {
 
-    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
+    public static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build();
+
+    public static final OkHttpClient LONG_TIMEOUT_CLIENT = OK_HTTP_CLIENT.newBuilder()
+            .connectTimeout(100, TimeUnit.SECONDS)
+            .readTimeout(100, TimeUnit.SECONDS)
+            .build();
+    public static final Random RANDOM = new Random();
+    private static final OkHttpClient REDIRECT_CLIENT = OK_HTTP_CLIENT.newBuilder()
             .followRedirects(false)
             .followSslRedirects(false)
             .build();
+    private static final Map<Long, Object> BP_SYNC_MAP = new HashMap<>();
 
     /**
      * 获取重定向地址
@@ -68,14 +80,14 @@ public class Utils {
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
                 .header("Accept-Encoding", "br,deflate,gzip,x-gzip")
                 .build();
-        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
+        try (Response response = REDIRECT_CLIENT.newCall(request).execute()) {
             String url = response.header("Location");
             if (url == null) url = response.header("location");
             if (url == null) url = response.request().url().toString();
             System.out.println(path + " => redirect to " + url);
             return url;
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("getRedirectUrl error", e);
             return null;
         }
     }
@@ -144,8 +156,6 @@ public class Utils {
         return String.format("%.2f %sB", bytes / Math.pow(1024, exp), unit);
     }
 
-    public static final Random RANDOM = new Random();
-
     public static final <T, K1, K2> T getValueOrDefault(Map<K1, Map<K2, T>> map, K1 k1, K2 k2, T def) {
         if (map.containsKey(k1)) {
             Map<K2, T> m2 = map.get(k1);
@@ -167,8 +177,6 @@ public class Utils {
     public static <T> T getRandT(List<T> ts) {
         return ts.get(RANDOM.nextInt(ts.size()));
     }
-
-    private static final Map<Long, Object> BP_SYNC_MAP = new HashMap<>();
 
     public static Object getBpSync(Long bid) {
         long key = bid.longValue();
@@ -241,6 +249,15 @@ public class Utils {
         private Logic logic;
         private String exp;
 
+        public Logic() {
+        }
+
+        public Logic(String limiter, Logic logic, String exp) {
+            this.limiter = limiter;
+            this.logic = logic;
+            this.exp = exp;
+        }
+
         public Boolean getV(String json) {
             if (logic != null) {
                 if (LIMITER_AND.equals(limiter)) {
@@ -272,7 +289,7 @@ public class Utils {
                     Double kv = Double.parseDouble(Converter.getOutEnd(json, key, null).toString());
                     return kv < dk;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("Logic error", e);
                     return false;
                 }
             } else if (op.equals(">")) {
@@ -281,20 +298,11 @@ public class Utils {
                     Double kv = Double.parseDouble(Converter.getOutEnd(json, key, null).toString());
                     return kv > dk;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("Logic error", e);
                     return false;
                 }
             }
             return false;
-        }
-
-        public Logic() {
-        }
-
-        public Logic(String limiter, Logic logic, String exp) {
-            this.limiter = limiter;
-            this.logic = logic;
-            this.exp = exp;
         }
 
     }
@@ -305,6 +313,7 @@ public class Utils {
      * modify by kloping on 2023/7/17
      */
     public static class CreateTable {
+        public static final Pattern p0 = Pattern.compile("[A-Z]");
         public static Map<String, String> javaProperty2SqlColumnMap = new HashMap<>();
 
         static {
@@ -335,8 +344,6 @@ public class Utils {
             }
             return sName;
         }
-
-        public static final Pattern p0 = Pattern.compile("[A-Z]");
 
         public static String createTable(Class<?> clz, String tableName) throws IOException {
             Field[] fields = null;

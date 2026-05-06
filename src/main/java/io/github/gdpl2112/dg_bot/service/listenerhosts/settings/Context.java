@@ -10,6 +10,7 @@ import java.util.LinkedList;
 
 // 2. 上下文类，现在维护一个状态栈
 public abstract class Context {
+    private static final String PATH_PREFIX = "[当前路径]";
     private Deque<BotState> stateStack = new LinkedList<>(); // 使用栈记录状态历史
     @Getter
     private Bot bot;
@@ -46,8 +47,6 @@ public abstract class Context {
         }
         return end.isEmpty() ? "" : end.substring(0, end.length() - 1);
     }
-
-    private static final String PATH_PREFIX = "[当前路径]";
 
     public String handleInput(User user, String input) {
         if ("退出".equals(input) || "0".equals(input)) {

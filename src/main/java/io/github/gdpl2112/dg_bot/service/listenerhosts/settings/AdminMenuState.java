@@ -52,23 +52,22 @@ public class AdminMenuState implements BotState {
     }
 
     public class GroupConfState implements BotState {
-        @Override
-        public String getName() {
-            return "开关设置";
-        }
-
         private Long bid;
+        private GroupConf groupConf;
 
         public GroupConfState(long bid) {
             this.bid = bid;
         }
 
         @Override
+        public String getName() {
+            return "开关设置";
+        }
+
+        @Override
         public String getWelcomeMessage() {
             return "输入指定 群聊/好友 ID以查看或操作开关!\n 0. 退出!";
         }
-
-        private GroupConf groupConf;
 
         @Override
         public String handleInput(User user, String input, Context context) {
@@ -143,23 +142,22 @@ public class AdminMenuState implements BotState {
     }
 
     public class AdminManagerState implements BotState {
-        @Override
-        public String getName() {
-            return "设置管理";
-        }
-
         private Long bid;
+        private List<Administrator> administrators;
 
         public AdminManagerState(long id) {
             this.bid = id;
             update();
         }
 
+        @Override
+        public String getName() {
+            return "设置管理";
+        }
+
         private void update() {
             administrators = administratorMapper.selectList(new LambdaQueryWrapper<Administrator>().eq(Administrator::getQid, bid));
         }
-
-        private List<Administrator> administrators;
 
         @Override
         public String getWelcomeMessage() {

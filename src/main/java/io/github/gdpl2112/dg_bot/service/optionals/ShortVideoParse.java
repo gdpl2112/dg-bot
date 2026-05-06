@@ -23,6 +23,13 @@ import java.util.regex.Pattern;
  */
 @Component
 public class ShortVideoParse implements BaseOptional {
+    public static final String regx = "(https?|http|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]";
+    public static final Pattern pattern = Pattern.compile(regx);
+    public static final String KS_LINK = "v.kuaishou.com";
+    public static final String DY_LINK = "v.douyin.com";
+    public static final int BATCH_SIZE = 16;
+    public static final RestTemplate TEMPLATE = new RestTemplate();
+
     @Override
     public String getDesc() {
         return "自动检测消息中解析[快手/抖音][短视频/图集]短链接并解析发送结果";
@@ -44,33 +51,6 @@ public class ShortVideoParse implements BaseOptional {
             if (matcher.find()) parseNow(matcher.group(), event);
         }
     }
-
-    @Data
-    @Accessors(chain = true)
-    public static class JxData {
-        private Integer code;
-        private String msg;
-        //douyin 或 kuaishou
-        private String type;
-        //image / video
-        private String format;
-
-        private String cover;
-        private String title;
-        private String author;
-
-        private Object data;
-    }
-
-    public static final String regx = "(https?|http|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]";
-    public static final Pattern pattern = Pattern.compile(regx);
-
-    public static final String KS_LINK = "v.kuaishou.com";
-    public static final String DY_LINK = "v.douyin.com";
-
-    public static final int BATCH_SIZE = 16;
-
-    public static final RestTemplate TEMPLATE = new RestTemplate();
 
     public void parseNow(String url, MessageEvent event) {
         System.out.println("开始解析: " + url);
@@ -173,5 +153,22 @@ public class ShortVideoParse implements BaseOptional {
             double kb0 = kb + (b / 1024.0);
             return String.format("%.2f KB", kb0);
         }
+    }
+
+    @Data
+    @Accessors(chain = true)
+    public static class JxData {
+        private Integer code;
+        private String msg;
+        //douyin 或 kuaishou
+        private String type;
+        //image / video
+        private String format;
+
+        private String cover;
+        private String title;
+        private String author;
+
+        private Object data;
     }
 }

@@ -10,13 +10,8 @@ import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MusicKind;
 import net.mamoe.mirai.message.data.MusicShare;
 import net.mamoe.mirai.message.data.PlainText;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.jetbrains.annotations.NotNull;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,6 +31,272 @@ import static io.github.gdpl2112.dg_bot.Utils.getRedirectUrl;
 public class SongPoint implements BaseOptional {
     public static final String DESC = "包含[点歌,QQ点歌,酷狗点歌,网易点歌,取消点歌,取消选择] 功能";
     public static final String NAME = "异步点歌";
+    public static final String TYPE_KUGOU = "kg";
+    public static final String TYPE_QQ = "qq";
+    public static final String TYPE_WY = "wy";
+    public static final String TYPE_DY = "dy";
+    // id <type,data>
+    public static final Map<Long, SongData> QID2DATA = new HashMap<>();
+    public static final long MAX_CD = 1000 * 60 * 30;
+    public static final RestTemplate TEMPLATE = new RestTemplate();
+    public static final String SERVER_HOST = "https://kloping.top/";
+    private static final Map<String, PointInterface> POINT_INTERFACES = Map.of(
+            TYPE_QQ, new PointInterface(TYPE_QQ) {
+                @Override
+                String list(Long qid, String name, Integer p) {
+                    String content = getString(String.format("https://zj.v.api.aa1.cn/api/qqmusic/demo.php?type=1&q=%s&p=%s&n=10", name, p));
+                    JSONObject data = JSONObject.parseObject(content);
+                    StringBuilder sb = new StringBuilder(String.format("歌名:%s,页数:%s,总数:%s\n", name, p, data.get("count")));
+                    int n = 1;
+                    for (Object o : data.getJSONArray("list")) {
+                        JSONObject o1 = (JSONObject) o;
+                        sb.append(n++ + ".").append(o1.getString("name")).append("--").append(o1.getString("singer")).append("\n");
+                    }
+                    sb.append("选择歌曲前数字.选择0时进入下一页");
+                    QID2DATA.put(qid, new SongData(p, name, TYPE_QQ, content, qid, System.currentTimeMillis()));
+                    return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                }
+
+                @Override
+                Message point(Long qid, SongData data, Integer n) {
+                    String content = (String) data.data;
+                    JSONObject jo = JSON.parseObject(content);
+                    JSONArray arr0 = jo.getJSONArray("list");
+                    jo = arr0.getJSONObject(n - 1);
+                    String url = getRedirectUrl(jo.getString("url"));
+                    MusicShare share = new MusicShare(MusicKind.QQMusic, jo.getString("name"), jo.getString("singer"), url, jo.getString("cover"), url);
+                    return share;
+                }
+            }
+            , TYPE_KUGOU, new PointInterface(TYPE_KUGOU) {
+
+                @Override
+                Message point(Long qid, SongData data, Integer n) {
+                    JSONObject r0 = (JSONObject) data.data;
+                    r0 = r0.getJSONObject("data");
+                    JSONArray infos = r0.getJSONArray("info");
+                    JSONObject info = infos.getJSONObject(n - 1);
+                    String content = getStringKugouUrl("http://m.kugou.com/app/i/getSongInfo.php?hash=" + info.getString("hash") + "&cmd=playInfo");
+                    JSONObject out = JSON.parseObject(content);
+                    String cover = out.getString("imgUrl");
+                    String url = out.getString("url");
+                    MusicShare share = new MusicShare(MusicKind.KugouMusic,
+                            out.getString("songName"), out.getString("author_name"), url, cover, url);
+                    return share;
+                }
+
+                @Override
+                String list(Long qid, String name, Integer p) {
+                    String url = String.format("http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=%s&page=%s&pagesize=%s", name, p, 10);
+                    String content = getStringKugouList(url);
+//                    String content = getString("https://api.yaohud.cn/api/music/migu?key=zn54xgS3NU0cOKEO0yQ&n=&msg=" + name);
+                    JSONObject obj = JSON.parseObject(content);
+                    QID2DATA.put(qid, new SongData(p, name, type, obj, qid, System.currentTimeMillis()));
+                    obj = obj.getJSONObject("data");
+                    StringBuilder sb = new StringBuilder(String.format("歌名:%s,页数:%s,总数:%s\n", name, p, obj.getInteger("total")));
+                    int n = 1;
+                    JSONArray infos = obj.getJSONArray("info");
+                    for (Object o : infos) {
+                        JSONObject o1 = (JSONObject) o;
+                        sb.append(n++ + ".").append(o1.getString("songname")).append("--").append(o1.getString("singername")).append("\n");
+                    }
+                    sb.append("选择歌曲前数字.选择0时进入下一页");
+                    return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                }
+            }
+            , TYPE_WY, new PointInterface(TYPE_WY) {
+                @Override
+                Message point(Long qid, SongData data, Integer n) {
+                    String content = (String) data.data;
+                    JSONArray arr = JSON.parseArray(content);
+                    JSONObject jo = arr.getJSONObject(n - 1);
+                    String id = jo.getString("id");
+                    String url = getRedirectUrl(SERVER_HOST + "api/music/get-url-by-id?id=" + id);
+                    String cover = getRedirectUrl(SERVER_HOST + "api/music/get-cover-by-id?id=" + id);
+                    MusicShare share = new MusicShare(
+                            MusicKind.QQMusic, jo.getString("name"),
+                            jo.getString("artist"), "https://music.163.com/#/song?id=" + id,
+                            cover, url);
+                    return share;
+                }
+
+                @Override
+                String list(Long qid, String name, Integer p) {
+                    String content = getString(SERVER_HOST + "api/music/search?keyword=" + name);
+                    StringBuilder sb = new StringBuilder();
+                    JSONArray arr = JSON.parseArray(content);
+                    Integer index = 1;
+                    for (Object o : arr) {
+                        JSONObject e0 = (JSONObject) o;
+                        sb.append(index++).append(".").append(e0.getString("name")).append("--").append(e0.getString("artist")).append("\n");
+                    }
+                    QID2DATA.put(qid, new SongData(p, name, type, content, qid, System.currentTimeMillis()));
+                    return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                }
+            }
+            , TYPE_DY, new PointInterface(TYPE_DY) {
+
+                @Override
+                Message point(Long qid, SongData data, Integer n) {
+                    String content = getString("https://api.cenguigui.cn/api/douyin/music/?msg="
+                            + data.name + "&page=" + data.p + "&limit=10&type=json&n=" + n);
+                    JSONObject jo = JSON.parseObject(content);
+                    JSONObject jd = jo.getJSONObject("data");
+                    String url = jd.getString("url");
+                    String cover = jd.getString("cover");
+                    String title = jd.getString("title");
+                    String singer = jd.getString("singer");
+                    MusicShare share = new MusicShare(MusicKind.QQMusic, title, singer, url, cover, url);
+                    return share;
+                }
+
+                @Override
+                String list(Long qid, String name, Integer p) {
+                    String content = getString("https://api.cenguigui.cn/api/douyin/music/?msg="
+                            + name + "&page=" + p + "&limit=10&type=json&n=");
+                    StringBuilder sb = new StringBuilder();
+                    JSONObject all = JSON.parseObject(content);
+                    JSONArray arr = all.getJSONArray("data");
+                    for (Object o : arr) {
+                        JSONObject e0 = (JSONObject) o;
+                        sb.append(e0.getInteger("n")).append(".")
+                                .append(e0.getString("title")).append("--")
+                                .append(e0.getString("singer")).append("\n");
+                    }
+                    QID2DATA.put(qid, new SongData(p, name, type, content, qid, System.currentTimeMillis()));
+                    sb.append("选择歌曲前数字.选择0时进入下一页");
+                    return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
+
+                }
+            }
+    );
+
+    static {
+        FrameUtils.SERVICE.scheduleWithFixedDelay(() -> {
+            Iterator<Long> iterator = QID2DATA.keySet().iterator();
+            while (iterator.hasNext()) {
+                Long qid = iterator.next();
+                SongData data = QID2DATA.get(qid);
+                if ((System.currentTimeMillis() - data.time) > MAX_CD) {
+                    QID2DATA.remove(qid);
+                }
+            }
+        }, 20, 30, TimeUnit.MINUTES);
+    }
+
+    /**
+     * 获取指定URL的内容
+     *
+     * @param url 目标URL
+     * @return 返回响应内容字符串，失败则返回null
+     */
+    public static String getString(String url) {
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+                .build();
+        try (Response response = io.github.gdpl2112.dg_bot.Utils.OK_HTTP_CLIENT.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                return response.body().string();
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("getString error {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 列出歌曲列表
+     *
+     * @param type
+     * @param p    页数
+     * @param name
+     * @return
+     */
+    public static String listSongs(Long qid, String type, Integer p, String name) {
+        PointInterface pi = POINT_INTERFACES.get(type);
+        if (pi == null) {
+            return "不支持的点歌类型";
+        } else {
+            return pi.list(qid, name, p);
+        }
+    }
+
+    /**
+     * 点出歌曲发送
+     *
+     * @param data
+     * @param n    页数
+     * @return
+     */
+    public static Message pointSongs(SongData data, Integer n) {
+        PointInterface pi = POINT_INTERFACES.get(data.type);
+        if (pi == null) {
+            return new PlainText("不支持的点歌类型");
+        } else {
+            return pi.point(data.qid, data, n);
+        }
+    }
+
+    /**
+     * 获取酷狗音乐列表页面
+     *
+     * @param url 目标URL
+     * @return 响应内容字符串
+     */
+    public static String getStringKugouList(String url) {
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
+                .header("Host", "mobilecdn.kugou.com")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
+                .header("Accept-Encoding", "gzip, deflate")
+                .header("Connection", "keep-alive")
+                .header("Upgrade-Insecure-Requests", "1")
+                .build();
+        try (Response response = io.github.gdpl2112.dg_bot.Utils.OK_HTTP_CLIENT.newCall(request).execute()) {
+            if (response.body() != null) {
+                return response.body().string();
+            }
+            return null;
+        } catch (IOException e) {
+            log.error("kugou request error", e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取酷狗音乐详情页面
+     *
+     * @param url 目标URL
+     * @return 响应内容字符串
+     */
+    public static String getStringKugouUrl(String url) {
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
+                .header("Host", "m.kugou.com")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
+                .header("Accept-Encoding", "gzip, deflate")
+                .header("Connection", "keep-alive")
+                .header("Upgrade-Insecure-Requests", "1")
+                .build();
+        try (Response response = io.github.gdpl2112.dg_bot.Utils.OK_HTTP_CLIENT.newCall(request).execute()) {
+            if (response.body() != null) {
+                return response.body().string();
+            }
+            return null;
+        } catch (IOException e) {
+            log.error("kugou request error", e);
+            return null;
+        }
+    }
 
     @Override
     public String getDesc() {
@@ -107,61 +368,6 @@ public class SongPoint implements BaseOptional {
         }
     }
 
-
-    public static final String TYPE_KUGOU = "kg";
-    public static final String TYPE_QQ = "qq";
-    public static final String TYPE_WY = "wy";
-    public static final String TYPE_DY = "dy";
-
-    // id <type,data>
-    public static final Map<Long, SongData> QID2DATA = new HashMap<>();
-
-    public static final long MAX_CD = 1000 * 60 * 30;
-
-    static {
-        FrameUtils.SERVICE.scheduleWithFixedDelay(() -> {
-            Iterator<Long> iterator = QID2DATA.keySet().iterator();
-            while (iterator.hasNext()) {
-                Long qid = iterator.next();
-                SongData data = QID2DATA.get(qid);
-                if ((System.currentTimeMillis() - data.time) > MAX_CD) {
-                    QID2DATA.remove(qid);
-                }
-            }
-        }, 20, 30, TimeUnit.MINUTES);
-    }
-
-
-    public static final RestTemplate TEMPLATE = new RestTemplate();
-    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
-            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
-            .build();
-
-    /**
-     * 获取指定URL的Document对象
-     *
-     * @param url 目标URL
-     * @return 解析后的Document对象，失败则返回null
-     */
-    @NotNull
-    public static Document getDocument(String url) {
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-                .build();
-        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                return Jsoup.parse(response.body().string());
-            }
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     public abstract static class PointInterface {
         protected final String type;
 
@@ -184,6 +390,12 @@ public class SongPoint implements BaseOptional {
     }
 
     public static class SongData {
+        public Integer p = 1;
+        public String name;
+        public String type;
+        public Object data;
+        public Long qid;
+        public Long time;
         public SongData(String type, String name, Long qid, Long time) {
             this.type = type;
             this.name = name;
@@ -191,7 +403,6 @@ public class SongPoint implements BaseOptional {
             this.qid = qid;
             this.time = time;
         }
-
         public SongData(Integer p, String name, String type, Object data, Long qid, Long time) {
             this.p = p;
             this.name = name;
@@ -200,242 +411,6 @@ public class SongPoint implements BaseOptional {
             this.qid = qid;
             this.time = time;
         }
-
-        public Integer p = 1;
-        public String name;
-        public String type;
-        public Object data;
-        public Long qid;
-        public Long time;
     }
-
-    public static final String SERVER_HOST = "https://kloping.top/";
-
-    /**
-     * 列出歌曲列表
-     *
-     * @param type
-     * @param p    页数
-     * @param name
-     * @return
-     */
-    public static String listSongs(Long qid, String type, Integer p, String name) {
-        PointInterface pi = POINT_INTERFACES.get(type);
-        if (pi == null) {
-            return "不支持的点歌类型";
-        } else {
-            return pi.list(qid, name, p);
-        }
-    }
-
-    /**
-     * 点出歌曲发送
-     *
-     * @param data
-     * @param n    页数
-     * @return
-     */
-    public static Message pointSongs(SongData data, Integer n) {
-        PointInterface pi = POINT_INTERFACES.get(data.type);
-        if (pi == null) {
-            return new PlainText("不支持的点歌类型");
-        } else {
-            return pi.point(data.qid, data, n);
-        }
-    }
-    /**
-     * 获取酷狗音乐列表页面
-     *
-     * @param url 目标URL
-     * @return 解析后的Document对象
-     */
-    public static Document getDocumentKugouList(String url) {
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
-                .header("Host", "mobilecdn.kugou.com")
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-                .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
-                .header("Accept-Encoding", "gzip, deflate")
-                .header("Connection", "keep-alive")
-                .header("Upgrade-Insecure-Requests", "1")
-                .build();
-        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
-            if (response.body() != null) {
-                return Jsoup.parse(response.body().string());
-            }
-            return null;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * 获取酷狗音乐详情页面
-     *
-     * @param url 目标URL
-     * @return 解析后的Document对象
-     */
-    public static Document getDocumentKugouUrl(String url) {
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
-                .header("Host", "m.kugou.com")
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-                .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
-                .header("Accept-Encoding", "gzip, deflate")
-                .header("Connection", "keep-alive")
-                .header("Upgrade-Insecure-Requests", "1")
-                .build();
-        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
-            if (response.body() != null) {
-                return Jsoup.parse(response.body().string());
-            }
-            return null;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private static final Map<String, PointInterface> POINT_INTERFACES = Map.of(
-            TYPE_QQ, new PointInterface(TYPE_QQ) {
-                @Override
-                String list(Long qid, String name, Integer p) {
-                    Document doc0 = getDocument(String.format("https://zj.v.api.aa1.cn/api/qqmusic/demo.php?type=1&q=%s&p=%s&n=10", name, p));
-                    JSONObject data = JSONObject.parseObject(doc0.body().text());
-                    StringBuilder sb = new StringBuilder(String.format("歌名:%s,页数:%s,总数:%s\n", name, p, data.get("count")));
-                    int n = 1;
-                    for (Object o : data.getJSONArray("list")) {
-                        JSONObject o1 = (JSONObject) o;
-                        sb.append(n++ + ".").append(o1.getString("name")).append("--").append(o1.getString("singer")).append("\n");
-                    }
-                    sb.append("选择歌曲前数字.选择0时进入下一页");
-                    QID2DATA.put(qid, new SongData(p, name, TYPE_QQ, doc0, qid, System.currentTimeMillis()));
-                    return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
-                }
-
-                @Override
-                Message point(Long qid, SongData data, Integer n) {
-                    Document doc0 = (Document) data.data;
-                    String content = doc0.wholeText();
-                    JSONObject jo = JSON.parseObject(content);
-                    JSONArray arr0 = jo.getJSONArray("list");
-                    jo = arr0.getJSONObject(n - 1);
-                    String url = getRedirectUrl(jo.getString("url"));
-                    MusicShare share = new MusicShare(MusicKind.QQMusic, jo.getString("name"), jo.getString("singer"), url, jo.getString("cover"), url);
-                    return share;
-                }
-            }
-            , TYPE_KUGOU, new PointInterface(TYPE_KUGOU) {
-
-                @Override
-                Message point(Long qid, SongData data, Integer n) {
-                    JSONObject r0 = (JSONObject) data.data;
-                    r0 = r0.getJSONObject("data");
-                    JSONArray infos = r0.getJSONArray("info");
-                    JSONObject info = infos.getJSONObject(n - 1);
-                    Document doc0 = getDocumentKugouUrl("http://m.kugou.com/app/i/getSongInfo.php?hash="+info.getString("hash")+"&cmd=playInfo");
-                    JSONObject out = JSON.parseObject(doc0.body().text());
-                    String cover = out.getString("imgUrl");
-                    String url = out.getString("url");
-                    MusicShare share = new MusicShare(MusicKind.KugouMusic,
-                            out.getString("songName"), out.getString("author_name"), url, cover, url);
-                    return share;
-                }
-
-                @Override
-                String list(Long qid, String name, Integer p) {
-                    String url = String.format("http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=%s&page=%s&pagesize=%s", name, p, 10);
-                    Document doc0 = getDocumentKugouList(url);
-//                    Document doc0 = getDocument("https://api.yaohud.cn/api/music/migu?key=zn54xgS3NU0cOKEO0yQ&n=&msg=" + name);
-                    String content = doc0.wholeText();
-                    JSONObject obj = JSON.parseObject(content);
-                    QID2DATA.put(qid, new SongData(p, name, type, obj, qid, System.currentTimeMillis()));
-                    obj= obj.getJSONObject("data");
-                    StringBuilder sb = new StringBuilder(String.format("歌名:%s,页数:%s,总数:%s\n", name, p, obj.getInteger("total")));
-                    int n = 1;
-                    JSONArray infos = obj.getJSONArray("info");
-                    for (Object o : infos) {
-                        JSONObject o1 = (JSONObject) o;
-                        sb.append(n++ + ".").append(o1.getString("songname")).append("--").append(o1.getString("singername")).append("\n");
-                    }
-                    sb.append("选择歌曲前数字.选择0时进入下一页");
-                    return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
-                }
-            }
-            , TYPE_WY, new PointInterface(TYPE_WY) {
-                @Override
-                Message point(Long qid, SongData data, Integer n) {
-                    Document doc0 = (Document) data.data;
-                    String content = doc0.wholeText();
-                    JSONArray arr = JSON.parseArray(content);
-                    JSONObject jo = arr.getJSONObject(n - 1);
-                    String id = jo.getString("id");
-                    String url = getRedirectUrl(SERVER_HOST + "api/music/get-url-by-id?id=" + id);
-                    String cover = getRedirectUrl(SERVER_HOST + "api/music/get-cover-by-id?id=" + id);
-                    MusicShare share = new MusicShare(
-                            MusicKind.QQMusic, jo.getString("name"),
-                            jo.getString("artist"), "https://music.163.com/#/song?id=" + id,
-                            cover, url);
-                    return share;
-                }
-
-                @Override
-                String list(Long qid, String name, Integer p) {
-                    Document doc0 = getDocument(SERVER_HOST + "api/music/search?keyword=" + name);
-                    String content = doc0.wholeText();
-                    StringBuilder sb = new StringBuilder();
-                    JSONArray arr = JSON.parseArray(content);
-                    Integer index = 1;
-                    for (Object o : arr) {
-                        JSONObject e0 = (JSONObject) o;
-                        sb.append(index++).append(".").append(e0.getString("name")).append("--").append(e0.getString("artist")).append("\n");
-                    }
-                    QID2DATA.put(qid, new SongData(p, name, type, doc0, qid, System.currentTimeMillis()));
-                    return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
-                }
-            }
-            , TYPE_DY, new PointInterface(TYPE_DY) {
-
-                @Override
-                Message point(Long qid, SongData data, Integer n) {
-                    Document doc0 = getDocument("https://api.cenguigui.cn/api/douyin/music/?msg="
-                            + data.name + "&page=" + data.p + "&limit=10&type=json&n=" + n);
-                    String content = doc0.wholeText();
-                    JSONObject jo = JSON.parseObject(content);
-                    JSONObject jd = jo.getJSONObject("data");
-                    String url = jd.getString("url");
-                    String cover = jd.getString("cover");
-                    String title = jd.getString("title");
-                    String singer = jd.getString("singer");
-                    MusicShare share = new MusicShare(MusicKind.QQMusic, title, singer, url, cover, url);
-                    return share;
-                }
-
-                @Override
-                String list(Long qid, String name, Integer p) {
-                    Document doc0 = getDocument("https://api.cenguigui.cn/api/douyin/music/?msg="
-                            + name + "&page=" + p + "&limit=10&type=json&n=");
-                    String content = doc0.wholeText();
-                    StringBuilder sb = new StringBuilder();
-                    JSONObject all = JSON.parseObject(content);
-                    JSONArray arr = all.getJSONArray("data");
-                    for (Object o : arr) {
-                        JSONObject e0 = (JSONObject) o;
-                        sb.append(e0.getInteger("n")).append(".")
-                                .append(e0.getString("title")).append("--")
-                                .append(e0.getString("singer")).append("\n");
-                    }
-                    QID2DATA.put(qid, new SongData(p, name, type, doc0, qid, System.currentTimeMillis()));
-                    sb.append("选择歌曲前数字.选择0时进入下一页");
-                    return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
-
-                }
-            }
-    );
 
 }

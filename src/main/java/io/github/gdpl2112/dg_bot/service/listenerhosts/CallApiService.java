@@ -7,6 +7,7 @@ import io.github.gdpl2112.dg_bot.built.callapi.ConnectionContext;
 import io.github.gdpl2112.dg_bot.dao.CallTemplate;
 import io.github.gdpl2112.dg_bot.mapper.CallTemplateMapper;
 import io.github.gdpl2112.dg_bot.service.ConfigService;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.EventHandler;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class CallApiService extends SimpleListenerHost {
 
     @Autowired
@@ -34,6 +36,7 @@ public class CallApiService extends SimpleListenerHost {
 
     @Autowired
     CallApiServiceWorker worker;
+    private Map<Long, Map<String, CallTemplate>> cache = new HashMap<>();
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
@@ -117,7 +120,7 @@ public class CallApiService extends SimpleListenerHost {
             if (connection == null) return null;
             return worker.work(connection, template, bot, gid, qid, subject);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("execute error", e);
         }
         return null;
     }
@@ -125,8 +128,6 @@ public class CallApiService extends SimpleListenerHost {
     private boolean containsArgs(String url) {
         return url.contains("$1") || url.contains("$number") || url.contains("$numberOrSelf");
     }
-
-    private Map<Long, Map<String, CallTemplate>> cache = new HashMap<>();
 
     public void clear(String qid) {
         Long id = Long.parseLong(qid);

@@ -21,14 +21,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     final PasswordEncoder passwordEncoder;
 
     final AuthMapper authMapper;
+    @Value("${super.qid:3474006766}")
+    String superQid;
 
     public UserDetailsServiceImpl(AuthMapper authMapper, PasswordEncoder passwordEncoder) {
         this.authMapper = authMapper;
         this.passwordEncoder = passwordEncoder;
     }
-
-    @Value("${super.qid:3474006766}")
-    String superQid;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

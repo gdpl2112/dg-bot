@@ -24,6 +24,12 @@ import java.util.Map;
 @Slf4j
 @Service
 public class OptionalService implements ListenerHost {
+    @Autowired
+    public OptionalMapper optionalMapper;
+    @Autowired
+    ConfigService configService;
+    private Map<String, BaseOptional> bos = new HashMap<>();
+
     private void touchEvent(MessageEvent event, String bid, String tid) {
         if (configService.isNotOpenK3(event.getBot().getId(), tid)) return;
         Map<String, BaseOptional> bos = getBos();
@@ -35,9 +41,6 @@ public class OptionalService implements ListenerHost {
             }
         });
     }
-
-    @Autowired
-    public OptionalMapper optionalMapper;
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
@@ -77,8 +80,6 @@ public class OptionalService implements ListenerHost {
         return bos;
     }
 
-    private Map<String, BaseOptional> bos = new HashMap<>();
-
     public List<OptionalDto> getOptionalDtos(String id) {
         List<OptionalDto> dtos = new LinkedList<>();
         Map<String, BaseOptional> bos = getBos();
@@ -96,9 +97,6 @@ public class OptionalService implements ListenerHost {
         });
         return dtos;
     }
-
-    @Autowired
-    ConfigService configService;
 
     public boolean isOpen(String id, String name) {
         Optional optional = optionalMapper.selectByQidAndOpt(id, name);

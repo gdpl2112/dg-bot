@@ -35,6 +35,9 @@ public class PreController {
 
     @Autowired
     StatisticsMapper statisticsMapper;
+    @Autowired
+    AuthMapper authMapper;
+    private Map<String, String> t2url = new HashMap<>();
 
     @RequestMapping("/pre/statistics")
     public Object statistics() {
@@ -42,11 +45,6 @@ public class PreController {
         int count1 = statisticsMapper.getTotalCountByType(Statistics.PRIVATE);
         return Map.of("group", count0, "private", count1, "all", count0 + count1);
     }
-
-    @Autowired
-    AuthMapper authMapper;
-
-    private Map<String, String> t2url = new HashMap<>();
 
     @GetMapping("/bot/avatar")
     public void avatar0(@RequestParam(name = "t") String t, HttpServletRequest request, HttpServletResponse response) {

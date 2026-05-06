@@ -7,6 +7,7 @@ import io.github.gdpl2112.dg_bot.dao.Passive;
 import io.github.gdpl2112.dg_bot.mapper.PassiveMapper;
 import io.github.gdpl2112.dg_bot.pack.PassiveMessage;
 import io.github.kloping.judge.Judge;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +28,7 @@ import java.util.Map;
 @RestController
 @PreAuthorize("hasAuthority('user')")
 @RequestMapping("/api")
+@Slf4j
 public class UserPassiveController {
 
     @Autowired
@@ -89,7 +91,7 @@ public class UserPassiveController {
                 return passiveMapper.delete(qw) > 0;
             return false;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("deletePassive error", e);
             return false;
         }
     }

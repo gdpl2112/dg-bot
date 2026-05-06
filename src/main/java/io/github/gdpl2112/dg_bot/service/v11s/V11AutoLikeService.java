@@ -33,11 +33,15 @@ import java.util.List;
 @Service
 public class V11AutoLikeService extends SimpleListenerHost {
 
+    private static final String FORMAT_SIGN_DATA = "{\"action\": \"send_group_sign\",\"params\": {\"group_id\": \"%s\"}}";
+    public static boolean yesterdayLiking = false;
     @Autowired
     public V11ConfMapper mapper;
-
+    @Autowired
+    ReportService reportService;
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+    //最后的处理
 
     public V11AutoLikeService(RecController controller) {
         super();
@@ -79,7 +83,6 @@ public class V11AutoLikeService extends SimpleListenerHost {
     public int updateById(V11Conf v11Conf) {
         return mapper.updateById(v11Conf);
     }
-    //最后的处理
 
     @Scheduled(cron = "00 59 23 * * ? ")
     public void autoLike() {
@@ -108,7 +111,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                 final int count = 10;
                 all:
                 while (true) {
-                    JSONObject jsonData = ProfileLike.getProfileLikePage(id ,remoteBot, st, count);
+                    JSONObject jsonData = ProfileLike.getProfileLikePage(id, remoteBot, st, count);
 
                     JSONObject voteInfo = jsonData.getJSONObject("voteInfo");
                     JSONArray vUserInfos = voteInfo.getJSONArray("userInfos");
@@ -161,8 +164,6 @@ public class V11AutoLikeService extends SimpleListenerHost {
         }
         return sb != null ? sb.toString() : null;
     }
-
-    public static boolean yesterdayLiking = false;
 
     // 回赞昨日
     @Scheduled(cron = "16 00 00 * * ?")
@@ -297,9 +298,4 @@ public class V11AutoLikeService extends SimpleListenerHost {
             }
         }
     }
-
-    @Autowired
-    ReportService reportService;
-
-    private static final String FORMAT_SIGN_DATA = "{\"action\": \"send_group_sign\",\"params\": {\"group_id\": \"%s\"}}";
 }

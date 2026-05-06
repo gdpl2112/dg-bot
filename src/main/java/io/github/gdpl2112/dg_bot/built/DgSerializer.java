@@ -19,9 +19,6 @@ import org.springframework.web.client.RestTemplate;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +29,9 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 public class DgSerializer {
+    public static final Map<Integer, MarketFace> MARKET_FACE_MAP = new HashMap<>();
+    public static final RestTemplate TEMPLATE = new RestTemplate();
+    public static final ArrSerializer ARR_SERIALIZER = new ArrSerializer();
     private static final Pattern PATTER_FACE = Pattern.compile("<face:.*?>");
     private static final Pattern PATTER_PIC = Pattern.compile("<pic:.*?>");
     private static final Pattern PATTER_AT = Pattern.compile("<at:\\d+>");
@@ -40,10 +40,68 @@ public class DgSerializer {
     private static final Pattern PATTER_MIRAI_FACE = Pattern.compile("\\[mirai:face:\\d+]");
     private static final Pattern PATTER_MIRAI_IMAGE = Pattern.compile("\\[mirai:image:[a-zA-Z0-9\\-]+]");
     public static final Pattern[] PATTERNS = {PATTER_FACE, PATTER_PIC, PATTER_AT, PATTER_VOICE, PATTER_MUSIC, PATTER_MIRAI_FACE, PATTER_MIRAI_IMAGE};
-
     private static final String BASE64 = "base64,";
+    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient();
 
-    public static final Map<Integer, MarketFace> MARKET_FACE_MAP = new HashMap<>();
+    static {
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<Image>(Image.class) {
+            @Override
+            public String serializer(Image o) {
+                return String.format("<pic:%s>", o.getImageId());
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<At>(At.class) {
+            @Override
+            public String serializer(At o) {
+                return String.format("<at:%s>", o.getTarget());
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<Face>(Face.class) {
+            @Override
+            public String serializer(Face o) {
+                return String.format("<face:%s>", o.getId());
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<PlainText>(PlainText.class) {
+            @Override
+            public String serializer(PlainText o) {
+                String touch = o.getContent();
+                String regx = "<.*?>";
+                Pattern pattern = Pattern.compile(regx);
+                Matcher matcher = pattern.matcher(touch);
+                while (matcher.find()) {
+                    touch = touch.replace(matcher.group(), "\\" + matcher.group());
+                }
+                return touch;
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<Audio>(Audio.class) {
+            @Override
+            public String serializer(Audio o) {
+                return String.format("<audio:%s>", o.getFilename());
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<MusicShare>(MusicShare.class) {
+            @Override
+            public String serializer(MusicShare o) {
+                return String.format("<music:%s>", o.getMusicUrl());
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<MarketFace>(MarketFace.class) {
+            @Override
+            public String serializer(MarketFace o) {
+                MARKET_FACE_MAP.put(o.getId(), o);
+                return String.format("<marketface:%s>", o.getId());
+            }
+        });
+        ARR_SERIALIZER.add(new ArrSerializer.Rule<QuoteReply>(QuoteReply.class) {
+            @Override
+            public String serializer(QuoteReply o) {
+                return String.format("<qr:%s>", AllMessage.latest(0, o.getSource().getInternalIds()));
+            }
+        });
+        ARR_SERIALIZER.setMode(1);
+    }
 
     public static MessageChain stringDeserializeToMessageChain(String str, Bot bot) {
         return stringDeserializeToMessageChain(str, bot, bot.getAsFriend());
@@ -136,13 +194,13 @@ public class DgSerializer {
         }
         int n = nm.keySet().iterator().next();
         String v = nm.get(n);
-        
+
         String pre = line.substring(0, n);
         if (!pre.isEmpty()) {
             list.add(pre);
         }
         list.add(v);
-        
+
         String next = line.substring(n + v.length());
         algorithmFill(list, next);
     }
@@ -162,7 +220,7 @@ public class DgSerializer {
             map.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEachOrdered(x -> result1.put(x.getKey(), x.getValue()));
             return result1;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("parseObject error", e);
             return null;
         }
     }
@@ -173,9 +231,6 @@ public class DgSerializer {
         MusicShare share = new MusicShare(kind, ss[1], ss[2], ss[3], ss[4], ss[5]);
         return share;
     }
-
-    public static final RestTemplate TEMPLATE = new RestTemplate();
-    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient();
 
     /**
      * 根据URL获取图片字节数组
@@ -223,7 +278,6 @@ public class DgSerializer {
             }
         } catch (Exception e) {
             log.error("图片创建失败:url:{},", path, e);
-            e.printStackTrace();
         }
         if (image != null) return image;
         else return null;
@@ -247,14 +301,14 @@ public class DgSerializer {
                 return ((Friend) contact).uploadAudio(resource);
             } else return new PlainText(url);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("uploadAudio error", e);
             return null;
         } finally {
             if (resource != null) {
                 try {
                     resource.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("close resource error", e);
                 }
             }
         }
@@ -264,68 +318,6 @@ public class DgSerializer {
         ForwardMessageBuilder builder = new ForwardMessageBuilder(contact);
         for (String s : picUrl) builder.add(bot.getId(), bot.getBot().getNick(), createImage(contact, bot, s));
         return builder.build();
-    }
-
-    public static final ArrSerializer ARR_SERIALIZER = new ArrSerializer();
-
-    static {
-        ARR_SERIALIZER.add(new ArrSerializer.Rule<Image>(Image.class) {
-            @Override
-            public String serializer(Image o) {
-                return String.format("<pic:%s>", o.getImageId());
-            }
-        });
-        ARR_SERIALIZER.add(new ArrSerializer.Rule<At>(At.class) {
-            @Override
-            public String serializer(At o) {
-                return String.format("<at:%s>", o.getTarget());
-            }
-        });
-        ARR_SERIALIZER.add(new ArrSerializer.Rule<Face>(Face.class) {
-            @Override
-            public String serializer(Face o) {
-                return String.format("<face:%s>", o.getId());
-            }
-        });
-        ARR_SERIALIZER.add(new ArrSerializer.Rule<PlainText>(PlainText.class) {
-            @Override
-            public String serializer(PlainText o) {
-                String touch = o.getContent();
-                String regx = "<.*?>";
-                Pattern pattern = Pattern.compile(regx);
-                Matcher matcher = pattern.matcher(touch);
-                while (matcher.find()) {
-                    touch = touch.replace(matcher.group(), "\\" + matcher.group());
-                }
-                return touch;
-            }
-        });
-        ARR_SERIALIZER.add(new ArrSerializer.Rule<Audio>(Audio.class) {
-            @Override
-            public String serializer(Audio o) {
-                return String.format("<audio:%s>", o.getFilename());
-            }
-        });
-        ARR_SERIALIZER.add(new ArrSerializer.Rule<MusicShare>(MusicShare.class) {
-            @Override
-            public String serializer(MusicShare o) {
-                return String.format("<music:%s>", o.getMusicUrl());
-            }
-        });
-        ARR_SERIALIZER.add(new ArrSerializer.Rule<MarketFace>(MarketFace.class) {
-            @Override
-            public String serializer(MarketFace o) {
-                MARKET_FACE_MAP.put(o.getId(), o);
-                return String.format("<marketface:%s>", o.getId());
-            }
-        });
-        ARR_SERIALIZER.add(new ArrSerializer.Rule<QuoteReply>(QuoteReply.class) {
-            @Override
-            public String serializer(QuoteReply o) {
-                return String.format("<qr:%s>", AllMessage.latest(0, o.getSource().getInternalIds()));
-            }
-        });
-        ARR_SERIALIZER.setMode(1);
     }
 
     public static String messageChainSerializeToString(MessageChain chain) {

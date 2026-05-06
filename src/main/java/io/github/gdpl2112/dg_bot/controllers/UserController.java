@@ -33,6 +33,38 @@ import java.util.Map;
 public class UserController {
     @Autowired
     AuthMapper authMapper;
+    @Autowired
+    CronMapper cronMapper;
+    @Autowired
+    CallTemplateMapper callTemplateMapper;
+    @Autowired
+    PassiveMapper passiveMapper;
+    //==============================================================
+    @Autowired
+    AdministratorMapper administratorMapper;
+    @Autowired
+    GroupConfMapper groupConfMapper;
+
+    @NotNull
+    private static JSONObject setSwitchInfo(Map<String, GroupConf> tid2conf, String tid, String name, String icon) {
+        JSONObject jo = new JSONObject();
+        if (tid2conf.containsKey(tid)) {
+            GroupConf f0 = tid2conf.get(tid);
+            jo.put("k0", f0.getK0());
+            jo.put("k1", f0.getK1());
+            jo.put("k2", f0.getK2());
+            jo.put("k3", f0.getK3());
+        } else {
+            jo.put("k0", true);
+            jo.put("k1", true);
+            jo.put("k2", true);
+            jo.put("k3", true);
+        }
+        jo.put("tid", tid);
+        jo.put("name", name.length() > 6 ? name.substring(0, 5) + ".." : name);
+        jo.put("icon", icon);
+        return jo;
+    }
 
     @RequestMapping("/user")
     public Object user(@AuthenticationPrincipal UserDetails userDetails, HttpServletRequest request) {
@@ -62,12 +94,6 @@ public class UserController {
         return null;
     }
 
-    @Autowired
-    CronMapper cronMapper;
-
-    @Autowired
-    CallTemplateMapper callTemplateMapper;
-
     @RequestMapping("/statistics")
     public Object statistics(@AuthenticationPrincipal UserDetails userDetails) {
         JSONObject jo = new JSONObject();
@@ -95,17 +121,13 @@ public class UserController {
         return jo;
     }
 
-    @Autowired
-    PassiveMapper passiveMapper;
-    //==============================================================
-    @Autowired
-    AdministratorMapper administratorMapper;
-
     @RequestMapping("mlist")
     public List<Administrator> mlist(@AuthenticationPrincipal UserDetails userDetails) {
         return administratorMapper.selectList(new LambdaQueryWrapper<Administrator>()
                 .eq(Administrator::getQid, userDetails.getUsername()));
     }
+
+    //==============================================================
 
     @RequestMapping("mdel")
     public Boolean mdel(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String id) {
@@ -130,11 +152,6 @@ public class UserController {
             return administratorMapper.insert(administrator) > 0;
         } else return false;
     }
-
-    //==============================================================
-
-    @Autowired
-    GroupConfMapper groupConfMapper;
 
     @RequestMapping("glist")
     public List glist(@AuthenticationPrincipal UserDetails userDetails) {
@@ -174,28 +191,6 @@ public class UserController {
             }
         }
         return outList;
-    }
-
-
-    @NotNull
-    private static JSONObject setSwitchInfo(Map<String, GroupConf> tid2conf, String tid, String name, String icon) {
-        JSONObject jo = new JSONObject();
-        if (tid2conf.containsKey(tid)) {
-            GroupConf f0 = tid2conf.get(tid);
-            jo.put("k0", f0.getK0());
-            jo.put("k1", f0.getK1());
-            jo.put("k2", f0.getK2());
-            jo.put("k3", f0.getK3());
-        } else {
-            jo.put("k0", true);
-            jo.put("k1", true);
-            jo.put("k2", true);
-            jo.put("k3", true);
-        }
-        jo.put("tid", tid);
-        jo.put("name", name.length() > 6 ? name.substring(0, 5) + ".." : name);
-        jo.put("icon", icon);
-        return jo;
     }
 
     @RequestMapping("gc0")

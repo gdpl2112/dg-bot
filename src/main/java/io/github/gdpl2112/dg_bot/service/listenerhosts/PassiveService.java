@@ -34,6 +34,7 @@ import java.util.Map;
 @Slf4j
 public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost {
 
+    public Map<Long, Map<String, Long>> cdMap = new HashMap<>();
     @Autowired
     BotService service;
     @Autowired
@@ -42,6 +43,8 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost {
     ConfMapper confMapper;
     @Autowired
     GroupConfMapper groupConfMapper;
+    @Autowired
+    ConfigService configService;
 
     @EventHandler
     public void onEvent(GroupMessageEvent event) {
@@ -56,11 +59,6 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost {
         if (Judge.isEmpty(content)) content = MessageChain.serializeToJsonString(event.getMessage());
         step(event.getBot().getId(), "f" + event.getFriend().getId(), content, event.getSubject());
     }
-
-    public Map<Long, Map<String, Long>> cdMap = new HashMap<>();
-
-    @Autowired
-    ConfigService configService;
 
     public void step(Long bid, String tid, String content, Contact contact) {
         if (configService.isNotOpenK2(bid, tid)) return;
@@ -81,7 +79,6 @@ public class PassiveService extends net.mamoe.mirai.event.SimpleListenerHost {
                                 msg = DgSerializer.stringDeserializeToMessageChain(out, contact.getBot(), contact);
                             contact.sendMessage(msg);
                         } catch (Exception e) {
-                            e.printStackTrace();
                             log.error("发送被动消息时失败qid:{}", bid, e);
                         }
                         Conf conf = confMapper.selectById(bid);

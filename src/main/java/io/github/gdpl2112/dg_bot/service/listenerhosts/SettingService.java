@@ -34,13 +34,10 @@ import java.util.Map;
 @Slf4j
 public class SettingService implements ListenerHost {
 
+    public static final String PREFIX = "[设置模式输出]\n";
     private static Map<Long, Context> BID2CONTEXT = new HashMap<>();
-
     @Autowired
     DefaultService defaultService;
-
-    public static final String PREFIX = "[设置模式输出]\n";
-
     @Autowired
     AdministratorMapper administratorMapper;
     @Autowired
@@ -84,7 +81,7 @@ public class SettingService implements ListenerHost {
                 handleInput = context.handleInput(user, command);
                 event.getSubject().sendMessage(PREFIX + handleInput);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("handleInput error", e);
                 event.getSubject().sendMessage(PREFIX + "发生错误:" + e.getMessage());
             }
         } else if (command.startsWith("开始设置")) {

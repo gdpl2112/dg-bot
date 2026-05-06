@@ -6,6 +6,7 @@ import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.CallTemplate;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.reg.MatcherUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.message.data.Message;
@@ -21,6 +22,7 @@ import static io.github.gdpl2112.dg_bot.built.callapi.Converter.PAR_URL;
 
 
 @Component
+@Slf4j
 public class CallApiServiceWorker {
     @Autowired
     RestTemplate restTemplate;
@@ -48,17 +50,14 @@ public class CallApiServiceWorker {
             out = Converter.filterArgs(out, bot, gid, qid);
             out = filterCall(out, template);
         } catch (Exception e) {
-            if (e instanceof NullPointerException) {
-                e.printStackTrace();
-            }
-            e.printStackTrace();
+            log.error("CallApiServiceWorker.work error", e);
             out = "调用时失败";
         }
         try {
             out = out.replaceAll("\\\\n", "\n");
             message = DgSerializer.stringDeserializeToMessageChain(out, bot, subject);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("stringDeserializeToMessageChain error", e);
             out = "类型转换时失败";
             message = new PlainText(out);
         }
@@ -87,7 +86,7 @@ public class CallApiServiceWorker {
                 return context;
             } else return getConnection(url);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("getConnection error", e);
         }
         return null;
     }

@@ -11,5 +11,5 @@ import org.apache.ibatis.annotations.Select;
 @org.apache.ibatis.annotations.Mapper
 public interface OptionalMapper extends BaseMapper<Optional> {
     @Select("SELECT * FROM optional WHERE qid = #{id} AND opt = #{opt}")
-    Optional selectByQidAndOpt(@Param("id") String qid,@Param("opt") String opt);
+    Optional selectByQidAndOpt(@Param("id") String qid, @Param("opt") String opt);
 }

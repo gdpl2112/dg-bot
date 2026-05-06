@@ -15,11 +15,11 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CallTemplate {
-    private String qid;
     public String touch;
     public String url;
     public String out;
     public String outArgs;
     public String jude;
     public String err = "调用失败";
+    private String qid;
 }

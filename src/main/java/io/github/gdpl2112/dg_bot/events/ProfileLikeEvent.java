@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 被点赞事件
+ *
  * @author github kloping
  * @since 2025/7/30-09:51
  */

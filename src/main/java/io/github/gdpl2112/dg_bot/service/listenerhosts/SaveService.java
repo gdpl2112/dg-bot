@@ -37,6 +37,10 @@ import java.util.List;
 public class SaveService extends SimpleListenerHost {
     @Autowired
     SaveMapper saveMapper;
+    @Autowired
+    ConfMapper confMapper;
+    @Autowired
+    GroupConfMapper groupConfMapper;
 
     public void save(AllMessage msg) {
         if (msg.getContent() == null || msg.getContent().isEmpty()) {
@@ -80,7 +84,6 @@ public class SaveService extends SimpleListenerHost {
         save(AllMessage.factory(event));
     }
 
-
     @EventHandler
     public void onMessage(@NotNull FriendMessageEvent event) throws Exception {
         save(AllMessage.factory(event));
@@ -100,9 +103,6 @@ public class SaveService extends SimpleListenerHost {
             }
         }
     }
-
-    @Autowired
-    ConfMapper confMapper;
 
     private Contact all(Bot bot, Long qid) {
         Conf conf = confMapper.selectById(qid);
@@ -140,9 +140,6 @@ public class SaveService extends SimpleListenerHost {
         }
         return false;
     }
-
-    @Autowired
-    GroupConfMapper groupConfMapper;
 
     @EventHandler
     public void onMessage(MessageRecallEvent.GroupRecall event) {

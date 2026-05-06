@@ -19,6 +19,7 @@ import java.util.List;
 public class OptSetState implements BotState {
     private Bot bot;
     private OptionalService optionalService;
+    private List<OptionalDto> dtos = null;
 
     public OptSetState(Bot bot, OptionalService optionalService) {
         this.bot = bot;
@@ -29,8 +30,6 @@ public class OptSetState implements BotState {
     public String getName() {
         return "扩展设置";
     }
-
-    private List<OptionalDto> dtos = null;
 
     @Override
     public String getWelcomeMessage() {

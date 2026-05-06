@@ -28,6 +28,8 @@ import java.util.List;
 public class UserConfigController {
     @Autowired
     ConfMapper confMapper;
+    @Autowired
+    ScriptService scriptService;
 
     @RequestMapping("/config")
     public Conf getConfig(@AuthenticationPrincipal UserDetails userDetails) {
@@ -73,10 +75,6 @@ public class UserConfigController {
         System.gc();
         return confMapper.updateById(conf) > 0 ? "成功" : "失败";
     }
-
-
-    @Autowired
-    ScriptService scriptService;
 
     @RequestMapping("/get-exception")
     public ScriptManager.ScriptException codeModify(@AuthenticationPrincipal UserDetails userDetails) {

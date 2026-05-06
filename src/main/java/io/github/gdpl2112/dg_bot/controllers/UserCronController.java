@@ -7,6 +7,7 @@ import io.github.gdpl2112.dg_bot.dao.CronMessage;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
 import io.github.gdpl2112.dg_bot.service.CronService;
 import io.github.kloping.judge.Judge;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,10 +30,13 @@ import java.util.List;
 @RestController
 @PreAuthorize("hasAuthority('user')")
 @RequestMapping("/api")
+@Slf4j
 public class UserCronController {
 
     @Autowired
     CronMapper cronMapper;
+    @Autowired
+    CronService cronService;
 
     @RequestMapping("/cronAdd")
     public String cronAdd(@AuthenticationPrincipal UserDetails userDetails,
@@ -43,7 +47,7 @@ public class UserCronController {
                 body = body.substring(0, body.length() - 1);
             }
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.error("URLDecoder error", e);
         }
         String desc = "";
         StringBuilder cronBuilder = new StringBuilder();
@@ -125,9 +129,6 @@ public class UserCronController {
         }
     }
 
-    @Autowired
-    CronService cronService;
-
     @RequestMapping("/cron-list")
     public List cronList(@AuthenticationPrincipal UserDetails userDetails) {
         QueryWrapper<CronMessage> qw = new QueryWrapper<>();
@@ -138,7 +139,7 @@ public class UserCronController {
             String aid = e.getTargetId().substring(1);
             JSONObject jo = JSON.parseObject(JSON.toJSONString(e));
             jo.put("icon", e.getTargetId().substring(0, 1).equals("g") ?
-                    String.format("http://p.qlogo.cn/gh/%s/%s/640", aid,aid) :
+                    String.format("http://p.qlogo.cn/gh/%s/%s/640", aid, aid) :
                     String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=640", aid));
             list.add(jo);
         }

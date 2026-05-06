@@ -39,7 +39,12 @@ public class RecController {
 
     @Autowired
     ApplicationEventPublisher eventPublisher;
-
+    @Autowired
+    @Lazy
+    V11AutoLikeService v11AutoLikeService;
+    @Autowired
+    @Lazy
+    V11QzoneService v11QzoneService;
     private Map<String, CountDownLatch> key2cdl = new ConcurrentHashMap<>();
 
     @PostMapping
@@ -139,14 +144,6 @@ public class RecController {
             key2cdl.remove(key);
         }
     }
-
-    @Autowired
-    @Lazy
-    V11AutoLikeService v11AutoLikeService;
-
-    @Autowired
-    @Lazy
-    V11QzoneService v11QzoneService;
 
     @RequestMapping("/test")
     public Object test(@RequestParam(name = "id") String bid) {

@@ -8,12 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.*;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -29,11 +26,17 @@ import java.util.Map;
 //@Component
 public class WzydView implements BaseOptional {
 
+    private final String[] tips = {
+            "数据正在努力绘制中，请稍等片刻哦~",
+            "正在搬运你的数据到图像上，请耐心等待~",
+            "正在为你整理数据，马上就好啦！",
+            "数据洪流正在玩命整理中，请稍等~",
+            "正在生成您的专属的图表，请等一下下~",
+            "数据正在努力加载中，很快就完成啦！"
+    };
     public Map<String, OneApi> apis = new HashMap<>();
-
-    public interface OneApi {
-        Object run(String content, MessageEvent event);
-    }
+    @Value("${wzry.api:null}")
+    private String api;
 
     {
         OneApi CRY = (content, event) -> {
@@ -151,24 +154,6 @@ public class WzydView implements BaseOptional {
         return tips[RandomUtils.RANDOM.nextInt(tips.length)];
     }
 
-    private final String[] tips = {
-            "数据正在努力绘制中，请稍等片刻哦~",
-            "正在搬运你的数据到图像上，请耐心等待~",
-            "正在为你整理数据，马上就好啦！",
-            "数据洪流正在玩命整理中，请稍等~",
-            "正在生成您的专属的图表，请等一下下~",
-            "数据正在努力加载中，很快就完成啦！"
-    };
-
-    public static class UserData {
-        public String uid;
-        public String name;
-        public String dw;
-        public String region;
-        public String level;
-        public String avatar;
-    }
-
     @Override
     public String getDesc() {
         return "通过绑定王者营地UID 查询可视化战绩等数据";
@@ -196,20 +181,12 @@ public class WzydView implements BaseOptional {
                     } else if (data instanceof String) {
                         mcb.append(new PlainText((String) data));
                         event.getSubject().sendMessage(mcb.build());
-                    }else log.error("wzry return 未知类型: {}", data);
+                    } else log.error("wzry return 未知类型: {}", data);
                 } else log.error("wzry return null");
                 return;
             }
         }
     }
-
-    @Value("${wzry.api:null}")
-    private String api;
-
-    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
-            .connectTimeout(100, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(100, java.util.concurrent.TimeUnit.SECONDS)
-            .build();
 
     /**
      * 发起基础请求并返回响应
@@ -238,7 +215,7 @@ public class WzydView implements BaseOptional {
                     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
                     .build();
 
-            return OK_HTTP_CLIENT.newCall(request).execute();
+            return io.github.gdpl2112.dg_bot.Utils.LONG_TIMEOUT_CLIENT.newCall(request).execute();
         } catch (Exception e) {
             log.error("doRequest0 wzry request error", e);
             return e.getMessage();
@@ -273,5 +250,18 @@ public class WzydView implements BaseOptional {
             log.error("wzry request error", e);
             return "请求异常: " + e.getMessage();
         }
+    }
+
+    public interface OneApi {
+        Object run(String content, MessageEvent event);
+    }
+
+    public static class UserData {
+        public String uid;
+        public String name;
+        public String dw;
+        public String region;
+        public String level;
+        public String avatar;
     }
 }

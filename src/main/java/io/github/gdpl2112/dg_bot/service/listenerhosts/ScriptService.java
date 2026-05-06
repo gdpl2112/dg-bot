@@ -46,23 +46,70 @@ import static io.github.gdpl2112.dg_bot.service.script.ScriptManager.*;
 @Slf4j
 @Service
 public class ScriptService extends SimpleListenerHost {
+    //===================================
+    // MessageEvent 事件入口 方法名
+    private static final String ON_MSG_EVENT_FUNCTION = "onMsgEvent";
+    // BotEvent 事件入口 方法名
+    private static final String ON_BOT_EVENT_FUNCTION = "onBotEvent";
+    // ProfileLikeEvent 事件入口 方法名
+    private static final String ON_PROFILE_LIKE_FUNCTION = "onProfileLike";
+    // SendLikedEvent 事件入口 方法名
+    private static final String ON_SEND_LIKED_FUNCTION = "onSendLiked";
+    // GroupSignEvent 事件入口 方法名
+    private static final String ON_GROUP_SIGN_FUNCTION = "onGroupSign";
+    @Autowired
+    ConfMapper confMapper;
+    @Autowired
+    RestTemplate template;
+    @Autowired
+    SaveMapper saveMapper;
+    @Autowired
+    ConfigService configService;
+
+    public static void offerLogMsg(String key, String msg) {
+        if (!PRINT_MAP.containsKey(key)) {
+            PRINT_MAP.put(key, new LinkedList<>());
+        }
+        String line = "[" + SF_0.format(new Date()) + "] " + msg;
+        PRINT_MAP.get(key).add(line);
+        log.info("script log: {}", line);
+        if (PRINT_MAP.get(key).size() > MAX_LINE)
+            PRINT_MAP.get(key).remove(0);
+    }
+
+    public static void offerLogMsg0(String key, String msg) {
+        offerLogMsg(key, "[系统]" + msg);
+    }
+
+    private static @Nullable Contact getContact(BotEvent event) {
+        try {
+            Contact contact = null;
+            if (event instanceof NudgeEvent) {
+                NudgeEvent nudgeEvent = (NudgeEvent) event;
+                contact = nudgeEvent.getSubject();
+            } else if (event instanceof SignEvent) {
+                UserOrBot userOrBot = ((SignEvent) event).getUser();
+                if (userOrBot instanceof Member) {
+                    contact = ((Member) userOrBot).getGroup();
+                } else if (userOrBot instanceof Friend) {
+                    contact = ((Friend) userOrBot);
+                }
+            } else if (event instanceof GroupEvent) {
+                contact = ((GroupEvent) event).getGroup();
+            } else if (contact instanceof FriendEvent) {
+                contact = ((FriendEvent) event).getFriend();
+            }
+            return contact;
+        } catch (Exception e) {
+            log.error("parseContact error", e);
+            return null;
+        }
+    }
+
     @Override
     public void handleException(@NotNull CoroutineContext context, @NotNull Throwable exception) {
         log.error("script error: {}", exception.getMessage());
     }
-
-    @Autowired
-    ConfMapper confMapper;
-
-    @Autowired
-    RestTemplate template;
-
-    @Autowired
-    SaveMapper saveMapper;
-
-    @Autowired
-    ConfigService configService;
-
 
     private String toMsg(MessageChain chain) {
         String msg = DgSerializer.messageChainSerializeToString(chain);
@@ -120,33 +167,6 @@ public class ScriptService extends SimpleListenerHost {
         }
     }
 
-    public static void offerLogMsg(String key, String msg) {
-        if (!PRINT_MAP.containsKey(key)) {
-            PRINT_MAP.put(key, new LinkedList<>());
-        }
-        String line = "[" + SF_0.format(new Date()) + "] " + msg;
-        PRINT_MAP.get(key).add(line);
-        log.info("script log: {}", line);
-        if (PRINT_MAP.get(key).size() > MAX_LINE)
-            PRINT_MAP.get(key).remove(0);
-    }
-
-    public static void offerLogMsg0(String key, String msg) {
-        offerLogMsg(key, "[系统]" + msg);
-    }
-
-    //===================================
-    // MessageEvent 事件入口 方法名
-    private static final String ON_MSG_EVENT_FUNCTION = "onMsgEvent";
-    // BotEvent 事件入口 方法名
-    private static final String ON_BOT_EVENT_FUNCTION = "onBotEvent";
-    // ProfileLikeEvent 事件入口 方法名
-    private static final String ON_PROFILE_LIKE_FUNCTION = "onProfileLike";
-    // SendLikedEvent 事件入口 方法名
-    private static final String ON_SEND_LIKED_FUNCTION = "onSendLiked";
-    // GroupSignEvent 事件入口 方法名
-    private static final String ON_GROUP_SIGN_FUNCTION = "onGroupSign";
-
     @Scheduled(cron = "0 1 */3 * * ?")
     public void deleteMsg() {
         for (JdbcTemplate value : BaseScriptUtils.templateMap.values()) {
@@ -170,31 +190,6 @@ public class ScriptService extends SimpleListenerHost {
                 onException(event.getBot(), e);
             }
         });
-    }
-
-    private static @Nullable Contact getContact(BotEvent event) {
-        try {
-            Contact contact = null;
-            if (event instanceof NudgeEvent) {
-                NudgeEvent nudgeEvent = (NudgeEvent) event;
-                contact = nudgeEvent.getSubject();
-            } else if (event instanceof SignEvent) {
-                UserOrBot userOrBot = ((SignEvent) event).getUser();
-                if (userOrBot instanceof Member) {
-                    contact = ((Member) userOrBot).getGroup();
-                } else if (userOrBot instanceof Friend) {
-                    contact = ((Friend) userOrBot);
-                }
-            } else if (event instanceof GroupEvent) {
-                contact = ((GroupEvent) event).getGroup();
-            } else if (contact instanceof FriendEvent) {
-                contact = ((FriendEvent) event).getFriend();
-            }
-            return contact;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     @EventHandler

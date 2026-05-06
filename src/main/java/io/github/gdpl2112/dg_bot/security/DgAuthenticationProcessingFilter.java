@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.security;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -15,10 +16,11 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Map;
 
-
+@Slf4j
 public class DgAuthenticationProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
     private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/bot/login", "GET");
+    private Map.Entry<HttpServletRequest, String> cache0 = null;
 
     public DgAuthenticationProcessingFilter() {
         super(new OrRequestMatcher(
@@ -42,7 +44,7 @@ public class DgAuthenticationProcessingFilter extends AbstractAuthenticationProc
         try {
             atoken = new DgAuthenticationToken(qid, auth);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("DgAuthenticationToken error", e);
         }
         setDetails(request, atoken);
         return this.getAuthenticationManager().authenticate(atoken);
@@ -61,8 +63,6 @@ public class DgAuthenticationProcessingFilter extends AbstractAuthenticationProc
         String json = readJsonFromRequest(request);
         return parseJsonField(json, "p");
     }
-
-    private Map.Entry<HttpServletRequest, String> cache0 = null;
 
     private String readJsonFromRequest(HttpServletRequest request) throws IOException {
         if (cache0 != null && cache0.getKey() == request) {

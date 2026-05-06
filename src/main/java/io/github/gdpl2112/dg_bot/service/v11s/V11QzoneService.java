@@ -35,14 +35,70 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class V11QzoneService {
 
+    public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     @Autowired
     V11ConfMapper mapper;
-
     @Autowired
     MiraiComponent component;
-
     @Autowired
     V11AutoLikeService likeService;
+    @Autowired
+    RestTemplate template;
+    Map<String, Integer> evlMap = new HashMap<>();
+    @Autowired
+    ReportService reportService;
+    private LambdaQueryWrapper<V11Conf> queryWrapper = new LambdaQueryWrapper<>();
+
+    {
+        queryWrapper.ge(V11Conf::getZoneEvl, 1);
+    }
+
+    public static final String getParmsStart(String id, Map<String, String> cookieMap) {
+        StringBuilder sb = new StringBuilder("?RK=");
+        sb.append(cookieMap.get("RK"));
+        sb.append("&skey=").append(cookieMap.get("skey"));
+        sb.append("&pt4_token=").append(cookieMap.get("pt4_token"));
+        sb.append("&p_skey=").append(cookieMap.get("p_skey"));
+        sb.append("&uin=").append(id);
+        return sb.toString();
+    }
+    //以下是 自动评论/点赞功能
+
+    private static Map<String, String> getCookiesMap(RemoteBot bot) {
+        return getCookiesMap(bot, true);
+    }
+
+    private static Map<String, String> getCookiesMap(RemoteBot bot, boolean force) {
+        int i = 0;
+        String cookies = null;
+        if (force) {
+            while (i < 3) {
+                String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"qzone.qq.com\"}");
+                JSONObject data = JSONObject.parseObject(dataR0);
+                String error = data.getString("error");
+                data = data.getJSONObject("data");
+                if (data == null || (error != null && !error.isEmpty())) {
+                    log.error("获取cookies异常 '{}' retry,{}", error, i);
+                    i++;
+                    try {
+                        TimeUnit.SECONDS.sleep(5);
+                    } catch (InterruptedException e) {
+                        log.error("{}", e.getMessage(), e);
+                    }
+                    continue;
+                }
+                cookies = data.getString("cookies");
+            }
+        }
+        Map<String, String> cookiesMap = new HashMap<>();
+        for (String s : cookies.split(" ")) {
+            String[] split = s.split("=");
+            String v0 = split[1];
+            if (v0.endsWith(";")) v0 = v0.substring(0, v0.length() - 1);
+            cookiesMap.put(split[0], v0);
+        }
+        return cookiesMap;
+    }
 
     @Scheduled(cron = "10 07 00 * * ? ")
     public void walksAll0() {
@@ -74,8 +130,6 @@ public class V11QzoneService {
             }
         }
     }
-
-    public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public void startQzoneWalkNow(long id, RemoteBot bot, boolean like) {
         V11Conf v11Conf = likeService.getV11Conf(String.valueOf(id));
@@ -121,28 +175,6 @@ public class V11QzoneService {
             }
         }
     }
-
-    public static final String getParmsStart(String id, Map<String, String> cookieMap) {
-        StringBuilder sb = new StringBuilder("?RK=");
-        sb.append(cookieMap.get("RK"));
-        sb.append("&skey=").append(cookieMap.get("skey"));
-        sb.append("&pt4_token=").append(cookieMap.get("pt4_token"));
-        sb.append("&p_skey=").append(cookieMap.get("p_skey"));
-        sb.append("&uin=").append(id);
-        return sb.toString();
-    }
-
-    @Autowired
-    RestTemplate template;
-    //以下是 自动评论/点赞功能
-
-    private LambdaQueryWrapper<V11Conf> queryWrapper = new LambdaQueryWrapper<>();
-
-    {
-        queryWrapper.ge(V11Conf::getZoneEvl, 1);
-    }
-
-    Map<String, Integer> evlMap = new HashMap<>();
 
     @Scheduled(cron = "12 */1 * * * ? ")
     public void autoComment() {
@@ -216,44 +248,5 @@ public class V11QzoneService {
             reportService.report(String.valueOf(id), "空间评论异常");
         }
         log.info("空间评论/点赞：end-b{}", uin);
-    }
-
-    @Autowired
-    ReportService reportService;
-
-    private static Map<String, String> getCookiesMap(RemoteBot bot) {
-        return getCookiesMap(bot, true);
-    }
-
-    private static Map<String, String> getCookiesMap(RemoteBot bot, boolean force) {
-        int i = 0;
-        String cookies = null;
-        if (force) {
-            while (i < 3) {
-                String dataR0 = bot.executeAction("get_cookies", "{\"domain\": \"qzone.qq.com\"}");
-                JSONObject data = JSONObject.parseObject(dataR0);
-                String error = data.getString("error");
-                data = data.getJSONObject("data");
-                if (data == null || (error != null && !error.isEmpty())) {
-                    log.error("获取cookies异常 '{}' retry,{}", error, i);
-                    i++;
-                    try {
-                        TimeUnit.SECONDS.sleep(5);
-                    } catch (InterruptedException e) {
-                        log.error("{}", e.getMessage(), e);
-                    }
-                    continue;
-                }
-                cookies = data.getString("cookies");
-            }
-        }
-        Map<String, String> cookiesMap = new HashMap<>();
-        for (String s : cookies.split(" ")) {
-            String[] split = s.split("=");
-            String v0 = split[1];
-            if (v0.endsWith(";")) v0 = v0.substring(0, v0.length() - 1);
-            cookiesMap.put(split[0], v0);
-        }
-        return cookiesMap;
     }
 }

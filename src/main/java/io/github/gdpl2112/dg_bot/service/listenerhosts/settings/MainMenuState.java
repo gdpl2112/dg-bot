@@ -11,6 +11,13 @@ import net.mamoe.mirai.contact.User;
 
 @Setter
 public class MainMenuState implements BotState {
+    private AdministratorMapper administratorMapper;
+    private GroupConfMapper groupConfMapper;
+    private CronService cronService;
+    private ConfMapper confMapper;
+    private OptionalService optionalService;
+    private V11AutoLikeService v11ConfService;
+
     @Override
     public String getName() {
         return "主菜单";
@@ -27,13 +34,6 @@ public class MainMenuState implements BotState {
                 + "\n5. V11设置"
                 + "\n0. 退出";
     }
-
-    private AdministratorMapper administratorMapper;
-    private GroupConfMapper groupConfMapper;
-    private CronService cronService;
-    private ConfMapper confMapper;
-    private OptionalService optionalService;
-    private V11AutoLikeService v11ConfService;
 
     @Override
     public String handleInput(User user, String input, Context context) {

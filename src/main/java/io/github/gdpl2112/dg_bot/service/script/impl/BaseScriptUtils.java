@@ -6,6 +6,7 @@ import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import io.github.gdpl2112.dg_bot.service.script.ScriptUtils;
 import io.github.kloping.map.MapUtils;
+import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.message.data.MessageChain;
 import org.jetbrains.annotations.NotNull;
@@ -21,13 +22,34 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
+@Slf4j
 public class BaseScriptUtils implements ScriptUtils {
+    public static final Map<Long, JdbcTemplate> templateMap = new HashMap<>();
     private long bid;
     private RestTemplate template;
 
     public BaseScriptUtils(Long bid, RestTemplate template) {
         this.template = template;
         this.bid = bid;
+    }
+
+    @NotNull
+    private static JdbcTemplate getJdbcTemplate(long bid) {
+        if (templateMap.containsKey(bid)) return templateMap.get(bid);
+        DataSource dataSource = new AbstractDataSource() {
+            @Override
+            public Connection getConnection() throws SQLException {
+                return DriverManager.getConnection(String.format("jdbc:sqlite:user-%s-db.db", bid));
+            }
+
+            @Override
+            public Connection getConnection(String username, String password) throws SQLException {
+                return DriverManager.getConnection(String.format("jdbc:sqlite:user-%s-db.db", bid));
+            }
+        };
+        JdbcTemplate template = new JdbcTemplate(dataSource);
+        templateMap.put(bid, template);
+        return template;
     }
 
     @Override
@@ -102,7 +124,7 @@ public class BaseScriptUtils implements ScriptUtils {
             Constructor constructor = cla.getDeclaredConstructor(list.toArray(new Class[0]));
             return (T) constructor.newInstance(args);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("newInstance error", e);
             return null;
         }
     }
@@ -117,7 +139,7 @@ public class BaseScriptUtils implements ScriptUtils {
             connection.close();
             return k;
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("execute sql error", e);
             return false;
         }
     }
@@ -154,26 +176,5 @@ public class BaseScriptUtils implements ScriptUtils {
             }
         }
         return null;
-    }
-
-    public static final Map<Long, JdbcTemplate> templateMap = new HashMap<>();
-
-    @NotNull
-    private static JdbcTemplate getJdbcTemplate(long bid) {
-        if (templateMap.containsKey(bid)) return templateMap.get(bid);
-        DataSource dataSource = new AbstractDataSource() {
-            @Override
-            public Connection getConnection() throws SQLException {
-                return DriverManager.getConnection(String.format("jdbc:sqlite:user-%s-db.db", bid));
-            }
-
-            @Override
-            public Connection getConnection(String username, String password) throws SQLException {
-                return DriverManager.getConnection(String.format("jdbc:sqlite:user-%s-db.db", bid));
-            }
-        };
-        JdbcTemplate template = new JdbcTemplate(dataSource);
-        templateMap.put(bid, template);
-        return template;
     }
 }

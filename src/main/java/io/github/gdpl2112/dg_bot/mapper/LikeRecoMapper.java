@@ -15,7 +15,7 @@ import java.util.List;
 public interface LikeRecoMapper extends BaseMapper<LikeReco> {
 
     @Select("SELECT * from `like_reco` where `bid`=#{bid} AND `date`=#{date} AND `tid`=#{tid}")
-    LikeReco getByDateAndBidAndTid(@Param("bid") Long bid,@Param("date") String date,@Param("tid") String tid);
+    LikeReco getByDateAndBidAndTid(@Param("bid") Long bid, @Param("date") String date, @Param("tid") String tid);
 
     @Select("SELECT * from `like_reco` where `bid`=#{bid} AND `date`=#{date} ")
     List<LikeReco> selectListByDateAndBid(String bid, String date);

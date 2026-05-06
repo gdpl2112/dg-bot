@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.compile;
 
 import io.github.gdpl2112.dg_bot.DgMain;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
 import java.time.ZoneId;
@@ -12,6 +13,7 @@ import java.util.Properties;
  * @author github kloping
  * @since 2025/9/4-14:17
  */
+@Slf4j
 public class CompileRes {
 
     public static final String VERSION_DATE = "2026/0506";
@@ -46,7 +48,7 @@ public class CompileRes {
                 return "未找到编译时间信息";
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("获取编译时间失败", e);
             return "获取编译时间失败";
         }
     }

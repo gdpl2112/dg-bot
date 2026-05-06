@@ -12,8 +12,11 @@ import java.util.regex.Pattern;
 
 @Getter
 public class ScriptCompile {
+    private final NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
     private CompiledScript script;
     private ScriptEngine engine;
+    // 存储所有提取的函数名
+    private Set<String> functionNames = new HashSet<>();
 
     public ScriptCompile(String scriptText) {
         this.script = initScript(scriptText, null);
@@ -26,8 +29,6 @@ public class ScriptCompile {
     public ScriptCompile(String scriptText, Map<String, Object> initParams) {
         this.script = initScript(scriptText, initParams);
     }
-
-    private final NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
 
     public CompiledScript initScript(String scriptText, Map<String, Object> initParams) {
         CompiledScript script = null;
@@ -100,9 +101,6 @@ public class ScriptCompile {
     public Object executeFuc(String fucName, Object... args) throws Exception {
         return executeFuc(null, fucName, args);
     }
-
-    // 存储所有提取的函数名
-    private Set<String> functionNames = new HashSet<>();
 
     // 新增：通过正则表达式提取函数名
     private void extractFunctionNames(String scriptText) {

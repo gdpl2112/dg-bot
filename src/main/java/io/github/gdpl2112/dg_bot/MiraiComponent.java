@@ -41,6 +41,8 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.VERSION_DATE;
 @Component
 @Slf4j
 public class MiraiComponent extends SimpleListenerHost implements CommandLineRunner {
+    public static Map<Long, Boolean> VIP_INFO = new java.util.HashMap<>();
+    public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(20, 20, 10, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
     @Autowired
     AuthMapper authMapper;
     @Autowired
@@ -59,6 +61,58 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     OptionalService optionalService;
     @Autowired
     SettingService settingService;
+    @Autowired
+    ConnConfigMapper connConfigMapper;
+    @Autowired
+    SaveMapper saveMapper;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    public static void handleOneBot(ConnConfig connConfig) {
+        handleOneBot(connConfig, false);
+    }
+
+    public static void handleOneBot(ConnConfig connConfig, boolean tread) {
+        BotBuilder builder = null;
+        if (connConfig.getType().equalsIgnoreCase("ws")) {
+            builder = BotBuilder.positive(connConfig.getIp()).retryTimes(3).retryWaitMills(7000).retryRestMills(-1);
+        } else {
+            builder = BotBuilder.reversed(connConfig.getPort());
+        }
+        builder.overrideLogger(log);
+        builder.token(connConfig.getToken());
+        builder.heartbeatCheckSeconds(connConfig.getHeart());
+
+        if (builder != null) {
+            if (tread) {
+                BotBuilder finalBuilder = builder;
+                EXECUTOR_SERVICE.execute(() -> {
+                    try {
+                        Bot bot = finalBuilder.connect();
+                    } catch (Throwable e) {
+                        log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
+                    }
+                });
+            } else {
+                try {
+                    Bot bot = builder.connect();
+                } catch (Throwable e) {
+                    log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
+                }
+            }
+        }
+    }
+
+    public static void closeOneBot(ConnConfig connConfig) {
+        Bot bot = Bot.getInstanceOrNull(Long.valueOf(connConfig.getQid()));
+        if (bot != null) {
+            try {
+                bot.close();
+            } catch (Throwable e) {
+                log.error("on bot.{} close error:{}", connConfig.getQid(), e.getMessage());
+            }
+        }
+    }
 
     @Override
     public void run(String... args) throws Exception {
@@ -105,9 +159,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         System.out.println("Q云代挂启动成功 update at " + VERSION_DATE);
     }
 
-    @Autowired
-    ConnConfigMapper connConfigMapper;
-
     @EventHandler
     public void onBotOnline(BotOnlineEvent event) {
         Long bid = event.getBot().getId();
@@ -141,14 +192,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         }
     }
 
-    public static Map<Long, Boolean> VIP_INFO = new java.util.HashMap<>();
-
-    @Autowired
-    SaveMapper saveMapper;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
     @Scheduled(cron = "0 */5 * * * ?")
     public void deleteMsg() {
         long less = System.currentTimeMillis() - (1000L * 60 * 30 * 3);
@@ -156,54 +199,5 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         qw.le("time", less);
         jdbcTemplate.execute("VACUUM;");
         log.info("释放db存储并删除消息记录: {}", saveMapper.delete(qw));
-    }
-
-
-    public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(20, 20, 10, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
-
-    public static void handleOneBot(ConnConfig connConfig) {
-        handleOneBot(connConfig, false);
-    }
-
-    public static void handleOneBot(ConnConfig connConfig, boolean tread) {
-        BotBuilder builder = null;
-        if (connConfig.getType().equalsIgnoreCase("ws")) {
-            builder = BotBuilder.positive(connConfig.getIp()).retryTimes(3).retryWaitMills(7000).retryRestMills(-1);
-        } else {
-            builder = BotBuilder.reversed(connConfig.getPort());
-        }
-        builder.overrideLogger(log);
-        builder.token(connConfig.getToken());
-        builder.heartbeatCheckSeconds(connConfig.getHeart());
-
-        if (builder != null) {
-            if (tread) {
-                BotBuilder finalBuilder = builder;
-                EXECUTOR_SERVICE.execute(() -> {
-                    try {
-                        Bot bot = finalBuilder.connect();
-                    } catch (Throwable e) {
-                        log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
-                    }
-                });
-            } else {
-                try {
-                    Bot bot = builder.connect();
-                } catch (Throwable e) {
-                    log.error("on bot.{} connect error:{}", connConfig.getQid(), e.getMessage(), e);
-                }
-            }
-        }
-    }
-
-    public static void closeOneBot(ConnConfig connConfig) {
-        Bot bot = Bot.getInstanceOrNull(Long.valueOf(connConfig.getQid()));
-        if (bot != null) {
-            try {
-                bot.close();
-            } catch (Throwable e) {
-                log.error("on bot.{} close error:{}", connConfig.getQid(), e.getMessage());
-            }
-        }
     }
 }

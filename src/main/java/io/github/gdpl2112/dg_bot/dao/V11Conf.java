@@ -38,6 +38,20 @@ public class V11Conf {
     //空间自动访问
     private String zoneWalks;
 
+    @NotNull
+    private static List<Long> getLongList(String[] split) {
+        List<Long> list = new ArrayList<>();
+        for (String s : split) {
+            try {
+                Long l = Long.parseLong(s);
+                list.add(l);
+            } catch (NumberFormatException e) {
+                continue;
+            }
+        }
+        return list;
+    }
+
     public List<Long> getSignGroupIds() {
         String[] split = signGroups.split(",|;|\\s");
         return getLongList(split);
@@ -57,19 +71,5 @@ public class V11Conf {
     public List<Long> getZoneWalksIds() {
         String[] split = zoneWalks.split(",|;|\\s");
         return getLongList(split);
-    }
-
-    @NotNull
-    private static List<Long> getLongList(String[] split) {
-        List<Long> list = new ArrayList<>();
-        for (String s : split) {
-            try {
-                Long l = Long.parseLong(s);
-                list.add(l);
-            } catch (NumberFormatException e) {
-                continue;
-            }
-        }
-        return list;
     }
 }

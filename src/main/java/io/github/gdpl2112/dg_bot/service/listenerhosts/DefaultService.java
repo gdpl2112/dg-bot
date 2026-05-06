@@ -61,9 +61,15 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
 
     @Autowired
     PassiveService passiveService;
-
+    @Value("${super.qid:3474006766}")
+    Long superQid;
+    @Autowired
+    StatisticsMapper statisticsMapper;
     @Autowired
     private AuthMapper authMapper;
+    @Value("${report.point-gid}")
+    private Long reportPointGid;
+    private Map<Long, Map<Long, Passive>> adding = new HashMap<>();
 
     @Override
     public void run(String... args) throws Exception {
@@ -91,9 +97,6 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
         ifispg(event.getSubject().getId(), event.getSender().getId(), content, event.getSubject());
     }
 
-    @Value("${super.qid:3474006766}")
-    Long superQid;
-
     private void ifispg(long id, long sid, String content, Group subject) {
         try {
             if (id == reportPointGid && sid == superQid) {
@@ -105,12 +108,6 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             log.error("Error in ifispg method", e);
         }
     }
-
-    @Value("${report.point-gid}")
-    private Long reportPointGid;
-
-    @Autowired
-    StatisticsMapper statisticsMapper;
 
     @EventHandler
     public void onEvent(GroupMessageSyncEvent event) {
@@ -124,7 +121,7 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             try {
                 builder.append(Contact.uploadImage(event.getSubject(), new URL(String.format("https://q1.qlogo.cn/g?b=qq&nk=%s&s=160", bid)).openStream()));
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("uploadImage error", e);
             }
             Integer grc = statisticsMapper.getTotalCount(bid.toString(), Statistics.GROUP);
             Integer frc = statisticsMapper.getTotalCount(bid.toString(), Statistics.PRIVATE);
@@ -169,8 +166,6 @@ public class DefaultService extends net.mamoe.mirai.event.SimpleListenerHost imp
             }
         });
     }
-
-    private Map<Long, Map<Long, Passive>> adding = new HashMap<>();
 
     private void step(Long bid, Long sid, String tid, String content, Contact contact) {
         if (content.trim().isEmpty()) return;

@@ -11,9 +11,7 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  * @author github-kloping
@@ -22,6 +20,8 @@ import java.util.Date;
 @Configuration
 public class BaseComponent {
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy年MM月dd日");
+    @Autowired
+    AuthMapper authMapper;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -32,9 +32,6 @@ public class BaseComponent {
     public SessionRegistryImpl sessionRegistry() {
         return new SessionRegistryImpl();
     }
-
-    @Autowired
-    AuthMapper authMapper;
 
     @Scheduled(cron = "0 1 1 * * ? ")
     public void auth() {

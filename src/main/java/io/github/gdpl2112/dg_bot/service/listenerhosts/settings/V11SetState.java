@@ -18,6 +18,8 @@ import java.util.List;
 public class V11SetState implements BotState {
     private final Bot bot;
     private final V11AutoLikeService service;
+    private V11Conf v11Conf = null;
+    private int setState = 0;
 
     public V11SetState(Bot bot, V11AutoLikeService service) {
         this.bot = bot;
@@ -28,8 +30,6 @@ public class V11SetState implements BotState {
     public String getName() {
         return "V11设置";
     }
-
-    private V11Conf v11Conf = null;
 
     @Override
     public String getWelcomeMessage() {
@@ -48,8 +48,6 @@ public class V11SetState implements BotState {
         sb.append("\n 10. 空间自动访问: ").append(v11Conf.getZoneWalksIds().size()).append("个");
         return sb.toString();
     }
-
-    private int setState = 0;
 
     @Override
     public String handleInput(User user, String input, Context context) {

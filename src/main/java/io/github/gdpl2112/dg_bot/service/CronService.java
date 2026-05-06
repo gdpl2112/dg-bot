@@ -34,13 +34,20 @@ import java.util.Map;
 public class CronService implements CommandLineRunner {
     public final CronMapper mapper;
     final BotService service;
+    private final Map<Integer, Integer> cmid2cronid = new HashMap<>();
+    @Autowired
+    RestTemplate template;
+    @Autowired
+    ScriptService scriptService;
+    @Autowired
+    ConfMapper confMapper;
+    @Autowired
+    ReportService reportService;
 
     public CronService(CronMapper mapper, BotService service) {
         this.mapper = mapper;
         this.service = service;
     }
-
-    private final Map<Integer, Integer> cmid2cronid = new HashMap<>();
 
     @Override
     public void run(String... args) throws Exception {
@@ -52,15 +59,6 @@ public class CronService implements CommandLineRunner {
         log.info("cron任务加载完成");
     }
 
-    @Autowired
-    RestTemplate template;
-
-    @Autowired
-    ScriptService scriptService;
-
-    @Autowired
-    ConfMapper confMapper;
-
     public List<CronMessage> getCronMessages(long bid) {
         return mapper.selectList(new QueryWrapper<CronMessage>().eq("qid", bid));
     }
@@ -71,9 +69,6 @@ public class CronService implements CommandLineRunner {
         if (Judge.isEmpty(conf.getCode())) return null;
         return conf.getCode();
     }
-
-    @Autowired
-    ReportService reportService;
 
     public int appendTask(CronMessage msg) {
         Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
