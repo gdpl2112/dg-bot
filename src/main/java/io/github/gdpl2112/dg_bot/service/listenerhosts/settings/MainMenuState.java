@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.service.listenerhosts.settings;
 
 import io.github.gdpl2112.dg_bot.mapper.AdministratorMapper;
+import io.github.gdpl2112.dg_bot.mapper.AiConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
 import io.github.gdpl2112.dg_bot.service.CronService;
@@ -17,6 +18,7 @@ public class MainMenuState implements BotState {
     private ConfMapper confMapper;
     private OptionalService optionalService;
     private V11AutoLikeService v11ConfService;
+    private AiConfMapper aiConfMapper;
 
     @Override
     public String getName() {
@@ -32,6 +34,7 @@ public class MainMenuState implements BotState {
                 + "\n3. 配置设置"
                 + "\n4. 扩展设置"
                 + "\n5. V11设置"
+                + "\n6. AI设置"
                 + "\n0. 退出";
     }
 
@@ -48,6 +51,8 @@ public class MainMenuState implements BotState {
                 return context.pushState(new OptSetState(context.getBot(), optionalService));
             case "5":
                 return context.pushState(new V11SetState(context.getBot(), v11ConfService));
+            case "6":
+                return context.pushState(new AiSetState(context.getBot(), aiConfMapper));
             default:
                 return "无效输入";
         }

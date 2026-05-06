@@ -43,6 +43,7 @@ public class DgMain implements CommandLineRunner {
             io.github.gdpl2112.dg_bot.dao.AuthM.class,
             io.github.gdpl2112.dg_bot.dao.CallTemplate.class,
             io.github.gdpl2112.dg_bot.dao.Conf.class,
+            io.github.gdpl2112.dg_bot.dao.AiConf.class,
             io.github.gdpl2112.dg_bot.dao.ConnConfig.class,
             io.github.gdpl2112.dg_bot.dao.CronMessage.class,
             io.github.gdpl2112.dg_bot.dao.GroupConf.class,

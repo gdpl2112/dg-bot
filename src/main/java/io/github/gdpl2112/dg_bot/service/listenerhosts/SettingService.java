@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.service.listenerhosts;
 
+import io.github.gdpl2112.dg_bot.mapper.AiConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.AdministratorMapper;
 import io.github.gdpl2112.dg_bot.mapper.ConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
@@ -53,6 +54,9 @@ public class SettingService implements ListenerHost {
     @Autowired
     private V11AutoLikeService v11AutoLikeService;
 
+    @Autowired
+    private AiConfMapper aiConfMapper;
+
     @EventHandler
     public void onEvent(net.mamoe.mirai.event.events.GroupMessageEvent event) {
         doEvent(event);
@@ -92,6 +96,7 @@ public class SettingService implements ListenerHost {
             state.setConfMapper(confMapper);
             state.setOptionalService(optionalService);
             state.setV11ConfService(v11AutoLikeService);
+            state.setAiConfMapper(aiConfMapper);
             Context context = new Context(event.getBot(), state) {
                 @Override
                 public void close() {

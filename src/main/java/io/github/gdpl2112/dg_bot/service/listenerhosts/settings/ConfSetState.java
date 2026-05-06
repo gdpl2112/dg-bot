@@ -184,9 +184,8 @@ public class ConfSetState implements BotState {
                     return "无效输入! 请输入0-12之间的数字\n" + getWelcomeMessage();
                 }
             } catch (NumberFormatException e) {
-                return "无效输入! 请输入数字\n" + getWelcomeMessage();
+                return "无效输入!\n" + getWelcomeMessage();
             }
         }
     }
-
 }
