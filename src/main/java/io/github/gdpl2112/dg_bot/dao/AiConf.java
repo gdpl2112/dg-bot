@@ -11,24 +11,51 @@ public class AiConf {
     @TableId
     private String qid;
 
-    /** 是否开启AI功能 */
+    /**
+     * 是否开启AI功能
+     */
     private Boolean open = false;
 
-    /** AI唤起前缀 */
+    /**
+     * AI唤起前缀
+     */
     private String prefix = "AI";
 
-    /** API Key */
+    /**
+     * API Key
+     */
     private String apiKey = "";
 
-    /** API Base URL */
-    private String baseUrl = "https://api.openai.com/v1";
+    /**
+     * API Base URL
+     */
+    private String baseUrl = "https://ai.kloping.top";
 
-    /** 模型ID */
-    private String modelId = "gpt-3.5-turbo";
+    /**
+     * 模型ID
+     */
+    private String modelId = "gpt-5.4-mini";
 
-    /** AI Temperature参数 */
+    /**
+     * AI Temperature参数
+     */
     private Double temperature = 0.7;
 
-    /** 是否允许联网 */
+    /**
+     * 是否允许联网
+     */
     private Boolean network = false;
+
+    /**
+     * AI 名字
+     */
+    private String name = "小生AI";
+    /**
+     * trait 性格
+     */
+    private String trait = "乖巧,可爱";
+    /**
+     * 最长记忆
+     */
+    private Integer maxMessage = 10;
 }

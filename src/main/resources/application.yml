@@ -4,16 +4,9 @@ spring:
     driver-class-name: org.sqlite.JDBC
     hikari:
       maximum-pool-size: 5
-  jpa:
-    properties:
-      hibernate:
-        cache:
-          use-second-level-cache: false
-
-mybatis:
-  configuration:
-    cache-enabled: false
-    local-cache-scope: STATEMENT
+  ai:
+    openai:
+      api-key: placeholder
 
 server:
   port: 34740
@@ -27,6 +20,21 @@ super:
 # 服务已不可用
 #wzry:
 #  api: http://119.45.132.231:8080
+
+top.kloping.ai.mcp:
+  servers:
+    WebSearch:
+      server: https://dashscope.aliyuncs.com
+      endpoint: /api/v1/mcps/WebSearch/sse
+      token: sk-token # 从阿里百炼控制台获取 免费的 否则无法启用 ai的联网功能
+      heartbeat: 25
+    WebParser:
+      server: ${top.kloping.ai.mcp.servers.WebSearch.server}
+      endpoint: /api/v1/mcps/WebParser/sse
+      token: ${top.kloping.ai.mcp.servers.WebSearch.token}
+      heartbeat: 180
+
+
 # 状态上报
 report:
   point-gid: 943648151

@@ -5,76 +5,79 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+
+import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
+
 @Configuration
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+public class SecurityConfig {
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
     @Autowired
     PasswordEncoder passwordEncoder;
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.sessionManagement()
-                .and()
-                .formLogin().disable()
-                .httpBasic().disable()
-                //=============
-                .authorizeRequests()
-                .antMatchers(
-                        "/api/bot/list",
-                        "/api/bot/alist",
-                        "/api/bot/avatar",
-                        "/api/pre/statistics",
-                        "/api/rec", "/api/rec/test"
-                )
-                .permitAll()
-                .anyRequest()
-                .authenticated()
-                .and()
-                .exceptionHandling(exception -> exception
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpStatus.FORBIDDEN.value());
-                            response.getWriter().write("Access Denied: Insufficient permissions");
-                        })
-                )
-                //========
-                .rememberMe()
-                .tokenValiditySeconds(60 * 60 * 24)
-                .and()
-                .csrf().disable();
-
-        DgAuthenticationProcessingFilter dgFilter = new DgAuthenticationProcessingFilter();
-
-        dgFilter.setAuthenticationManager(authenticationManagerBean());
-        dgFilter.setAuthenticationSuccessHandler(new DgAuthenticationSuccessHandler());
-        dgFilter.setAuthenticationFailureHandler(new DgAuthenticationFailureHandler());
-
+    @Bean
+    public AuthenticationManager authenticationManager() {
         DgAuthenticationProvider dgProvider = new DgAuthenticationProvider(userDetailsService);
-
-        http.authenticationProvider(dgProvider).addFilterAfter(dgFilter, UsernamePasswordAuthenticationFilter.class);
-    }
-
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
+        return new ProviderManager(dgProvider);
     }
 
     @Bean
-    @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
+    public RememberMeServices rememberMeServices() {
+        TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices("dg-bot-key", userDetailsService);
+        rememberMeServices.setTokenValiditySeconds(60 * 60 * 24);
+        rememberMeServices.setAlwaysRemember(true);
+        return rememberMeServices;
     }
 
-    @Override
-    public void configure(WebSecurity web) throws Exception {
-        super.configure(web);
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        DgAuthenticationProcessingFilter dgFilter = new DgAuthenticationProcessingFilter();
+
+        dgFilter.setAuthenticationManager(authenticationManager());
+        dgFilter.setAuthenticationSuccessHandler(new DgAuthenticationSuccessHandler());
+        dgFilter.setAuthenticationFailureHandler(new DgAuthenticationFailureHandler());
+        dgFilter.setSecurityContextRepository(new DelegatingSecurityContextRepository(
+                new RequestAttributeSecurityContextRepository(),
+                new HttpSessionSecurityContextRepository()
+        ));
+        dgFilter.setRememberMeServices(rememberMeServices());
+
+        http
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
+            .authorizeHttpRequests(authz -> authz
+                    .requestMatchers(
+                            "/api/bot/list",
+                            "/api/bot/alist",
+                            "/api/bot/avatar",
+                            "/api/pre/statistics",
+                            "/api/rec", "/api/rec/test"
+                    ).permitAll()
+                    .anyRequest().authenticated()
+            )
+            .exceptionHandling(exception -> exception
+                    .accessDeniedHandler((request, response, accessDeniedException) -> {
+                        response.setStatus(HttpStatus.FORBIDDEN.value());
+                        response.getWriter().write("Access Denied: Insufficient permissions");
+                    })
+            )
+            .rememberMe(remember -> remember
+                    .rememberMeServices(rememberMeServices())
+            )
+            .csrf(csrf -> csrf.disable())
+            .addFilterAfter(dgFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 }
