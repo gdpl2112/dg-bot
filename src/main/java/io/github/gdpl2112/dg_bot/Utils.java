@@ -12,6 +12,9 @@ import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.SingleMessage;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -46,31 +49,35 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.isLinux;
  */
 public class Utils {
 
+    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .build();
+
     /**
      * 获取重定向地址
      *
-     * @param path
-     * @return
-     * @throws Exception
+     * @param path 目标路径
+     * @return 重定向后的URL，如果失败则返回null
      */
     public static String getRedirectUrl(String path) {
-        Connection.Response response;
-        try {
-            response = Jsoup.connect(path).ignoreHttpErrors(true)
-                    .followRedirects(false)
-                    .ignoreContentType(true).header("Connection", "Keep-Alive")
-                    .header("User-Agent", "Apache-HttpClient/4.5.14 (Java/17.0.8.1)")
-                    .header("Accept-Encoding", "br,deflate,gzip,x-gzip")
-                    .method(Connection.Method.HEAD).execute();
+        Request request = new Request.Builder()
+                .url(path)
+                .head()
+                .header("Connection", "Keep-Alive")
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+                .header("Accept-Encoding", "br,deflate,gzip,x-gzip")
+                .build();
+        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
+            String url = response.header("Location");
+            if (url == null) url = response.header("location");
+            if (url == null) url = response.request().url().toString();
+            System.out.println(path + " => redirect to " + url);
+            return url;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
-        String url = response.header("Location");
-        if (url == null) url = response.header("location");
-        if (url == null) url = response.url().toString();
-        System.out.println(path + " => redirect to " + url);
-        return url;
     }
 
     public static String getAllStatus(long bid, AuthMapper authMapper) {

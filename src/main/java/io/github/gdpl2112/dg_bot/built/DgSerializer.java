@@ -11,13 +11,17 @@ import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.message.data.*;
 import net.mamoe.mirai.utils.ExternalResource;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -110,14 +114,14 @@ public class DgSerializer {
     public static List<Object> getAllElements(String line) {
         List<String> list = new ArrayList<>();
         List<Object> olist = new ArrayList<>();
-        line = line.toLowerCase();
+        // 关键逻辑：不再在这里统一转小写，防止破坏 URL 中的大写参数（如 QQ=xxx）
         algorithmFill(list, line);
         for (String s : list) {
-            int i = line.indexOf(s);
+            int i = line.toLowerCase().indexOf(s.toLowerCase());
             if (i > 0) {
                 olist.add(line.substring(0, i));
             }
-            olist.add(s);
+            olist.add(line.substring(i, i + s.length()));
             line = line.substring(i + s.length());
         }
         if (!line.isEmpty()) olist.add(line);
@@ -128,22 +132,19 @@ public class DgSerializer {
         if (list == null || line == null || line.isEmpty()) return;
         Map<Integer, String> nm = getNearestOne(line, PATTERNS);
         if (nm.isEmpty()) {
-            list.add(line);
             return;
         }
         int n = nm.keySet().iterator().next();
         String v = nm.get(n);
-        String[] ss = new String[2];
-        ss[0] = line.substring(0, line.indexOf(v));
-        ss[1] = line.substring(line.indexOf(v) + v.length(), line.length());
-        if (!ss[0].isEmpty()) {
-            list.add(ss[0]);
-            line = line.substring(ss[0].length());
+        
+        String pre = line.substring(0, n);
+        if (!pre.isEmpty()) {
+            list.add(pre);
         }
-        line = ss[1];
         list.add(v);
-        algorithmFill(list, line);
-        return;
+        
+        String next = line.substring(n + v.length());
+        algorithmFill(list, next);
     }
 
     public static Map<Integer, String> getNearestOne(final String line, Pattern... patterns) {
@@ -174,15 +175,33 @@ public class DgSerializer {
     }
 
     public static final RestTemplate TEMPLATE = new RestTemplate();
+    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient();
 
+    /**
+     * 根据URL获取图片字节数组
+     *
+     * @param url 图片URL
+     * @return 图片字节数组
+     */
     public static byte[] getImageFromUrl(String url) {
-        try {
-            Connection.Response response = Jsoup.connect(url).ignoreHttpErrors(true).ignoreContentType(true)
-                    .header("Accept", "*/*")
-                    .header("Accept-Encoding", "gzip, deflate, br")
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0")
-                    .method(Connection.Method.GET).execute();
-            return response.bodyAsBytes();
+        // 关键逻辑：某些接口对参数大小写敏感或需要跟随重定向
+        // 如果 URL 包含大写参数名，OkHttp 默认不会修改它，但我们需要确保 URL 格式与浏览器完全一致
+        Request request = new Request.Builder().url(url).header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36").build();
+        // 关键逻辑：使用自动跟随重定向的客户端
+        OkHttpClient client = OK_HTTP_CLIENT.newBuilder()
+                .followRedirects(true)
+                .followSslRedirects(true)
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected code " + response);
+            }
+            byte[] bytes = response.body().bytes();
+            // 调试：保存图片到本地
+//            File tempDir = new File("./temp");
+//            if (!tempDir.exists()) tempDir.mkdirs();
+//            Files.write(Paths.get("./temp/debug_image.png"), bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            return bytes;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

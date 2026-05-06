@@ -8,12 +8,15 @@ import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.*;
-import org.jsoup.Connection;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,16 +53,19 @@ public class WzydView implements BaseOptional {
                     .replace("查荣耀", "");
             content = content.replace(uid, "");
             Object resp = doRequest0("/battle/preview", Map.of("uid", uid, "sid", sid, "opt", content));
-            if (resp instanceof Connection.Response) {
-                Connection.Response response = (Connection.Response) resp;
-                if (response.statusCode() == 200) {
-                    MessageChainBuilder mcb = new MessageChainBuilder();
-                    mcb.append(new QuoteReply(event.getMessage()));
-                    mcb.append(new PlainText(response.body()));
-                    mcb.append(new PlainText("\n" + getRandomCryTips()));
-                    event.getSubject().sendMessage(mcb.build());
-                    return doRequest("/battle/history", Map.of("uid", uid, "sid", sid, "opt", content));
-                } else return "请求失败: " + response.body();
+            if (resp instanceof Response) {
+                try (Response response = (Response) resp) {
+                    if (response.isSuccessful()) {
+                        MessageChainBuilder mcb = new MessageChainBuilder();
+                        mcb.append(new QuoteReply(event.getMessage()));
+                        mcb.append(new PlainText(response.body().string()));
+                        mcb.append(new PlainText("\n" + getRandomCryTips()));
+                        event.getSubject().sendMessage(mcb.build());
+                        return doRequest("/battle/history", Map.of("uid", uid, "sid", sid, "opt", content));
+                    } else return "请求失败: " + response.body().string();
+                } catch (IOException e) {
+                    return "请求异常: " + e.getMessage();
+                }
             } else return "请求失败: " + resp.toString();
         };
         apis.put("CRY", CRY);
@@ -200,56 +206,68 @@ public class WzydView implements BaseOptional {
     @Value("${wzry.api:null}")
     private String api;
 
+    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(100, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(100, java.util.concurrent.TimeUnit.SECONDS)
+            .build();
+
+    /**
+     * 发起基础请求并返回响应
+     *
+     * @param url  请求路径
+     * @param args 请求参数
+     * @return Response 对象或错误信息字符串
+     */
     public Object doRequest0(String url, Map<String, Object> args) {
         try {
             if (api == null || "null".equals(api)) return "未配置api";
-            url = api + url + "?";
-            for (String key0 : args.keySet()) {
-                Object value = args.get(key0);
-                String value0 = value != null ? value.toString() : null;
-                if (Judge.isNotEmpty(value0)) {
-                    url += key0 + "=" + args.get(key0) + "&";
+            StringBuilder urlBuilder = new StringBuilder(api).append(url).append("?");
+            for (Map.Entry<String, Object> entry : args.entrySet()) {
+                Object value = entry.getValue();
+                String valueStr = value != null ? value.toString() : null;
+                if (Judge.isNotEmpty(valueStr)) {
+                    urlBuilder.append(entry.getKey()).append("=").append(valueStr).append("&");
                 }
             }
-            if (url.endsWith("&")) url = url.substring(0, url.length() - 1);
-            Connection.Response response = Jsoup.connect(url).ignoreHttpErrors(true)
-                    .ignoreContentType(true).method(Connection.Method.GET).timeout(getTimeOutMillis()).execute();
-            return response;
+            String finalUrl = urlBuilder.toString();
+            if (finalUrl.endsWith("&")) finalUrl = finalUrl.substring(0, finalUrl.length() - 1);
+
+            Request request = new Request.Builder()
+                    .url(finalUrl)
+                    .get()
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+                    .build();
+
+            return OK_HTTP_CLIENT.newCall(request).execute();
         } catch (Exception e) {
             log.error("doRequest0 wzry request error", e);
             return e.getMessage();
         }
     }
 
-    private static int getTimeOutMillis() {
-        return 100000;
-    }
-
+    /**
+     * 发起请求并根据响应内容类型返回结果
+     *
+     * @param url  请求路径
+     * @param args 请求参数
+     * @return 图片字节数组、文本内容或错误信息
+     */
     public Object doRequest(String url, Map<String, Object> args) {
-        try {
-            if (api == null || "null".equals(api)) return "未配置api";
-            url = api + url + "?";
-            for (String key0 : args.keySet()) {
-                Object value = args.get(key0);
-                String value0 = value != null ? value.toString() : null;
-                if (Judge.isNotEmpty(value0)) {
-                    url += key0 + "=" + args.get(key0) + "&";
-                }
-            }
-            if (url.endsWith("&")) url = url.substring(0, url.length() - 1);
-            Connection.Response response = Jsoup.connect(url).ignoreHttpErrors(true)
-                    .ignoreContentType(true).method(Connection.Method.GET).timeout(getTimeOutMillis()).execute();
-            if (response.statusCode() == 200) {
-                if (response.contentType().equalsIgnoreCase("image/png")) {
-                    return response.bodyAsBytes();
+        Object resp = doRequest0(url, args);
+        if (!(resp instanceof Response)) return resp;
+        try (Response response = (Response) resp) {
+            if (response.isSuccessful()) {
+                String contentType = response.header("Content-Type");
+                if (contentType != null && contentType.equalsIgnoreCase("image/png")) {
+                    return response.body().bytes();
                 } else {
-                    return response.body();
+                    return response.body().string();
                 }
-            } else if (response.statusCode() == 400) {
-                return response.body();
+            } else if (response.code() == 400) {
+                return response.body().string();
             } else {
-                log.error("wzry return {}\nbody:{}", response.statusCode(), response.body());
-                return ("请求失败: code." + response.statusCode());
+                log.error("wzry return {}\nbody:{}", response.code(), response.body().string());
+                return ("请求失败: code." + response.code());
             }
         } catch (Exception e) {
             log.error("wzry request error", e);

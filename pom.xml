@@ -53,6 +53,11 @@
             <version>1.17.2</version>
         </dependency>
         <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.github.kloping</groupId>
             <artifactId>JvUtils</artifactId>
             <version>0.4.9-Beta2</version>

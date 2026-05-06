@@ -10,6 +10,9 @@ import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MusicKind;
 import net.mamoe.mirai.message.data.MusicShare;
 import net.mamoe.mirai.message.data.PlainText;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -130,13 +133,29 @@ public class SongPoint implements BaseOptional {
 
 
     public static final RestTemplate TEMPLATE = new RestTemplate();
+    private static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+            .build();
 
+    /**
+     * 获取指定URL的Document对象
+     *
+     * @param url 目标URL
+     * @return 解析后的Document对象，失败则返回null
+     */
     @NotNull
     public static Document getDocument(String url) {
-        try {
-            ResponseEntity<String> response = TEMPLATE.getForEntity(url, String.class);
-            Document doc0 = Jsoup.parse(response.getBody());
-            return doc0;
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+                .build();
+        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                return Jsoup.parse(response.body().string());
+            }
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -224,33 +243,58 @@ public class SongPoint implements BaseOptional {
             return pi.point(data.qid, data, n);
         }
     }
+    /**
+     * 获取酷狗音乐列表页面
+     *
+     * @param url 目标URL
+     * @return 解析后的Document对象
+     */
     public static Document getDocumentKugouList(String url) {
-        try {
-            return Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
-                    .header("Host", "mobilecdn.kugou.com")
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-                    .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
-                    .header("Accept-Encoding", "gzip, deflate")
-                    .header("Connection", "keep-alive")
-                    .header("Upgrade-Insecure-Requests", "1")
-                    .ignoreHttpErrors(true).timeout(5000).ignoreContentType(true).get();
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
+                .header("Host", "mobilecdn.kugou.com")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
+                .header("Accept-Encoding", "gzip, deflate")
+                .header("Connection", "keep-alive")
+                .header("Upgrade-Insecure-Requests", "1")
+                .build();
+        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
+            if (response.body() != null) {
+                return Jsoup.parse(response.body().string());
+            }
+            return null;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
     }
+
+    /**
+     * 获取酷狗音乐详情页面
+     *
+     * @param url 目标URL
+     * @return 解析后的Document对象
+     */
     public static Document getDocumentKugouUrl(String url) {
-        try {
-            return Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
-                    .header("Host", "m.kugou.com")
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-                    .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
-                    .header("Accept-Encoding", "gzip, deflate")
-                    .header("Connection", "keep-alive")
-                    .header("Upgrade-Insecure-Requests", "1")
-                    .ignoreHttpErrors(true).timeout(5000).ignoreContentType(true).get();
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0")
+                .header("Host", "m.kugou.com")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
+                .header("Accept-Encoding", "gzip, deflate")
+                .header("Connection", "keep-alive")
+                .header("Upgrade-Insecure-Requests", "1")
+                .build();
+        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
+            if (response.body() != null) {
+                return Jsoup.parse(response.body().string());
+            }
+            return null;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
