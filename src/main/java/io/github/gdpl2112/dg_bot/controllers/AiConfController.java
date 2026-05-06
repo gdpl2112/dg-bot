@@ -76,7 +76,15 @@ public class AiConfController {
         if (aiConf.getNetwork() != null) {
             existing.setNetwork(aiConf.getNetwork());
         }
-
+        if (aiConf.getName() != null) {
+            existing.setName(aiConf.getName());
+        }
+        if (aiConf.getTrait() != null) {
+            existing.setTrait(aiConf.getTrait());
+        }
+        if (aiConf.getMaxMessage() != null) {
+            existing.setMaxMessage(aiConf.getMaxMessage());
+        }
         int result = aiConfMapper.updateById(existing);
         if (result > 0) {
             // 配置更新后清除对应的ChatClient缓存

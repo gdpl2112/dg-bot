@@ -91,11 +91,6 @@ public class AIAssistantOptional implements BaseOptional {
         return BID_LAST_IMAGE_MAP.get(bid);
     }
 
-    /**
-     * 执行拦截和消息处理逻辑
-     *
-     * @param event 消息事件（可能为群消息或好友消息），非空
-     */
     @Override
     public void run(MessageEvent event) {
         Long bid = event.getBot().getId();
