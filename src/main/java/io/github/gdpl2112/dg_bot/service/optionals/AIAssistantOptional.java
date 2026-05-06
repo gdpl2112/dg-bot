@@ -1,14 +1,14 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
 import com.alibaba.fastjson.JSONObject;
-import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.AiConf;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
 import io.github.gdpl2112.dg_bot.mapper.AiConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
-import io.github.gdpl2112.dg_bot.service.listenerhosts.DefaultService;
 import io.github.gdpl2112.dg_bot.service.CronService;
+import io.github.gdpl2112.dg_bot.service.listenerhosts.DefaultService;
 import io.github.kloping.judge.Judge;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -120,6 +120,8 @@ public class AIAssistantOptional implements BaseOptional {
 
         if (content == null || content.trim().isEmpty()) {
             return;
+        } else {
+            content = content.trim();
         }
 
         // 提取并获取AI全局配置
@@ -438,10 +440,10 @@ public class AIAssistantOptional implements BaseOptional {
             if (state > 0) {
                 QueryWrapper<CronMessage> qw = new QueryWrapper<>();
                 qw.eq("qid", String.valueOf(bid))
-                  .eq("cron", cron)
-                  .eq("desc", desc)
-                  .eq("target_id", targetId)
-                  .eq("msg", msg);
+                        .eq("cron", cron)
+                        .eq("desc", desc)
+                        .eq("target_id", targetId)
+                        .eq("msg", msg);
                 CronMessage savedMsg = cronMapper.selectOne(qw);
                 if (savedMsg != null) {
                     cronMessage.setId(savedMsg.getId());
