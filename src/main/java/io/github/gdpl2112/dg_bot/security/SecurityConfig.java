@@ -10,6 +10,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.ConcurrentSessionControlAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
 
 import org.springframework.security.web.context.DelegatingSecurityContextRepository;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -17,8 +21,12 @@ import org.springframework.security.web.context.RequestAttributeSecurityContextR
 
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 
 @Configuration
 public class SecurityConfig {
@@ -34,6 +42,22 @@ public class SecurityConfig {
         return new ProviderManager(dgProvider);
     }
 
+    /**
+     * 会话注册表，用于跟踪所有活跃会话，支持单点登录的并发控制
+     */
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    /**
+     * 监听 HttpSession 生命周期事件，session 销毁时从 SessionRegistry 中移除
+     */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
     @Bean
     public RememberMeServices rememberMeServices() {
         TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices("dg-bot-key", userDetailsService);
@@ -44,8 +68,22 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        DgAuthenticationProcessingFilter dgFilter = new DgAuthenticationProcessingFilter();
+        // 构建并发会话控制策略：限制同一用户最多1个会话，新登录踢掉旧会话
+        ConcurrentSessionControlAuthenticationStrategy concurrentStrategy =
+                new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry());
+        concurrentStrategy.setMaximumSessions(1);
+        // false: 新登录踢掉旧会话; true: 阻止新登录
+        concurrentStrategy.setExceptionIfMaximumExceeded(false);
 
+        CompositeSessionAuthenticationStrategy sessionStrategy = new CompositeSessionAuthenticationStrategy(
+                Arrays.asList(
+                        concurrentStrategy,
+                        new SessionFixationProtectionStrategy(),
+                        new RegisterSessionAuthenticationStrategy(sessionRegistry())
+                )
+        );
+
+        DgAuthenticationProcessingFilter dgFilter = new DgAuthenticationProcessingFilter();
         dgFilter.setAuthenticationManager(authenticationManager());
         dgFilter.setAuthenticationSuccessHandler(new DgAuthenticationSuccessHandler());
         dgFilter.setAuthenticationFailureHandler(new DgAuthenticationFailureHandler());
@@ -54,6 +92,8 @@ public class SecurityConfig {
                 new HttpSessionSecurityContextRepository()
         ));
         dgFilter.setRememberMeServices(rememberMeServices());
+        // 将并发会话策略绑定到自定义过滤器，使单点登录生效
+        dgFilter.setSessionAuthenticationStrategy(sessionStrategy);
 
         http
             .formLogin(form -> form.disable())
@@ -89,6 +129,7 @@ public class SecurityConfig {
                     // 单点登录：同一用户只允许一个活跃会话，新登录踢掉旧会话
                     .maximumSessions(1)
                     .maxSessionsPreventsLogin(false)
+                    .sessionRegistry(sessionRegistry())
             )
             .rememberMe(remember -> remember
                     .rememberMeServices(rememberMeServices())
