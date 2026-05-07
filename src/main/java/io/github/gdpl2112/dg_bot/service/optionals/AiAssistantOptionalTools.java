@@ -18,6 +18,9 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
+import javax.imageio.ImageIO;
+import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -361,7 +364,192 @@ public class AiAssistantOptionalTools {
         Group group = bot.getGroup(groupId);
         if (group == null) return "群未找到";
         group.sendMessage(message);
-        return "消息已发送至群 " + groupId;
+        return "已发送至 " + groupId;
+    }
+
+    /**
+     * 群禁言，时长为0则解除禁言
+     *
+     * @param bid      机器人ID
+     * @param groupId  群号
+     * @param userId   成员QQ号
+     * @param duration 禁言时长（秒），0表示解除禁言
+     * @return 操作结果
+     */
+    @Tool(description = "群禁言，时长为0则解除禁言")
+    public String set_group_ban(
+            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "群号") Long groupId,
+            @ToolParam(description = "成员QQ号") Long userId,
+            @ToolParam(description = "禁言时长（秒），0表示解除禁言") Integer duration) {
+        log.info("set_group_ban: bid={}, groupId={}, userId={}, duration={}", bid, groupId, userId, duration);
+        BotResolveResult botResult = resolveRemoteBot(bid);
+        if (!botResult.success()) {
+            return botResult.errorMessage();
+        }
+        RemoteBot remoteBot = botResult.remoteBot();
+        JSONObject payload = new JSONObject();
+        payload.put("group_id", groupId);
+        payload.put("user_id", userId);
+        payload.put("duration", duration != null ? duration : 0);
+        try {
+            return remoteBot.executeAction("set_group_ban", payload.toJSONString());
+        } catch (Exception e) {
+            log.error("群禁言操作出错", e);
+            return "群禁言操作出错: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 发布群公告
+     *
+     * @param bid     机器人ID
+     * @param groupId 群号
+     * @param content 公告内容
+     * @param image   图片（base64格式，可选）
+     * @return 操作结果
+     */
+    @Tool(description = "发布群公告")
+    public String _send_group_notice(
+            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "群号") Long groupId,
+            @ToolParam(description = "公告内容") String content,
+            @ToolParam(description = "图片base64（可选，无图片则不传）") String image) {
+        log.info("_send_group_notice: bid={}, groupId={}, content={}", bid, groupId, content);
+        BotResolveResult botResult = resolveRemoteBot(bid);
+        if (!botResult.success()) {
+            return botResult.errorMessage();
+        }
+        RemoteBot remoteBot = botResult.remoteBot();
+        JSONObject payload = new JSONObject();
+        payload.put("group_id", groupId);
+        payload.put("content", content);
+        // 图片参数可选，非空时才加入
+        if (image != null && !image.trim().isEmpty()) {
+            payload.put("image", image);
+        }
+        try {
+            return remoteBot.executeAction("_send_group_notice", payload.toJSONString());
+        } catch (Exception e) {
+            log.error("发布群公告出错", e);
+            return "发布群公告出错: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 获取群荣誉信息
+     *
+     * @param bid     机器人ID
+     * @param groupId 群号
+     * @param type    荣誉类型（talkative/performer/legend/strong_newbie/emotion/all）
+     * @return 群荣誉信息
+     */
+    @Tool(description = "获取群荣誉信息")
+    public String get_group_honor_info(
+            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "群号") Long groupId,
+            @ToolParam(description = "荣誉类型：talkative/performer/legend/strong_newbie/emotion/all") String type) {
+        log.info("get_group_honor_info: bid={}, groupId={}, type={}", bid, groupId, type);
+        BotResolveResult botResult = resolveRemoteBot(bid);
+        if (!botResult.success()) {
+            return botResult.errorMessage();
+        }
+        RemoteBot remoteBot = botResult.remoteBot();
+        JSONObject payload = new JSONObject();
+        payload.put("group_id", groupId);
+        payload.put("type", type != null ? type : "all");
+        try {
+            return remoteBot.executeAction("get_group_honor_info", payload.toJSONString());
+        } catch (Exception e) {
+            log.error("获取群荣誉信息出错", e);
+            return "获取群荣誉信息出错: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 群打卡签到
+     *
+     * @param bid     机器人ID
+     * @param groupId 群号
+     * @return 打卡结果
+     */
+    @Tool(description = "群打卡签到")
+    public String set_group_sign(
+            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "群号") Long groupId) {
+        log.info("set_group_sign: bid={}, groupId={}", bid, groupId);
+        BotResolveResult botResult = resolveRemoteBot(bid);
+        if (!botResult.success()) {
+            return botResult.errorMessage();
+        }
+        RemoteBot remoteBot = botResult.remoteBot();
+        JSONObject payload = new JSONObject();
+        payload.put("group_id", groupId);
+        try {
+            String result = remoteBot.executeAction("set_group_sign", payload.toJSONString());
+            return "OK";
+        } catch (Exception e) {
+            log.error("群打卡签到出错", e);
+            return "群打卡签到出错: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 获取加入的群列表
+     *
+     * @param bid 机器人ID
+     * @return 群列表信息
+     */
+    @Tool(description = "获取加入的群列表")
+    public String get_group_list(@ToolParam(description = "bot ID") Long bid) {
+        log.info("get_group_list: bid={}", bid);
+        BotResolveResult botResult = resolveRemoteBot(bid);
+        if (!botResult.success()) {
+            return botResult.errorMessage();
+        }
+        RemoteBot remoteBot = botResult.remoteBot();
+        try {
+            return remoteBot.executeAction("get_group_list", "{}");
+        } catch (Exception e) {
+            log.error("获取群列表出错", e);
+            return "获取群列表出错: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 获取群或QQ用户头像
+     *
+     * @param id   群号或QQ号
+     * @param type 类型：group-群头像，user-用户头像
+     * @return 头像图片
+     */
+    @Tool(description = "获取群或QQ用户头像，返回图片")
+    public RenderedImage get_avatar(
+            @ToolParam(description = "群号或QQ号") Long id,
+            @ToolParam(description = "类型：group-群头像，user-用户头像") String type) {
+        log.info("get_avatar: id={}, type={}", id, type);
+        if (id == null) {
+            return null;
+        }
+        String url;
+        if ("group".equalsIgnoreCase(type)) {
+            // 群头像URL
+            url = "https://p.qlogo.cn/gh/" + id + "/" + id + "/0";
+        } else {
+            // 用户头像URL
+            url = "https://q1.qlogo.cn/g?b=qq&nk=" + id + "&s=640";
+        }
+        try {
+            byte[] bytes = HttpsUtils.readAsBytesFromImageUrl(url);
+            if (bytes == null) {
+                log.error("获取头像失败，返回数据为空: url={}", url);
+                return null;
+            }
+            return ImageIO.read(new ByteArrayInputStream(bytes));
+        } catch (Exception e) {
+            log.error("获取头像出错: url={}", url, e);
+            return null;
+        }
     }
 
     /**
