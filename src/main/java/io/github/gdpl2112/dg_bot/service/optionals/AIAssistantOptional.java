@@ -28,13 +28,20 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.web.client.RestClient;
 import top.kloping.core.ai.McpBean;
 
 import java.net.URI;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -94,6 +101,14 @@ public class AIAssistantOptional implements BaseOptional {
         return BID_LAST_IMAGE_MAP.get(bid);
     }
 
+    private static final String SYSTEM_PROMPT_TEXT = """
+            You are an assistant built into the QQ proxy service. Your name is %s.
+            Only answer content related to the question or QQ-related fields. 
+            It is strictly prohibited to output any markdown format. Only emoji, emoticons and text are allowed.
+            Reply in the same language as the input.
+            Style requirement: %s. Current environment: %s, environment ID: %s,Sender Id: %s,bot ID: %s. It is strictly prohibited to cross over to another bid.
+            """;
+
     @Override
     public void run(MessageEvent event) {
         Long bid = event.getBot().getId();
@@ -149,7 +164,7 @@ public class AIAssistantOptional implements BaseOptional {
         log.info("AI助手对话 bid:{} sid:{} content:{}", bid, sid, actualContent);
 
         String systemPrompt = String.format(SYSTEM_PROMPT_TEXT, aiConf.getName(), aiConf.getTrait(),
-                event instanceof GroupAwareMessageEvent ? "Group" : "Friend", event.getSubject().getId(), event.getBot().getId());
+                event instanceof GroupAwareMessageEvent ? "Group" : "Friend", event.getSubject().getId(), event.getSender().getId(), event.getBot().getId());
         String memoryKey = buildMemoryKey(bid, event.getSubject().getId());
         appendMemory(memoryKey, buildUserMessage(actualContent, images), resolveMaxMessage(aiConf.getMaxMessage()));
         List<Message> memoryMessages = buildMemoryMessages(memoryKey, resolveMaxMessage(aiConf.getMaxMessage()));
@@ -185,7 +200,7 @@ public class AIAssistantOptional implements BaseOptional {
             appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
         } catch (Exception e) {
             log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
-            event.getSubject().sendMessage(new PlainText("AI调用失败，请稍后再试" + "\n\n['" + aiConf.getName() + "'回复]"));
+            event.getSubject().sendMessage(new PlainText("[" + aiConf.getName() + "输出]\n\n[AI调用失败，请稍后再试]"));
         }
     }
 
@@ -266,13 +281,6 @@ public class AIAssistantOptional implements BaseOptional {
         return mediaList.isEmpty() ? new UserMessage(text) : UserMessage.builder().text(text).media(mediaList).build();
     }
 
-    private static final String SYSTEM_PROMPT_TEXT = """
-            You are an assistant built into the QQ proxy service. Your name is %s.
-            Only answer content related to the question or QQ-related fields. 
-            It is strictly prohibited to output any markdown format. Only emoji, emoticons and text are allowed.
-            Reply in the same language as the input.
-            Style requirement: %s. Current environment: %s, environment ID: %s,bot ID: %s. It is strictly prohibited to cross over to another bid.
-            """;
 
     /**
      * 获取ChatClient实例，优先从缓存获取；缓存不存在则创建并缓存
@@ -293,6 +301,17 @@ public class AIAssistantOptional implements BaseOptional {
         CHAT_CLIENT_CACHE.remove(bid);
     }
 
+    private static final RetryTemplate RETRY_TEMPLATE = new RetryTemplate(new RetryPolicy() {
+        @Override
+        public boolean shouldRetry(Throwable throwable) {
+            log.error("ChatClient调用失败，请稍后再试", throwable);
+            return false;
+        }
+    });
+
+    private static final RestClient.Builder REST_CLIENT_BUILDER = RestClient.builder().requestFactory(ClientHttpRequestFactoryBuilder.simple()
+            .build(HttpClientSettings.defaults().withTimeouts(Duration.of(5, ChronoUnit.SECONDS), Duration.of(90, ChronoUnit.SECONDS))));
+
     /**
      * 根据AI配置创建ChatClient实例
      *
@@ -303,16 +322,19 @@ public class AIAssistantOptional implements BaseOptional {
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .baseUrl(aiConf.getBaseUrl())
                 .apiKey(aiConf.getApiKey())
+                .restClientBuilder(REST_CLIENT_BUILDER)
                 .build();
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(aiConf.getModelId())
                 .temperature(aiConf.getTemperature())
+                .streamUsage(false)
                 .build();
 
         OpenAiChatModel chatModel = OpenAiChatModel.builder()
                 .openAiApi(openAiApi)
                 .defaultOptions(options)
+                .retryTemplate(RETRY_TEMPLATE)
                 .build();
 
         return ChatClient.builder(chatModel).build();
