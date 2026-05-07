@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
@@ -34,9 +35,7 @@ import org.springframework.stereotype.Component;
 import top.kloping.core.ai.McpBean;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -152,12 +151,14 @@ public class AIAssistantOptional implements BaseOptional {
         String systemPrompt = String.format(SYSTEM_PROMPT_TEXT, aiConf.getName(), aiConf.getTrait(),
                 event instanceof GroupAwareMessageEvent ? "Group" : "Friend", event.getSubject().getId(), event.getBot().getId());
         String memoryKey = buildMemoryKey(bid, event.getSubject().getId());
+        appendMemory(memoryKey, "用户", actualContent, resolveMaxMessage(aiConf.getMaxMessage()));
         String memoryPrompt = buildMemoryPrompt(systemPrompt, memoryKey, resolveMaxMessage(aiConf.getMaxMessage()));
 
         ChatClient chatClient = getChatClient(aiConf);
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
                 .system(memoryPrompt)
-                .user(actualContent).toolCallbacks(getToolCallbacks());
+                .user(actualContent)
+                .toolCallbacks(getToolCallbacks(aiConf, memoryKey));
         if (aiConf.getNetwork()) {
             chatClientRequestSpec.toolCallbacks(mcpBean.getToolCallbacks());
         }
@@ -167,9 +168,8 @@ public class AIAssistantOptional implements BaseOptional {
             if (responseContent == null || responseContent.trim().isEmpty()) {
                 return;
             }
-            String reply = responseContent + "\n\n['" + aiConf.getName() + "'回复]";
+            String reply = "['" + aiConf.getName() + "'回答]\n\n" + responseContent;
             event.getSubject().sendMessage(new PlainText(reply));
-            appendMemory(memoryKey, "用户", actualContent, resolveMaxMessage(aiConf.getMaxMessage()));
             appendMemory(memoryKey, "助手", responseContent.trim(), resolveMaxMessage(aiConf.getMaxMessage()));
         } catch (Exception e) {
             log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
@@ -271,6 +271,80 @@ public class AIAssistantOptional implements BaseOptional {
     }
 
     /**
+     * 根据最近的N次消息记录 判断 需要用到哪些tool 需要格式化输出
+     * <p>
+     * 输入 工机具描述和 工具id
+     * 输出 工具id
+     *
+     * @param conf
+     * @param memoryKey
+     * @return
+     */
+    private List<ToolCallback> getToolCallbacks(AiConf conf, String memoryKey) {
+        initToolCache();
+        String toolListData = cachedToolListData;
+
+        // 取最近3条对话记录作为工具选择的上下文
+        Deque<MemoryMessage> memory = MESSAGE_MEMORY_CACHE.get(memoryKey);
+        StringBuilder recentMessages = new StringBuilder();
+        if (memory != null && !memory.isEmpty()) {
+            synchronized (memory) {
+                int start = Math.max(0, memory.size() - 5);
+                int index = 0;
+                for (MemoryMessage msg : memory) {
+                    if (index++ < start) continue;
+                    recentMessages.append(msg.role()).append("：").append(msg.content()).append("\n");
+                }
+            }
+        }
+
+        String systemPrompt = "你是一个工具选择器。根据用户最近的对话记录，从可用工具列表中选出可能需要用到的工具名称。" +
+                "只输出一个JSON数组，数组元素为工具name字符串，不需要其他任何文字。如果不需要任何工具则输出空数组[]。\n" +
+                "输出示例：[\"set_group_card\",\"send_like\"]\n\n" +
+                "可用工具列表(name->description)：\n" + toolListData;
+
+        String userPrompt = recentMessages.isEmpty() ? "暂无对话记录" : recentMessages.toString().trim();
+
+        String result;
+        try {
+            ChatClient chatClient = getChatClient(conf);
+            result = chatClient.prompt()
+                    .system(systemPrompt)
+                    .user(userPrompt)
+                    .call().content();
+        } catch (Exception e) {
+            // 工具选择AI调用失败时降级返回全部工具
+            log.warn("工具选择AI调用失败，降级返回全部工具", e);
+            return new ArrayList<>(cachedToolName2tool.values());
+        }
+
+        // 提取JSON数组部分（兼容AI可能附带多余文字的情况）
+        if (result == null || result.trim().isEmpty()) {
+            return new ArrayList<>(cachedToolName2tool.values());
+        }
+        int arrStart = result.indexOf('[');
+        int arrEnd = result.lastIndexOf(']');
+        if (arrStart < 0 || arrEnd < 0 || arrEnd <= arrStart) {
+            return new ArrayList<>(cachedToolName2tool.values());
+        }
+
+        JSONArray tools = JSON.parseArray(result.substring(arrStart, arrEnd + 1));
+        List<ToolCallback> toolCallbacks = new ArrayList<>();
+        for (int i = tools.size() - 1; i >= 0; i--) {
+            String toolName = tools.getString(i);
+            ToolCallback tool = cachedToolName2tool.get(toolName);
+            if (tool == null) {
+                log.warn("toolName not found: {}. on conf: {}", toolName, conf.getQid());
+            } else {
+                toolCallbacks.add(tool);
+            }
+        }
+        // 如果AI没选中任何工具则降级返回全部
+        return toolCallbacks.isEmpty() ? new ArrayList<>(cachedToolName2tool.values()) : toolCallbacks;
+    }
+
+
+    /**
      * 将 AiAssistantOptional 中所有 @Tool 方法逐一提取为独立的 ToolCallback
      *
      * @return ToolCallback 数组，每个元素对应一个 @Tool 方法
@@ -283,6 +357,27 @@ public class AIAssistantOptional implements BaseOptional {
     }
 
     private AiAssistantOptional aiAssistantOptional;
+
+    /** 工具名称->描述 缓存，由 @Tool 方法固定生成，无需每次重建 */
+    private Map<String, String> cachedToolName2Desc;
+    /** 工具名称->ToolCallback 缓存，由 @Tool 方法固定生成，无需每次重建 */
+    private Map<String, ToolCallback> cachedToolName2tool;
+    /** 工具列表JSON缓存，由 cachedToolName2Desc 序列化生成 */
+    private String cachedToolListData;
+
+    /**
+     * 懒加载初始化工具缓存，首次调用时从 @Tool 方法提取并缓存
+     */
+    private synchronized void initToolCache() {
+        if (cachedToolName2Desc != null) return;
+        cachedToolName2Desc = new HashMap<>();
+        cachedToolName2tool = new HashMap<>();
+        for (ToolCallback toolCallback : getToolCallbacks()) {
+            cachedToolName2Desc.put(toolCallback.getToolDefinition().name(), toolCallback.getToolDefinition().description());
+            cachedToolName2tool.put(toolCallback.getToolDefinition().name(), toolCallback);
+        }
+        cachedToolListData = JSON.toJSONString(cachedToolName2Desc);
+    }
 
     @AllArgsConstructor
     public static class AiAssistantOptional {
@@ -527,29 +622,52 @@ public class AIAssistantOptional implements BaseOptional {
 
         //send_like
         //{
-        //    "user_id": "123456",
+        //    "user_id": "123456,234567",
         //    "times": 10
         //}
         @Tool(description = "给指定QQ名片点赞")
         public String send_like(
                 @ToolParam(description = "BID") Long bid,
-                @ToolParam(description = "QQID") Long userId,
+                @ToolParam(description = "QQID,可多个用英文逗号分隔") String userIds,
                 @ToolParam(description = "点赞次数,一般10次 svip20次") Integer times) {
+            if (userIds == null || userIds.trim().isEmpty()) {
+                return "QQID不能为空";
+            }
+
             BotResolveResult botResult = resolveRemoteBot(bid);
             if (!botResult.success()) {
                 return botResult.errorMessage();
             }
             RemoteBot remoteBot = botResult.remoteBot();
-            try {
-                String result = remoteBot.executeAction("send_like", "{\n" +
-                        "    \"user_id\": \"" + userId + "\",\n" +
-                        "    \"times\": " + times + "\n" +
-                        "}");
-                return result;
-            } catch (Exception e) {
-                log.error("给指定QQ名片点赞出错", e);
-                return "给指定QQ名片点赞出错: " + e.getMessage();
+            String[] userIdArray = userIds.split("[,，]");
+            List<String> results = new ArrayList<>();
+            for (String userIdText : userIdArray) {
+                String trimmedUserId = userIdText.trim();
+                if (trimmedUserId.isEmpty()) {
+                    continue;
+                }
+                try {
+                    Long.parseLong(trimmedUserId);
+                } catch (NumberFormatException e) {
+                    results.add("QQID格式错误: " + trimmedUserId);
+                    continue;
+                }
+                try {
+                    String result = remoteBot.executeAction("send_like", "{\n" +
+                            "    \"user_id\": \"" + trimmedUserId + "\",\n" +
+                            "    \"times\": " + times + "\n" +
+                            "}");
+                    results.add(trimmedUserId + ": " + result);
+                } catch (Exception e) {
+                    log.error("给指定QQ名片点赞出错, userId={}", trimmedUserId, e);
+                    results.add(trimmedUserId + ": 给指定QQ名片点赞出错: " + e.getMessage());
+                }
             }
+
+            if (results.isEmpty()) {
+                return "未找到有效的QQID";
+            }
+            return String.join("\n", results);
         }
     }
 }
