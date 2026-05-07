@@ -11,8 +11,10 @@ import io.github.gdpl2112.dg_bot.utils.HttpsUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
+import net.mamoe.mirai.contact.Contact;
 import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
+import net.mamoe.mirai.utils.ExternalResource;
 import net.mamoe.mirai.message.data.Image;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -517,38 +519,89 @@ public class AiAssistantOptionalTools {
     }
 
     /**
-     * 获取群或QQ用户头像
+     * 发送指定图片或头像到群聊/私聊
      *
-     * @param id   群号或QQ号
-     * @param type 类型：group-群头像，user-用户头像
-     * @return 头像图片
+     * @param bid      机器人ID
+     * @param id       type=group时为群号，type=user时为QQ号，type=url时为图片直链
+     * @param type     图片类型：group=群头像，user=用户头像，url=图片直链
+     * @param targetId 发送目标，g群号=群聊，u用户号=私信，例如 g123456 或 u123456
+     * @return 发送结果
      */
-    @Tool(description = "获取群或QQ用户头像，返回图片")
-    public RenderedImage get_avatar(
-            @ToolParam(description = "群号或QQ号") Long id,
-            @ToolParam(description = "类型：group-群头像，user-用户头像") String type) {
-        log.info("get_avatar: id={}, type={}", id, type);
-        if (id == null) {
-            return null;
+    @Tool(description = "发送指定图片或头像到群聊/私聊，type=group时id为群号(群头像)，type=user时id为QQ号(用户头像)，type=url时id为图片直链，targetId格式：g群号=群聊 u用户号=私信")
+    public String send_image(
+            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "图片来源：type=group时为群号，type=user时为QQ号，type=url时为图片直链") String id,
+            @ToolParam(description = "类型：group=群头像, user=用户头像, url=图片直链") String type,
+            @ToolParam(description = "发送目标，g群号=发到群聊，u用户号=发到私信，例如 g123456 或 u123456") String targetId) {
+        log.info("send_image: bid={}, id={}, type={}, targetId={}", bid, id, type, targetId);
+        if (bid == null || id == null || type == null || targetId == null) {
+            return "参数不能为空";
         }
+
+        Bot bot = Bot.getInstanceOrNull(bid);
+        if (bot == null) return "机器人未找到";
+        if (!bot.isOnline()) return "机器人不在线";
+
+        // 解析发送目标为具体联系人（群或好友）
+        Contact contact;
+        String prefix = targetId.substring(0, 1).toLowerCase();
+        String idPart = targetId.substring(1);
+        if ("g".equals(prefix)) {
+            long groupId;
+            try {
+                groupId = Long.parseLong(idPart);
+            } catch (NumberFormatException e) {
+                return "targetId格式错误，群聊格式：g群号";
+            }
+            Group group = bot.getGroup(groupId);
+            if (group == null) return "群未找到：" + groupId;
+            contact = group;
+        } else if ("u".equals(prefix)) {
+            long userId;
+            try {
+                userId = Long.parseLong(idPart);
+            } catch (NumberFormatException e) {
+                return "targetId格式错误，私信格式：u用户号";
+            }
+            Friend friend = bot.getFriend(userId);
+            if (friend == null) return "好友未找到：" + userId;
+            contact = friend;
+        } else {
+            return "targetId格式错误，请使用 g群号 或 u用户号";
+        }
+
+        // 根据type构造图片URL
         String url;
         if ("group".equalsIgnoreCase(type)) {
             // 群头像URL
             url = "https://p.qlogo.cn/gh/" + id + "/" + id + "/0";
-        } else {
+        } else if ("user".equalsIgnoreCase(type)) {
             // 用户头像URL
             url = "https://q1.qlogo.cn/g?b=qq&nk=" + id + "&s=640";
+        } else if ("url".equalsIgnoreCase(type)) {
+            // 图片直链直接使用
+            url = id;
+        } else {
+            return "type参数错误，支持：group, user, url";
         }
+
         try {
             byte[] bytes = HttpsUtils.readAsBytesFromImageUrl(url);
-            if (bytes == null) {
-                log.error("获取头像失败，返回数据为空: url={}", url);
-                return null;
+            if (bytes == null || bytes.length == 0) {
+                return "图片下载失败：" + url;
             }
-            return ImageIO.read(new ByteArrayInputStream(bytes));
+            // 上传图片资源并发送
+            ExternalResource resource = ExternalResource.create(bytes);
+            try {
+                Image img = contact.uploadImage(resource);
+                contact.sendMessage(img);
+            } finally {
+                resource.close();
+            }
+            return "图片已发送至 " + targetId;
         } catch (Exception e) {
-            log.error("获取头像出错: url={}", url, e);
-            return null;
+            log.error("发送图片失败", e);
+            return "发送图片失败: " + e.getMessage();
         }
     }
 

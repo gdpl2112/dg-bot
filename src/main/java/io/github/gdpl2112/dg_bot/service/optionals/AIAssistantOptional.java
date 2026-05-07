@@ -163,38 +163,34 @@ public class AIAssistantOptional implements BaseOptional {
 
         log.info("AI助手对话 bid:{} sid:{} content:{}", bid, sid, actualContent);
 
-        String systemPrompt = String.format(SYSTEM_PROMPT_TEXT, aiConf.getName(), aiConf.getTrait(),
-                event instanceof GroupAwareMessageEvent ? "Group" : "Friend", event.getSubject().getId(), event.getSender().getId(), event.getBot().getId());
+        String systemPrompt = String.format(SYSTEM_PROMPT_TEXT, aiConf.getName(), aiConf.getTrait(), event instanceof GroupAwareMessageEvent ? "Group" : "Friend", event.getSubject().getId(), event.getSender().getId(), event.getBot().getId());
         String memoryKey = buildMemoryKey(bid, event.getSubject().getId());
         appendMemory(memoryKey, buildUserMessage(actualContent, images), resolveMaxMessage(aiConf.getMaxMessage()));
         List<Message> memoryMessages = buildMemoryMessages(memoryKey, resolveMaxMessage(aiConf.getMaxMessage()));
 
         ChatClient chatClient = getChatClient(aiConf);
-        ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-                .system(systemPrompt)
-                .messages(memoryMessages)
-                .user(userSpec -> {
-                    userSpec.text(actualContent);
-                    // 将消息中的图片作为多模态内容填入AI消息
-                    for (Image img : images) {
-                        try {
-                            String url = Image.queryUrl(img);
-                            userSpec.media(MimeTypeUtils.IMAGE_JPEG, new UrlResource(URI.create(url)));
-                        } catch (Exception e) {
-                            log.warn("添加图片到AI消息失败", e);
-                        }
-                    }
-                })
-                .toolCallbacks(getToolCallbacks(aiConf, memoryKey));
+        ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt().system(systemPrompt).messages(memoryMessages).user(userSpec -> {
+            userSpec.text(actualContent);
+            // 将消息中的图片作为多模态内容填入AI消息
+            for (Image img : images) {
+                try {
+                    String url = Image.queryUrl(img);
+                    userSpec.media(MimeTypeUtils.IMAGE_JPEG, new UrlResource(URI.create(url)));
+                } catch (Exception e) {
+                    log.warn("添加图片到AI消息失败", e);
+                }
+            }
+        }).toolCallbacks(getToolCallbacks(aiConf, memoryKey));
         if (aiConf.getNetwork()) {
             chatClientRequestSpec.toolCallbacks(mcpBean.getToolCallbacks());
         }
 
         try {
-            String responseContent = chatClientRequestSpec.call().content();
-            if (responseContent == null || responseContent.trim().isEmpty()) {
+            List<String> responseChunks = chatClientRequestSpec.stream().content().collectList().block();
+            if (responseChunks == null || responseChunks.isEmpty()) {
                 return;
             }
+            String responseContent = String.join("", responseChunks);
             String reply = "['" + aiConf.getName() + "'回答]\n\n" + responseContent;
             event.getSubject().sendMessage(new PlainText(reply));
             appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
@@ -268,11 +264,19 @@ public class AIAssistantOptional implements BaseOptional {
             return new UserMessage(text);
         }
         List<org.springframework.ai.content.Media> mediaList = new ArrayList<>();
+        List<String> md5s = new ArrayList<>();
         for (Image img : images) {
             try {
                 String url = Image.queryUrl(img);
                 byte[] bytes = HttpsUtils.readAsBytesFromImageUrl(url);
                 if (bytes == null) continue;
+
+                String md5 = org.springframework.util.DigestUtils.md5DigestAsHex(bytes);
+                if (md5s.contains(md5)) {
+                    log.debug("图片已存在，跳过");
+                    continue;
+                }
+                md5s.add(md5);
                 mediaList.add(new Media(MimeTypeUtils.IMAGE_JPEG, new ByteArrayResource(bytes)));
             } catch (Exception e) {
                 log.warn("构建图片Media失败", e);
@@ -309,8 +313,7 @@ public class AIAssistantOptional implements BaseOptional {
         }
     });
 
-    private static final RestClient.Builder REST_CLIENT_BUILDER = RestClient.builder().requestFactory(ClientHttpRequestFactoryBuilder.simple()
-            .build(HttpClientSettings.defaults().withTimeouts(Duration.of(5, ChronoUnit.SECONDS), Duration.of(90, ChronoUnit.SECONDS))));
+    private static final RestClient.Builder REST_CLIENT_BUILDER = RestClient.builder().requestFactory(ClientHttpRequestFactoryBuilder.simple().build(HttpClientSettings.defaults().withTimeouts(Duration.of(5, ChronoUnit.SECONDS), Duration.of(90, ChronoUnit.SECONDS))));
 
     /**
      * 根据AI配置创建ChatClient实例
@@ -319,23 +322,11 @@ public class AIAssistantOptional implements BaseOptional {
      * @return 新创建的ChatClient实例
      */
     private static ChatClient createChatClient(AiConf aiConf) {
-        OpenAiApi openAiApi = OpenAiApi.builder()
-                .baseUrl(aiConf.getBaseUrl())
-                .apiKey(aiConf.getApiKey())
-                .restClientBuilder(REST_CLIENT_BUILDER)
-                .build();
+        OpenAiApi openAiApi = OpenAiApi.builder().baseUrl(aiConf.getBaseUrl()).apiKey(aiConf.getApiKey()).restClientBuilder(REST_CLIENT_BUILDER).build();
 
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model(aiConf.getModelId())
-                .temperature(aiConf.getTemperature())
-                .streamUsage(false)
-                .build();
+        OpenAiChatOptions options = OpenAiChatOptions.builder().model(aiConf.getModelId()).temperature(aiConf.getTemperature()).build();
 
-        OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
-                .defaultOptions(options)
-                .retryTemplate(RETRY_TEMPLATE)
-                .build();
+        OpenAiChatModel chatModel = OpenAiChatModel.builder().openAiApi(openAiApi).defaultOptions(options).retryTemplate(RETRY_TEMPLATE).build();
 
         return ChatClient.builder(chatModel).build();
     }
@@ -357,21 +348,15 @@ public class AIAssistantOptional implements BaseOptional {
         // 取最近5条对话记录作为工具选择的上下文
         List<Message> recentMemoryMessages = buildMemoryMessages(memoryKey, 5);
 
-        String systemPrompt = "你是一个工具选择器。根据用户最近的对话记录，从可用工具列表中选出可能需要用到的工具名称。" +
-                "只输出一个JSON数组，数组元素为工具name字符串，不需要其他任何文字。如果不需要任何工具则输出空数组[]。\n" +
-                "输出示例：[\"set_group_card\",\"send_like\"]\n\n" +
-                "可用工具列表(name->description)：\n" + toolListData;
+        String systemPrompt = "你是一个工具选择器。根据用户最近的对话记录，从可用工具列表中选出可能需要用到的工具名称。" + "只输出一个JSON数组，数组元素可以为工具name字，不需要其他任何文字。如果不需要任何工具或图片则输出空数组[]。\n" + "输出示例：[\"set_group_card\"]\n\n" + "可用工具列表(name->description)：\n" + toolListData;
 
         String userPrompt = recentMemoryMessages.isEmpty() ? "暂无对话记录" : "根据以上对话记录选择工具";
 
         String result;
         try {
             ChatClient chatClient = getChatClient(conf);
-            result = chatClient.prompt()
-                    .system(systemPrompt)
-                    .messages(recentMemoryMessages)
-                    .user(userPrompt)
-                    .call().content();
+            List<String> resultChunks = chatClient.prompt().system(systemPrompt).messages(recentMemoryMessages).user(userPrompt).stream().content().collectList().block();
+            result = resultChunks == null ? null : String.join("", resultChunks);
         } catch (Exception e) {
             // 工具选择AI调用失败时降级返回全部工具
             log.warn("工具选择AI调用失败，降级返回全部工具", e);
@@ -390,17 +375,19 @@ public class AIAssistantOptional implements BaseOptional {
 
         JSONArray tools = JSON.parseArray(result.substring(arrStart, arrEnd + 1));
         List<ToolCallback> toolCallbacks = new ArrayList<>();
+        List<String> extractedUrls = new ArrayList<>();
         for (int i = tools.size() - 1; i >= 0; i--) {
-            String toolName = tools.getString(i);
-            ToolCallback tool = cachedToolName2tool.get(toolName);
+            String item = tools.getString(i);
+            ToolCallback tool = cachedToolName2tool.get(item);
             if (tool == null) {
-                log.warn("toolName not found: {}. on conf: {}", toolName, conf.getQid());
+                log.warn("toolName not found: {}. on conf: {}", item, conf.getQid());
             } else {
                 toolCallbacks.add(tool);
             }
         }
         // 如果AI没选中任何工具则降级返回全部
-        return toolCallbacks.isEmpty() ? new ArrayList<>(cachedToolName2tool.values()) : toolCallbacks;
+        // return toolCallbacks.isEmpty() ? new ArrayList<>(cachedToolName2tool.values()) : toolCallbacks;
+        return new ArrayList<>(cachedToolName2tool.values());
     }
 
 
