@@ -406,7 +406,7 @@ public class AIAssistantOptional implements BaseOptional {
         }
 
 
-        @Tool(description = "查看此账号的定时任务列表")
+        @Tool(description = "查看此账号的定时(主动续火)任务列表")
         public String list_cron_tasks(@ToolParam(description = "BID") Long bid) {
             QueryWrapper<CronMessage> qw = new QueryWrapper<>();
             qw.eq("qid", String.valueOf(bid));
@@ -422,13 +422,13 @@ public class AIAssistantOptional implements BaseOptional {
             return sb.toString();
         }
 
-        @Tool(description = "添加定时任务")
+        @Tool(description = "添加定时(主动续火)任务,禁止添加秒分时级的循环任务")
         public String add_cron_task(
                 @ToolParam(description = "BID") Long bid,
                 @ToolParam(description = "目标ID（如群号加前缀 g123456，私聊加前缀 u123456）") String targetId,
                 @ToolParam(description = "Cron 表达式（如 0 0 12 * * ?）") String cron,
                 @ToolParam(description = "任务中文描述") String desc,
-                @ToolParam(description = "要发送的消息内容或执行的脚本指令") String msg) {
+                @ToolParam(description = "要发送的消息内容") String msg) {
             CronMessage cronMessage = new CronMessage();
             cronMessage.setQid(String.valueOf(bid));
             cronMessage.setCron(cron);
@@ -455,9 +455,9 @@ public class AIAssistantOptional implements BaseOptional {
             return "添加失败";
         }
 
-        @Tool(description = "删除定时任务")
+        @Tool(description = "删除定时(主动续火)任务")
         public String delete_cron_task(
-                @ToolParam(description = "要删除的定时任务ID") String id) {
+                @ToolParam(description = "定时任务ID") String id) {
             try {
                 cronService.del(id);
                 return "删除成功，已移除任务ID：" + id;
