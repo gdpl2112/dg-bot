@@ -1,0 +1,7 @@
+{
+  "resources": [
+    { "pattern": ".*\\.properties$" },
+    { "pattern": ".*\\.yml$" },
+    { "pattern": ".*\\.yaml$" }
+  ]
+}

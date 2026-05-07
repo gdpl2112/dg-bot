@@ -1,3 +1,4 @@
+!**/META-INF/native-image/*
 application-*.yaml
 application-*.yml
 temp
