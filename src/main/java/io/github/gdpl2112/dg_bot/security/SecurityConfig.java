@@ -22,7 +22,6 @@ import org.springframework.security.web.context.RequestAttributeSecurityContextR
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,18 +35,13 @@ public class SecurityConfig {
     @Autowired
     PasswordEncoder passwordEncoder;
 
+    @Autowired
+    SessionRegistry sessionRegistry;
+
     @Bean
     public AuthenticationManager authenticationManager() {
         DgAuthenticationProvider dgProvider = new DgAuthenticationProvider(userDetailsService);
         return new ProviderManager(dgProvider);
-    }
-
-    /**
-     * 会话注册表，用于跟踪所有活跃会话，支持单点登录的并发控制
-     */
-    @Bean
-    public SessionRegistry sessionRegistry() {
-        return new SessionRegistryImpl();
     }
 
     /**
@@ -70,7 +64,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         // 构建并发会话控制策略：限制同一用户最多1个会话，新登录踢掉旧会话
         ConcurrentSessionControlAuthenticationStrategy concurrentStrategy =
-                new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry());
+                new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry);
         concurrentStrategy.setMaximumSessions(1);
         // false: 新登录踢掉旧会话; true: 阻止新登录
         concurrentStrategy.setExceptionIfMaximumExceeded(false);
@@ -79,7 +73,7 @@ public class SecurityConfig {
                 Arrays.asList(
                         concurrentStrategy,
                         new SessionFixationProtectionStrategy(),
-                        new RegisterSessionAuthenticationStrategy(sessionRegistry())
+                        new RegisterSessionAuthenticationStrategy(sessionRegistry)
                 )
         );
 
@@ -129,7 +123,7 @@ public class SecurityConfig {
                     // 单点登录：同一用户只允许一个活跃会话，新登录踢掉旧会话
                     .maximumSessions(1)
                     .maxSessionsPreventsLogin(false)
-                    .sessionRegistry(sessionRegistry())
+                    .sessionRegistry(sessionRegistry)
             )
             .rememberMe(remember -> remember
                     .rememberMeServices(rememberMeServices())
