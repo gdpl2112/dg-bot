@@ -10,9 +10,6 @@ spring:
 
 server:
   port: 34740
-  servlet:
-    session:
-      timeout: 680400
 
 super:
   qid: 3474006766 # 超级管理

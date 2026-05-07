@@ -1,94 +1,71 @@
 package io.github.gdpl2112.dg_bot.security;
 
+import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
-import org.springframework.security.web.authentication.session.ConcurrentSessionControlAuthenticationStrategy;
-import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
-import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
-
-import org.springframework.security.web.context.DelegatingSecurityContextRepository;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
-
-import org.springframework.security.web.authentication.RememberMeServices;
-import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Arrays;
 
+/**
+ * 基于内存令牌的认证配置
+ * 使用自定义过滤器（LoginFilter + TokenAuthFilter）替代Spring内置认证
+ * 令牌存储在内存中（userId -> token），有效期2小时，单点登录
+ */
 @Configuration
 public class SecurityConfig {
-    @Autowired
-    UserDetailsServiceImpl userDetailsService;
 
     @Autowired
-    PasswordEncoder passwordEncoder;
+    private AuthMapper authMapper;
 
-    @Autowired
-    SessionRegistry sessionRegistry;
+    @Value("${super.qid:3474006766}")
+    private String superQid;
 
+    /**
+     * 内存令牌存储，单例Bean
+     *
+     * @return TokenStore实例
+     */
     @Bean
-    public AuthenticationManager authenticationManager() {
-        DgAuthenticationProvider dgProvider = new DgAuthenticationProvider(userDetailsService);
-        return new ProviderManager(dgProvider);
+    public TokenStore tokenStore() {
+        return new TokenStore();
     }
 
     /**
-     * 监听 HttpSession 生命周期事件，session 销毁时从 SessionRegistry 中移除
+     * 登录过滤器，拦截 /bot/login 验证凭证并生成令牌
+     *
+     * @return LoginFilter实例
      */
     @Bean
-    public HttpSessionEventPublisher httpSessionEventPublisher() {
-        return new HttpSessionEventPublisher();
+    public LoginFilter loginFilter() {
+        return new LoginFilter(tokenStore(), authMapper);
     }
 
+    /**
+     * 令牌认证过滤器，从Cookie/Header提取令牌验证后设置安全上下文
+     *
+     * @return TokenAuthFilter实例
+     */
     @Bean
-    public RememberMeServices rememberMeServices() {
-        TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices("dg-bot-key", userDetailsService);
-        rememberMeServices.setTokenValiditySeconds(60 * 60 * 24);
-        rememberMeServices.setAlwaysRemember(true);
-        return rememberMeServices;
+    public TokenAuthFilter tokenAuthFilter() {
+        return new TokenAuthFilter(tokenStore(), authMapper, superQid);
     }
 
+    /**
+     * 构建安全过滤链
+     * 不使用Spring内置认证（AuthenticationManager、RememberMe、SessionRegistry），
+     * 完全由自定义过滤器实现登录认证、令牌校验和单点控制
+     *
+     * @param http HTTP安全配置构建器
+     * @return 安全过滤链
+     * @throws Exception 配置过滤链时可能抛出的异常
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // 构建并发会话控制策略：限制同一用户最多1个会话，新登录踢掉旧会话
-        ConcurrentSessionControlAuthenticationStrategy concurrentStrategy =
-                new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry);
-        concurrentStrategy.setMaximumSessions(1);
-        // false: 新登录踢掉旧会话; true: 阻止新登录
-        concurrentStrategy.setExceptionIfMaximumExceeded(false);
-
-        CompositeSessionAuthenticationStrategy sessionStrategy = new CompositeSessionAuthenticationStrategy(
-                Arrays.asList(
-                        concurrentStrategy,
-                        new SessionFixationProtectionStrategy(),
-                        new RegisterSessionAuthenticationStrategy(sessionRegistry)
-                )
-        );
-
-        DgAuthenticationProcessingFilter dgFilter = new DgAuthenticationProcessingFilter();
-        dgFilter.setAuthenticationManager(authenticationManager());
-        dgFilter.setAuthenticationSuccessHandler(new DgAuthenticationSuccessHandler());
-        dgFilter.setAuthenticationFailureHandler(new DgAuthenticationFailureHandler());
-        dgFilter.setSecurityContextRepository(new DelegatingSecurityContextRepository(
-                new RequestAttributeSecurityContextRepository(),
-                new HttpSessionSecurityContextRepository()
-        ));
-        dgFilter.setRememberMeServices(rememberMeServices());
-        // 将并发会话策略绑定到自定义过滤器，使单点登录生效
-        dgFilter.setSessionAuthenticationStrategy(sessionStrategy);
-
         http
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
@@ -98,7 +75,9 @@ public class SecurityConfig {
                             "/api/bot/alist",
                             "/api/bot/avatar",
                             "/api/pre/statistics",
-                            "/api/rec", "/api/rec/test"
+                            "/api/rec",
+                            "/bot/login",
+                            "/api/rec/test"
                     ).permitAll()
                     .anyRequest().authenticated()
             )
@@ -110,8 +89,21 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                     .logoutUrl("/bot/logout")
-                    .invalidateHttpSession(true)
-                    .deleteCookies("remember-me", "JSESSIONID")
+                    .addLogoutHandler((request, response, authentication) -> {
+                        // 从Cookie中提取令牌并从内存中移除
+                        if (request.getCookies() != null) {
+                            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                                if ("dg-token".equals(cookie.getName())) {
+                                    String token = cookie.getValue();
+                                    String userId = tokenStore().validateToken(token);
+                                    if (userId != null) {
+                                        tokenStore().removeToken(userId);
+                                    }
+                                }
+                            }
+                        }
+                    })
+                    .deleteCookies("dg-token", "JSESSIONID")
                     .clearAuthentication(true)
                     .logoutSuccessHandler((request, response, authentication) -> {
                         response.setContentType("text/plain;charset=UTF-8");
@@ -119,17 +111,14 @@ public class SecurityConfig {
                         response.getWriter().write("已登出");
                     })
             )
-            .sessionManagement(session -> session
-                    // 单点登录：同一用户只允许一个活跃会话，新登录踢掉旧会话
-                    .maximumSessions(1)
-                    .maxSessionsPreventsLogin(false)
-                    .sessionRegistry(sessionRegistry)
-            )
-            .rememberMe(remember -> remember
-                    .rememberMeServices(rememberMeServices())
-            )
+            // 禁用Session管理，不再依赖Spring内置会话控制
+            .sessionManagement(session -> session.disable())
             .csrf(csrf -> csrf.disable())
-            .addFilterAfter(dgFilter, UsernamePasswordAuthenticationFilter.class);
+            // 先执行令牌认证过滤器，再执行登录过滤器
+            .addFilterBefore(tokenAuthFilter(),
+                    org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(loginFilter(),
+                    org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
