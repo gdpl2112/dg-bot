@@ -161,6 +161,14 @@ public class AIAssistantOptional implements BaseOptional {
             return;
         }
 
+        if ("清除记忆".equalsIgnoreCase(actualContent) || "clear".equalsIgnoreCase(actualContent)) {
+            MESSAGE_MEMORY_CACHE.remove(buildMemoryKey(bid, event.getSubject().getId()));
+            //images
+            BID_LAST_IMAGE_MAP.remove(bid);
+            event.getSubject().sendMessage("[AI功能输出]\n已清除记忆");
+            return;
+        }
+
         log.info("AI助手对话 bid:{} sid:{} content:{}", bid, sid, actualContent);
 
         String systemPrompt = String.format(SYSTEM_PROMPT_TEXT, aiConf.getName(), aiConf.getTrait(), event instanceof GroupAwareMessageEvent ? "Group" : "Friend", event.getSubject().getId(), event.getSender().getId(), event.getBot().getId());
