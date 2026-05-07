@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.utils;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,6 +121,19 @@ public class HttpsUtils {
         SSLContext sc = SSLContext.getInstance("SSL");
         sc.init(null, trustAllCerts, null);
         HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+    }
+
+    public static byte @Nullable [] readAsBytesFromImageUrl(String url) throws IOException {
+        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient();
+        okhttp3.Request request = new okhttp3.Request.Builder().url(url).build();
+        byte[] bytes;
+        try (okhttp3.Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) {
+                return null;
+            }
+            bytes = response.body().bytes();
+        }
+        return bytes;
     }
 
     private static class TrustAllManager implements X509TrustManager {

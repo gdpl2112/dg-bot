@@ -2,20 +2,15 @@ package io.github.gdpl2112.dg_bot.service.optionals;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.AiConf;
-import io.github.gdpl2112.dg_bot.dao.CronMessage;
-import io.github.gdpl2112.dg_bot.dto.VoteResponseDTO;
 import io.github.gdpl2112.dg_bot.mapper.AiConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
 import io.github.gdpl2112.dg_bot.service.CronService;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.DefaultService;
+import io.github.gdpl2112.dg_bot.utils.HttpsUtils;
 import io.github.kloping.judge.Judge;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.events.GroupAwareMessageEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.Image;
@@ -23,18 +18,23 @@ import net.mamoe.mirai.message.data.MessageChain;
 import net.mamoe.mirai.message.data.PlainText;
 import net.mamoe.mirai.message.data.SingleMessage;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MimeTypeUtils;
 import top.kloping.core.ai.McpBean;
-import top.mrxiaom.overflow.contact.RemoteBot;
 
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -51,9 +51,9 @@ public class AIAssistantOptional implements BaseOptional {
     private static final Map<String, ChatClient> CHAT_CLIENT_CACHE = new ConcurrentHashMap<>();
 
     /**
-     * ChatClient实例缓存，key为bid(qid)
+     * 对话记忆缓存，key为bid:subjectId，value为Spring AI Message队列
      */
-    private static final Map<String, Deque<MemoryMessage>> MESSAGE_MEMORY_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, Deque<Message>> MESSAGE_MEMORY_CACHE = new ConcurrentHashMap<>();
 
     @Autowired
     private DefaultService defaultService;
@@ -104,15 +104,15 @@ public class AIAssistantOptional implements BaseOptional {
             return;
         }
 
-        // 记录当前账号最后发送的图片，供后续 AI 对话使用
-        Image lastImage = null;
+        // 提取消息中的所有图片，供AI多模态对话和set_qq_avatar工具使用
+        List<Image> images = new ArrayList<>();
         for (SingleMessage singleMessage : event.getMessage()) {
-            if (singleMessage instanceof Image) {
-                lastImage = (Image) singleMessage;
+            if (singleMessage instanceof Image img) {
+                images.add(img);
             }
         }
-        if (lastImage != null) {
-            BID_LAST_IMAGE_MAP.put(bid, lastImage);
+        if (!images.isEmpty()) {
+            BID_LAST_IMAGE_MAP.put(bid, images.getLast());
         }
 
         // 解析包含特殊字符(如at、表情等)的富文本消息为纯文本格式
@@ -151,13 +151,25 @@ public class AIAssistantOptional implements BaseOptional {
         String systemPrompt = String.format(SYSTEM_PROMPT_TEXT, aiConf.getName(), aiConf.getTrait(),
                 event instanceof GroupAwareMessageEvent ? "Group" : "Friend", event.getSubject().getId(), event.getBot().getId());
         String memoryKey = buildMemoryKey(bid, event.getSubject().getId());
-        appendMemory(memoryKey, "用户", actualContent, resolveMaxMessage(aiConf.getMaxMessage()));
-        String memoryPrompt = buildMemoryPrompt(systemPrompt, memoryKey, resolveMaxMessage(aiConf.getMaxMessage()));
+        appendMemory(memoryKey, buildUserMessage(actualContent, images), resolveMaxMessage(aiConf.getMaxMessage()));
+        List<Message> memoryMessages = buildMemoryMessages(memoryKey, resolveMaxMessage(aiConf.getMaxMessage()));
 
         ChatClient chatClient = getChatClient(aiConf);
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-                .system(memoryPrompt)
-                .user(actualContent)
+                .system(systemPrompt)
+                .messages(memoryMessages)
+                .user(userSpec -> {
+                    userSpec.text(actualContent);
+                    // 将消息中的图片作为多模态内容填入AI消息
+                    for (Image img : images) {
+                        try {
+                            String url = Image.queryUrl(img);
+                            userSpec.media(MimeTypeUtils.IMAGE_JPEG, new UrlResource(URI.create(url)));
+                        } catch (Exception e) {
+                            log.warn("添加图片到AI消息失败", e);
+                        }
+                    }
+                })
                 .toolCallbacks(getToolCallbacks(aiConf, memoryKey));
         if (aiConf.getNetwork()) {
             chatClientRequestSpec.toolCallbacks(mcpBean.getToolCallbacks());
@@ -170,7 +182,7 @@ public class AIAssistantOptional implements BaseOptional {
             }
             String reply = "['" + aiConf.getName() + "'回答]\n\n" + responseContent;
             event.getSubject().sendMessage(new PlainText(reply));
-            appendMemory(memoryKey, "助手", responseContent.trim(), resolveMaxMessage(aiConf.getMaxMessage()));
+            appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
         } catch (Exception e) {
             log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
             event.getSubject().sendMessage(new PlainText("AI调用失败，请稍后再试" + "\n\n['" + aiConf.getName() + "'回复]"));
@@ -185,37 +197,73 @@ public class AIAssistantOptional implements BaseOptional {
         return maxMessage == null || maxMessage <= 0 ? 10 : maxMessage;
     }
 
-    private static String buildMemoryPrompt(String systemPrompt, String memoryKey, int maxMessage) {
-        Deque<MemoryMessage> memory = MESSAGE_MEMORY_CACHE.get(memoryKey);
+    /**
+     * 根据记忆缓存获取最近的消息列表
+     *
+     * @param memoryKey  记忆缓存key，非空
+     * @param maxMessage 最大记忆条数
+     * @return 消息列表，无记忆时返回空列表
+     */
+    private static List<Message> buildMemoryMessages(String memoryKey, int maxMessage) {
+        Deque<Message> memory = MESSAGE_MEMORY_CACHE.get(memoryKey);
         if (memory == null || memory.isEmpty()) {
-            return systemPrompt;
+            return Collections.emptyList();
         }
 
-        StringBuilder builder = new StringBuilder(systemPrompt).append("\n\n历史对话：\n");
+        List<Message> messages = new ArrayList<>();
         synchronized (memory) {
             int start = Math.max(0, memory.size() - maxMessage);
             int index = 0;
-            for (MemoryMessage memoryMessage : memory) {
+            for (Message msg : memory) {
                 if (index++ < start) {
                     continue;
                 }
-                builder.append(memoryMessage.role()).append('：').append(memoryMessage.content()).append('\n');
+                messages.add(msg);
             }
         }
-        return builder.toString().trim();
+        return messages;
     }
 
-    private static void appendMemory(String memoryKey, String role, String content, int maxMessage) {
-        Deque<MemoryMessage> memory = MESSAGE_MEMORY_CACHE.computeIfAbsent(memoryKey, k -> new ArrayDeque<>());
+    /**
+     * 向记忆缓存追加一条消息，超出maxMessage时淘汰最早的消息
+     *
+     * @param memoryKey  记忆缓存key，非空
+     * @param message    Spring AI消息，非空
+     * @param maxMessage 最大记忆条数
+     */
+    private static void appendMemory(String memoryKey, Message message, int maxMessage) {
+        Deque<Message> memory = MESSAGE_MEMORY_CACHE.computeIfAbsent(memoryKey, k -> new ArrayDeque<>());
         synchronized (memory) {
-            memory.addLast(new MemoryMessage(role, content));
+            memory.addLast(message);
             while (memory.size() > maxMessage) {
                 memory.removeFirst();
             }
         }
     }
 
-    private record MemoryMessage(String role, String content) {
+    /**
+     * 构建包含文本和图片的UserMessage
+     *
+     * @param text   文本内容，非空
+     * @param images 图片列表，可为空
+     * @return UserMessage实例
+     */
+    private static UserMessage buildUserMessage(String text, List<Image> images) {
+        if (images == null || images.isEmpty()) {
+            return new UserMessage(text);
+        }
+        List<org.springframework.ai.content.Media> mediaList = new ArrayList<>();
+        for (Image img : images) {
+            try {
+                String url = Image.queryUrl(img);
+                byte[] bytes = HttpsUtils.readAsBytesFromImageUrl(url);
+                if (bytes == null) continue;
+                mediaList.add(new Media(MimeTypeUtils.IMAGE_JPEG, new ByteArrayResource(bytes)));
+            } catch (Exception e) {
+                log.warn("构建图片Media失败", e);
+            }
+        }
+        return mediaList.isEmpty() ? new UserMessage(text) : UserMessage.builder().text(text).media(mediaList).build();
     }
 
     private static final String SYSTEM_PROMPT_TEXT = """
@@ -284,32 +332,22 @@ public class AIAssistantOptional implements BaseOptional {
         initToolCache();
         String toolListData = cachedToolListData;
 
-        // 取最近3条对话记录作为工具选择的上下文
-        Deque<MemoryMessage> memory = MESSAGE_MEMORY_CACHE.get(memoryKey);
-        StringBuilder recentMessages = new StringBuilder();
-        if (memory != null && !memory.isEmpty()) {
-            synchronized (memory) {
-                int start = Math.max(0, memory.size() - 5);
-                int index = 0;
-                for (MemoryMessage msg : memory) {
-                    if (index++ < start) continue;
-                    recentMessages.append(msg.role()).append("：").append(msg.content()).append("\n");
-                }
-            }
-        }
+        // 取最近5条对话记录作为工具选择的上下文
+        List<Message> recentMemoryMessages = buildMemoryMessages(memoryKey, 5);
 
         String systemPrompt = "你是一个工具选择器。根据用户最近的对话记录，从可用工具列表中选出可能需要用到的工具名称。" +
                 "只输出一个JSON数组，数组元素为工具name字符串，不需要其他任何文字。如果不需要任何工具则输出空数组[]。\n" +
                 "输出示例：[\"set_group_card\",\"send_like\"]\n\n" +
                 "可用工具列表(name->description)：\n" + toolListData;
 
-        String userPrompt = recentMessages.isEmpty() ? "暂无对话记录" : recentMessages.toString().trim();
+        String userPrompt = recentMemoryMessages.isEmpty() ? "暂无对话记录" : "根据以上对话记录选择工具";
 
         String result;
         try {
             ChatClient chatClient = getChatClient(conf);
             result = chatClient.prompt()
                     .system(systemPrompt)
+                    .messages(recentMemoryMessages)
                     .user(userPrompt)
                     .call().content();
         } catch (Exception e) {
@@ -351,18 +389,24 @@ public class AIAssistantOptional implements BaseOptional {
      */
     public ToolCallback[] getToolCallbacks() {
         if (aiAssistantOptional == null) {
-            aiAssistantOptional = new AiAssistantOptional(cronMapper, cronService);
+            aiAssistantOptional = new AiAssistantOptionalTools(cronMapper, cronService);
         }
         return ToolCallbacks.from(aiAssistantOptional);
     }
 
-    private AiAssistantOptional aiAssistantOptional;
+    private AiAssistantOptionalTools aiAssistantOptional;
 
-    /** 工具名称->描述 缓存，由 @Tool 方法固定生成，无需每次重建 */
+    /**
+     * 工具名称->描述 缓存，由 @Tool 方法固定生成，无需每次重建
+     */
     private Map<String, String> cachedToolName2Desc;
-    /** 工具名称->ToolCallback 缓存，由 @Tool 方法固定生成，无需每次重建 */
+    /**
+     * 工具名称->ToolCallback 缓存，由 @Tool 方法固定生成，无需每次重建
+     */
     private Map<String, ToolCallback> cachedToolName2tool;
-    /** 工具列表JSON缓存，由 cachedToolName2Desc 序列化生成 */
+    /**
+     * 工具列表JSON缓存，由 cachedToolName2Desc 序列化生成
+     */
     private String cachedToolListData;
 
     /**
@@ -379,295 +423,4 @@ public class AIAssistantOptional implements BaseOptional {
         cachedToolListData = JSON.toJSONString(cachedToolName2Desc);
     }
 
-    @AllArgsConstructor
-    public static class AiAssistantOptional {
-        private final CronMapper cronMapper;
-        private final CronService cronService;
-
-        /**
-         * 机器人校验结果封装
-         * 用于统一返回可用的 RemoteBot 或错误信息
-         */
-        private record BotResolveResult(RemoteBot remoteBot, String errorMessage) {
-            private boolean success() {
-                return remoteBot != null;
-            }
-        }
-
-        /**
-         * 校验机器人是否存在、在线且支持远程操作
-         *
-         * @param bid 机器人ID
-         * @return 校验结果，成功时包含 RemoteBot，失败时包含错误信息
-         */
-        private static BotResolveResult resolveRemoteBot(Long bid) {
-            if (bid == null) {
-                return new BotResolveResult(null, "BID不能为空");
-            }
-
-            Bot bot = Bot.getInstanceOrNull(bid);
-            // 机器人不存在时直接返回错误信息
-            if (bot == null) {
-                return new BotResolveResult(null, "机器人未找到");
-            }
-            // 机器人离线时不可执行远程操作
-            if (!bot.isOnline()) {
-                return new BotResolveResult(null, "机器人未在线");
-            }
-            // 仅支持 RemoteBot 的机器人实例
-            if (!(bot instanceof RemoteBot remoteBot)) {
-                return new BotResolveResult(null, "当前机器人不支持该操作");
-            }
-            return new BotResolveResult(remoteBot, null);
-        }
-
-        /**
-         * set_group_special_title
-         * {
-         * "group_id": "123456",
-         * "user_id": "123456789",
-         * "special_title": "头衔"
-         * }
-         *
-         * @param bid
-         * @param groupId
-         * @param userId
-         * @param title
-         * @return
-         */
-        @Tool(description = "设置群头衔")
-        public String set_group_special_title(
-                @ToolParam(description = "BID") Long bid,
-                @ToolParam(description = "GroupID") Long groupId,
-                @ToolParam(description = "QQID") Long userId,
-                @ToolParam(description = "群头衔内容") String title) {
-            if (bid == null || groupId == null || userId == null || title == null) {
-                return "参数不能为空";
-            }
-
-            BotResolveResult botResult = resolveRemoteBot(bid);
-            if (!botResult.success()) {
-                return botResult.errorMessage();
-            }
-            RemoteBot remoteBot = botResult.remoteBot();
-
-            String payload = "{\"group_id\":\"" + groupId + "\",\"user_id\":\"" + userId
-                    + "\",\"special_title\":\"" + title.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
-            return remoteBot.executeAction("set_group_special_title", payload);
-        }
-
-        /**
-         * set_group_card
-         * {
-         * "group_id": "123456",
-         * "user_id": "123456789",
-         * "card": "新名片"
-         * }
-         *
-         * @param bid
-         * @param groupId
-         * @param userId
-         * @param card
-         */
-        @Tool(description = "设置群名片")
-        public String set_group_card(
-                @ToolParam(description = "BID") Long bid,
-                @ToolParam(description = "GroupID") Long groupId,
-                @ToolParam(description = "QQID") Long userId,
-                @ToolParam(description = "群名片内容") String card) {
-            BotResolveResult botResult = resolveRemoteBot(bid);
-            if (!botResult.success()) {
-                return botResult.errorMessage();
-            }
-            RemoteBot remoteBot = botResult.remoteBot();
-            JSONObject payload = new JSONObject();
-            payload.put("group_id", groupId);
-            payload.put("user_id", userId);
-            payload.put("card", card);
-            return remoteBot.executeAction("set_group_card", payload.toJSONString());
-        }
-
-        // 设置qq头像
-        //{
-        //  "file": "base64://..."
-        //}
-        @Tool(description = "设置QQ头像,为最近发的一个图片")
-        public String set_qq_avatar(@ToolParam(description = "BID") Long bid) {
-            BotResolveResult botResult = resolveRemoteBot(bid);
-            if (!botResult.success()) {
-                return botResult.errorMessage();
-            }
-            RemoteBot remoteBot = botResult.remoteBot();
-
-            Image lastImage = AIAssistantOptional.getLastImage(bid);
-            if (lastImage == null) {
-                return "未找到最近发送的图片";
-            }
-
-            String url = net.mamoe.mirai.message.data.Image.queryUrl(lastImage);
-            if (url == null || url.isEmpty()) {
-                return "获取图片URL失败";
-            }
-
-            try {
-                // 使用 okhttp 下载图片转为 base64
-                okhttp3.OkHttpClient client = new okhttp3.OkHttpClient();
-                okhttp3.Request request = new okhttp3.Request.Builder().url(url).build();
-                byte[] bytes;
-                try (okhttp3.Response response = client.newCall(request).execute()) {
-                    if (!response.isSuccessful() || response.body() == null) {
-                        return "下载图片失败: HTTP " + response.code();
-                    }
-                    bytes = response.body().bytes();
-                }
-                String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
-
-                JSONObject payload = new JSONObject();
-                payload.put("file", "base64://" + base64);
-                return remoteBot.executeAction("set_qq_avatar", payload.toJSONString());
-            } catch (Exception e) {
-                log.error("设置QQ头像失败", e);
-                return "设置QQ头像失败: " + e.getMessage();
-            }
-        }
-
-
-        @Tool(description = "查看此账号的定时(主动续火)任务列表")
-        public String list_cron_tasks(@ToolParam(description = "BID") Long bid) {
-            QueryWrapper<CronMessage> qw = new QueryWrapper<>();
-            qw.eq("qid", String.valueOf(bid));
-            java.util.List<CronMessage> list = cronMapper.selectList(qw);
-            if (list == null || list.isEmpty()) {
-                return "当前账号没有定时任务";
-            }
-            StringBuilder sb = new StringBuilder("定时任务列表：\n");
-            for (CronMessage msg : list) {
-                sb.append(String.format("ID: %s, 目标: %s, Cron: %s, 描述: %s, 内容: %s\n",
-                        msg.getId(), msg.getTargetId(), msg.getCron(), msg.getDesc(), msg.getMsg()));
-            }
-            return sb.toString();
-        }
-
-        @Tool(description = "添加定时(主动续火)任务,禁止添加秒分时级的循环任务")
-        public String add_cron_task(
-                @ToolParam(description = "BID") Long bid,
-                @ToolParam(description = "目标ID（如群号加前缀 g123456，私聊加前缀 u123456）") String targetId,
-                @ToolParam(description = "Cron 表达式（如 0 0 12 * * ?）") String cron,
-                @ToolParam(description = "任务中文描述") String desc,
-                @ToolParam(description = "要发送的消息内容") String msg) {
-            CronMessage cronMessage = new CronMessage();
-            cronMessage.setQid(String.valueOf(bid));
-            cronMessage.setCron(cron);
-            cronMessage.setTargetId(targetId);
-            cronMessage.setMsg(msg);
-            cronMessage.setDesc(desc);
-
-            int state = cronMapper.insert(cronMessage);
-            if (state > 0) {
-                QueryWrapper<CronMessage> qw = new QueryWrapper<>();
-                qw.eq("qid", String.valueOf(bid))
-                        .eq("cron", cron)
-                        .eq("desc", desc)
-                        .eq("target_id", targetId)
-                        .eq("msg", msg);
-                CronMessage savedMsg = cronMapper.selectOne(qw);
-                if (savedMsg != null) {
-                    cronMessage.setId(savedMsg.getId());
-                    cronService.appendTask(cronMessage);
-                    return "添加成功，任务ID：" + savedMsg.getId();
-                }
-                return "添加成功，但未获取到新任务ID";
-            }
-            return "添加失败";
-        }
-
-        @Tool(description = "删除定时(主动续火)任务")
-        public String delete_cron_task(
-                @ToolParam(description = "定时任务ID") String id) {
-            try {
-                cronService.del(id);
-                return "删除成功，已移除任务ID：" + id;
-            } catch (Exception e) {
-                log.error("删除定时任务出错", e);
-                return "删除失败: " + e.getMessage();
-            }
-        }
-
-        //get_profile_like
-        //{
-        //  "user_id": "",
-        //  "start": 0,
-        //  "count": 10
-        //}
-        @Tool(description = "获取名片点赞信息")
-        public String get_profile_like(@ToolParam(description = "BID") Long bid) {
-            BotResolveResult botResult = resolveRemoteBot(bid);
-            if (!botResult.success()) {
-                return botResult.errorMessage();
-            }
-            RemoteBot remoteBot = botResult.remoteBot();
-            try {
-                String result = remoteBot.executeAction("get_profile_like", "{\n" +
-                        "  \"user_id\": \"\",\n" +
-                        "  \"start\": 0,\n" +
-                        "  \"count\": 10\n" +
-                        "}");
-                VoteResponseDTO responseDTO = VoteResponseDTO.parseFromJson(result);
-                return JSON.toJSONString(responseDTO.toSimplifiedData());
-            } catch (Exception e) {
-                log.error("获取名片点赞信息出错", e);
-                return "获取名片点赞信息出错: " + e.getMessage();
-            }
-        }
-
-        //send_like
-        //{
-        //    "user_id": "123456,234567",
-        //    "times": 10
-        //}
-        @Tool(description = "给指定QQ名片点赞")
-        public String send_like(
-                @ToolParam(description = "BID") Long bid,
-                @ToolParam(description = "QQID,可多个用英文逗号分隔") String userIds,
-                @ToolParam(description = "点赞次数,一般10次 svip20次") Integer times) {
-            if (userIds == null || userIds.trim().isEmpty()) {
-                return "QQID不能为空";
-            }
-
-            BotResolveResult botResult = resolveRemoteBot(bid);
-            if (!botResult.success()) {
-                return botResult.errorMessage();
-            }
-            RemoteBot remoteBot = botResult.remoteBot();
-            String[] userIdArray = userIds.split("[,，]");
-            List<String> results = new ArrayList<>();
-            for (String userIdText : userIdArray) {
-                String trimmedUserId = userIdText.trim();
-                if (trimmedUserId.isEmpty()) {
-                    continue;
-                }
-                try {
-                    Long.parseLong(trimmedUserId);
-                } catch (NumberFormatException e) {
-                    results.add("QQID格式错误: " + trimmedUserId);
-                    continue;
-                }
-                try {
-                    String result = remoteBot.executeAction("send_like", "{\n" +
-                            "    \"user_id\": \"" + trimmedUserId + "\",\n" +
-                            "    \"times\": " + times + "\n" +
-                            "}");
-                    results.add(trimmedUserId + ": " + result);
-                } catch (Exception e) {
-                    log.error("给指定QQ名片点赞出错, userId={}", trimmedUserId, e);
-                    results.add(trimmedUserId + ": 给指定QQ名片点赞出错: " + e.getMessage());
-                }
-            }
-
-            if (results.isEmpty()) {
-                return "未找到有效的QQID";
-            }
-            return String.join("\n", results);
-        }
-    }
 }
