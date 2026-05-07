@@ -18,6 +18,8 @@ import org.springframework.security.web.context.RequestAttributeSecurityContextR
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 @Configuration
 public class SecurityConfig {
     @Autowired
@@ -71,6 +73,22 @@ public class SecurityConfig {
                         response.setStatus(HttpStatus.FORBIDDEN.value());
                         response.getWriter().write("Access Denied: Insufficient permissions");
                     })
+            )
+            .logout(logout -> logout
+                    .logoutUrl("/bot/logout")
+                    .invalidateHttpSession(true)
+                    .deleteCookies("remember-me", "JSESSIONID")
+                    .clearAuthentication(true)
+                    .logoutSuccessHandler((request, response, authentication) -> {
+                        response.setContentType("text/plain;charset=UTF-8");
+                        response.setStatus(HttpServletResponse.SC_OK);
+                        response.getWriter().write("已登出");
+                    })
+            )
+            .sessionManagement(session -> session
+                    // 单点登录：同一用户只允许一个活跃会话，新登录踢掉旧会话
+                    .maximumSessions(1)
+                    .maxSessionsPreventsLogin(false)
             )
             .rememberMe(remember -> remember
                     .rememberMeServices(rememberMeServices())
