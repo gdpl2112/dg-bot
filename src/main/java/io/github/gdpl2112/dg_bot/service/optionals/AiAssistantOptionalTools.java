@@ -91,6 +91,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "GroupID") Long groupId,
             @ToolParam(description = "QQID") Long userId,
             @ToolParam(description = "群头衔内容") String title) {
+        log.info("set_group_special_title: bid={}, groupId={}, userId={}, title={}", bid, groupId, userId, title);
         if (bid == null || groupId == null || userId == null || title == null) {
             return "参数不能为空";
         }
@@ -125,6 +126,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "GroupID") Long groupId,
             @ToolParam(description = "QQID") Long userId,
             @ToolParam(description = "群名片内容") String card) {
+        log.info("set_group_card: bid={}, groupId={}, userId={}, card={}", bid, groupId, userId, card);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
             return botResult.errorMessage();
@@ -143,6 +145,7 @@ public class AiAssistantOptionalTools {
     //}
     @Tool(description = "设置QQ头像,为最近发的一个图片")
     public String set_qq_avatar(@ToolParam(description = "BID") Long bid) {
+        log.info("set_qq_avatar: bid={}", bid);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
             return botResult.errorMessage();
@@ -174,6 +177,7 @@ public class AiAssistantOptionalTools {
 
     @Tool(description = "查看此账号的定时(主动续火)任务列表")
     public String list_cron_tasks(@ToolParam(description = "BID") Long bid) {
+        log.info("list_cron_tasks: bid={}", bid);
         QueryWrapper<CronMessage> qw = new QueryWrapper<>();
         qw.eq("qid", String.valueOf(bid));
         java.util.List<CronMessage> list = cronMapper.selectList(qw);
@@ -195,6 +199,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "Cron 表达式（如 0 0 12 * * ?）") String cron,
             @ToolParam(description = "任务中文描述") String desc,
             @ToolParam(description = "要发送的消息内容") String msg) {
+        log.info("add_cron_task: bid={}, targetId={}, cron={}, desc={}, msg={}", bid, targetId, cron, desc, msg);
         CronMessage cronMessage = new CronMessage();
         cronMessage.setQid(String.valueOf(bid));
         cronMessage.setCron(cron);
@@ -224,6 +229,7 @@ public class AiAssistantOptionalTools {
     @Tool(description = "删除定时(主动续火)任务")
     public String delete_cron_task(
             @ToolParam(description = "定时任务ID") String id) {
+        log.info("delete_cron_task: id={}", id);
         try {
             cronService.del(id);
             return "删除成功，已移除任务ID：" + id;
@@ -241,6 +247,7 @@ public class AiAssistantOptionalTools {
     //}
     @Tool(description = "获取名片点赞信息")
     public String get_profile_like(@ToolParam(description = "BID") Long bid) {
+        log.info("get_profile_like: bid={}", bid);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
             return botResult.errorMessage();
@@ -270,6 +277,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "BID") Long bid,
             @ToolParam(description = "QQID,可多个用英文逗号分隔") String userIds,
             @ToolParam(description = "点赞次数,一般10次 svip20次") Integer times) {
+        log.info("send_like: bid={}, userIds={}, times={}", bid, userIds, times);
         if (userIds == null || userIds.trim().isEmpty()) {
             return "QQID不能为空";
         }
@@ -323,6 +331,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "BID") Long bid,
             @ToolParam(description = "好友QQ号") Long friendId,
             @ToolParam(description = "消息内容") String message) {
+        log.info("send_friend_message: bid={}, friendId={}, message={}", bid, friendId, message);
         Bot bot = Bot.getInstanceOrNull(bid);
         if (bot == null) return "机器人未找到";
         if (!bot.isOnline()) return "机器人不在线";
@@ -345,6 +354,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "BID") Long bid,
             @ToolParam(description = "群号") Long groupId,
             @ToolParam(description = "消息内容") String message) {
+        log.info("send_group_message: bid={}, groupId={}, message={}", bid, groupId, message);
         Bot bot = Bot.getInstanceOrNull(bid);
         if (bot == null) return "机器人未找到";
         if (!bot.isOnline()) return "机器人不在线";
@@ -367,6 +377,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "BID") Long bid,
             @ToolParam(description = "群号") Long groupId,
             @ToolParam(description = "成员QQ号") Long userId) {
+        log.info("get_group_member_info: bid={}, groupId={}, userId={}", bid, groupId, userId);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
             return botResult.errorMessage();
