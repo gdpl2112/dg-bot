@@ -1,10 +1,12 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.AiConf;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
+import io.github.gdpl2112.dg_bot.dto.VoteResponseDTO;
 import io.github.gdpl2112.dg_bot.mapper.AiConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
 import io.github.gdpl2112.dg_bot.service.CronService;
@@ -23,6 +25,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -153,7 +157,7 @@ public class AIAssistantOptional implements BaseOptional {
         ChatClient chatClient = getChatClient(aiConf);
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
                 .system(memoryPrompt)
-                .user(actualContent).tools(getAiAssistantOptional());
+                .user(actualContent).toolCallbacks(getToolCallbacks());
         if (aiConf.getNetwork()) {
             chatClientRequestSpec.toolCallbacks(mcpBean.getToolCallbacks());
         }
@@ -266,11 +270,16 @@ public class AIAssistantOptional implements BaseOptional {
         return ChatClient.builder(chatModel).build();
     }
 
-    public AiAssistantOptional getAiAssistantOptional() {
+    /**
+     * 将 AiAssistantOptional 中所有 @Tool 方法逐一提取为独立的 ToolCallback
+     *
+     * @return ToolCallback 数组，每个元素对应一个 @Tool 方法
+     */
+    public ToolCallback[] getToolCallbacks() {
         if (aiAssistantOptional == null) {
             aiAssistantOptional = new AiAssistantOptional(cronMapper, cronService);
         }
-        return aiAssistantOptional;
+        return ToolCallbacks.from(aiAssistantOptional);
     }
 
     private AiAssistantOptional aiAssistantOptional;
@@ -279,6 +288,43 @@ public class AIAssistantOptional implements BaseOptional {
     public static class AiAssistantOptional {
         private final CronMapper cronMapper;
         private final CronService cronService;
+
+        /**
+         * 机器人校验结果封装
+         * 用于统一返回可用的 RemoteBot 或错误信息
+         */
+        private record BotResolveResult(RemoteBot remoteBot, String errorMessage) {
+            private boolean success() {
+                return remoteBot != null;
+            }
+        }
+
+        /**
+         * 校验机器人是否存在、在线且支持远程操作
+         *
+         * @param bid 机器人ID
+         * @return 校验结果，成功时包含 RemoteBot，失败时包含错误信息
+         */
+        private static BotResolveResult resolveRemoteBot(Long bid) {
+            if (bid == null) {
+                return new BotResolveResult(null, "BID不能为空");
+            }
+
+            Bot bot = Bot.getInstanceOrNull(bid);
+            // 机器人不存在时直接返回错误信息
+            if (bot == null) {
+                return new BotResolveResult(null, "机器人未找到");
+            }
+            // 机器人离线时不可执行远程操作
+            if (!bot.isOnline()) {
+                return new BotResolveResult(null, "机器人未在线");
+            }
+            // 仅支持 RemoteBot 的机器人实例
+            if (!(bot instanceof RemoteBot remoteBot)) {
+                return new BotResolveResult(null, "当前机器人不支持该操作");
+            }
+            return new BotResolveResult(remoteBot, null);
+        }
 
         /**
          * set_group_special_title
@@ -304,16 +350,11 @@ public class AIAssistantOptional implements BaseOptional {
                 return "参数不能为空";
             }
 
-            Bot bot = Bot.getInstanceOrNull(bid);
-            if (bot == null) {
-                return "机器人未找到";
+            BotResolveResult botResult = resolveRemoteBot(bid);
+            if (!botResult.success()) {
+                return botResult.errorMessage();
             }
-            if (!bot.isOnline()) {
-                return "机器人未在线";
-            }
-            if (!(bot instanceof RemoteBot remoteBot)) {
-                return "当前机器人不支持该操作";
-            }
+            RemoteBot remoteBot = botResult.remoteBot();
 
             String payload = "{\"group_id\":\"" + groupId + "\",\"user_id\":\"" + userId
                     + "\",\"special_title\":\"" + title.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
@@ -339,16 +380,11 @@ public class AIAssistantOptional implements BaseOptional {
                 @ToolParam(description = "GroupID") Long groupId,
                 @ToolParam(description = "QQID") Long userId,
                 @ToolParam(description = "群名片内容") String card) {
-            Bot bot = Bot.getInstanceOrNull(bid);
-            if (bot == null) {
-                return "机器人未找到";
+            BotResolveResult botResult = resolveRemoteBot(bid);
+            if (!botResult.success()) {
+                return botResult.errorMessage();
             }
-            if (!bot.isOnline()) {
-                return "机器人未在线";
-            }
-            if (!(bot instanceof RemoteBot remoteBot)) {
-                return "当前机器人不支持该操作";
-            }
+            RemoteBot remoteBot = botResult.remoteBot();
             JSONObject payload = new JSONObject();
             payload.put("group_id", groupId);
             payload.put("user_id", userId);
@@ -362,16 +398,11 @@ public class AIAssistantOptional implements BaseOptional {
         //}
         @Tool(description = "设置QQ头像,为最近发的一个图片")
         public String set_qq_avatar(@ToolParam(description = "BID") Long bid) {
-            Bot bot = Bot.getInstanceOrNull(bid);
-            if (bot == null) {
-                return "机器人未找到";
+            BotResolveResult botResult = resolveRemoteBot(bid);
+            if (!botResult.success()) {
+                return botResult.errorMessage();
             }
-            if (!bot.isOnline()) {
-                return "机器人未在线";
-            }
-            if (!(bot instanceof RemoteBot remoteBot)) {
-                return "当前机器人不支持该操作";
-            }
+            RemoteBot remoteBot = botResult.remoteBot();
 
             Image lastImage = AIAssistantOptional.getLastImage(bid);
             if (lastImage == null) {
@@ -464,6 +495,60 @@ public class AIAssistantOptional implements BaseOptional {
             } catch (Exception e) {
                 log.error("删除定时任务出错", e);
                 return "删除失败: " + e.getMessage();
+            }
+        }
+
+        //get_profile_like
+        //{
+        //  "user_id": "",
+        //  "start": 0,
+        //  "count": 10
+        //}
+        @Tool(description = "获取名片点赞信息")
+        public String get_profile_like(@ToolParam(description = "BID") Long bid) {
+            BotResolveResult botResult = resolveRemoteBot(bid);
+            if (!botResult.success()) {
+                return botResult.errorMessage();
+            }
+            RemoteBot remoteBot = botResult.remoteBot();
+            try {
+                String result = remoteBot.executeAction("get_profile_like", "{\n" +
+                        "  \"user_id\": \"\",\n" +
+                        "  \"start\": 0,\n" +
+                        "  \"count\": 10\n" +
+                        "}");
+                VoteResponseDTO responseDTO = VoteResponseDTO.parseFromJson(result);
+                return JSON.toJSONString(responseDTO.toSimplifiedData());
+            } catch (Exception e) {
+                log.error("获取名片点赞信息出错", e);
+                return "获取名片点赞信息出错: " + e.getMessage();
+            }
+        }
+
+        //send_like
+        //{
+        //    "user_id": "123456",
+        //    "times": 10
+        //}
+        @Tool(description = "给指定QQ名片点赞")
+        public String send_like(
+                @ToolParam(description = "BID") Long bid,
+                @ToolParam(description = "QQID") Long userId,
+                @ToolParam(description = "点赞次数,一般10次 svip20次") Integer times) {
+            BotResolveResult botResult = resolveRemoteBot(bid);
+            if (!botResult.success()) {
+                return botResult.errorMessage();
+            }
+            RemoteBot remoteBot = botResult.remoteBot();
+            try {
+                String result = remoteBot.executeAction("send_like", "{\n" +
+                        "    \"user_id\": \"" + userId + "\",\n" +
+                        "    \"times\": " + times + "\n" +
+                        "}");
+                return result;
+            } catch (Exception e) {
+                log.error("给指定QQ名片点赞出错", e);
+                return "给指定QQ名片点赞出错: " + e.getMessage();
             }
         }
     }
