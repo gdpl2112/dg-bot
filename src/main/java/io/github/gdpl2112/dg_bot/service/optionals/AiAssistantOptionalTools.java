@@ -52,7 +52,7 @@ public class AiAssistantOptionalTools {
      */
     private static BotResolveResult resolveRemoteBot(Long bid) {
         if (bid == null) {
-            return new BotResolveResult(null, "BID不能为空");
+            return new BotResolveResult(null, "bot ID不能为空");
         }
 
         Bot bot = Bot.getInstanceOrNull(bid);
@@ -87,7 +87,7 @@ public class AiAssistantOptionalTools {
      */
     @Tool(description = "设置群头衔")
     public String set_group_special_title(
-            @ToolParam(description = "BID") Long bid,
+            @ToolParam(description = "bot ID") Long bid,
             @ToolParam(description = "GroupID") Long groupId,
             @ToolParam(description = "QQID") Long userId,
             @ToolParam(description = "群头衔内容") String title) {
@@ -122,7 +122,7 @@ public class AiAssistantOptionalTools {
      */
     @Tool(description = "设置群名片")
     public String set_group_card(
-            @ToolParam(description = "BID") Long bid,
+            @ToolParam(description = "bot ID") Long bid,
             @ToolParam(description = "GroupID") Long groupId,
             @ToolParam(description = "QQID") Long userId,
             @ToolParam(description = "群名片内容") String card) {
@@ -144,7 +144,7 @@ public class AiAssistantOptionalTools {
     //  "file": "base64://..."
     //}
     @Tool(description = "设置QQ头像,为最近发的一个图片")
-    public String set_qq_avatar(@ToolParam(description = "BID") Long bid) {
+    public String set_qq_avatar(@ToolParam(description = "bot ID") Long bid) {
         log.info("set_qq_avatar: bid={}", bid);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
@@ -176,7 +176,7 @@ public class AiAssistantOptionalTools {
 
 
     @Tool(description = "查看此账号的定时(主动续火)任务列表")
-    public String list_cron_tasks(@ToolParam(description = "BID") Long bid) {
+    public String list_cron_tasks(@ToolParam(description = "bot ID") Long bid) {
         log.info("list_cron_tasks: bid={}", bid);
         QueryWrapper<CronMessage> qw = new QueryWrapper<>();
         qw.eq("qid", String.valueOf(bid));
@@ -194,7 +194,7 @@ public class AiAssistantOptionalTools {
 
     @Tool(description = "添加定时(主动续火)任务,禁止添加秒分时级的循环任务")
     public String add_cron_task(
-            @ToolParam(description = "BID") Long bid,
+            @ToolParam(description = "bot ID") Long bid,
             @ToolParam(description = "目标ID（如群号加前缀 g123456，私聊加前缀 u123456）") String targetId,
             @ToolParam(description = "Cron 表达式（如 0 0 12 * * ?）") String cron,
             @ToolParam(description = "任务中文描述") String desc,
@@ -246,7 +246,7 @@ public class AiAssistantOptionalTools {
     //  "count": 10
     //}
     @Tool(description = "获取名片点赞信息")
-    public String get_profile_like(@ToolParam(description = "BID") Long bid) {
+    public String get_profile_like(@ToolParam(description = "bot ID") Long bid) {
         log.info("get_profile_like: bid={}", bid);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
@@ -274,7 +274,7 @@ public class AiAssistantOptionalTools {
     //}
     @Tool(description = "给指定QQ名片点赞")
     public String send_like(
-            @ToolParam(description = "BID") Long bid,
+            @ToolParam(description = "bot ID") Long bid,
             @ToolParam(description = "QQID,可多个用英文逗号分隔") String userIds,
             @ToolParam(description = "点赞次数,一般10次 svip20次") Integer times) {
         log.info("send_like: bid={}, userIds={}, times={}", bid, userIds, times);
@@ -328,7 +328,7 @@ public class AiAssistantOptionalTools {
      */
     @Tool(description = "给指定好友发送消息")
     public String send_friend_message(
-            @ToolParam(description = "BID") Long bid,
+            @ToolParam(description = "bot ID") Long bid,
             @ToolParam(description = "好友QQ号") Long friendId,
             @ToolParam(description = "消息内容") String message) {
         log.info("send_friend_message: bid={}, friendId={}, message={}", bid, friendId, message);
@@ -351,7 +351,7 @@ public class AiAssistantOptionalTools {
      */
     @Tool(description = "给指定群发送消息")
     public String send_group_message(
-            @ToolParam(description = "BID") Long bid,
+            @ToolParam(description = "bot ID") Long bid,
             @ToolParam(description = "群号") Long groupId,
             @ToolParam(description = "消息内容") String message) {
         log.info("send_group_message: bid={}, groupId={}, message={}", bid, groupId, message);
@@ -374,7 +374,7 @@ public class AiAssistantOptionalTools {
      */
     @Tool(description = "获取指定群内指定成员的信息")
     public String get_group_member_info(
-            @ToolParam(description = "BID") Long bid,
+            @ToolParam(description = "bot ID") Long bid,
             @ToolParam(description = "群号") Long groupId,
             @ToolParam(description = "成员QQ号") Long userId) {
         log.info("get_group_member_info: bid={}, groupId={}, userId={}", bid, groupId, userId);
