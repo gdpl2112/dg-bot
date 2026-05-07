@@ -1,7 +1,6 @@
 package io.github.gdpl2112.dg_bot.built;
 
 import lombok.Getter;
-import org.openjdk.nashorn.api.scripting.NashornScriptEngineFactory;
 
 import javax.script.*;
 import java.util.HashSet;
@@ -12,7 +11,6 @@ import java.util.regex.Pattern;
 
 @Getter
 public class ScriptCompile {
-    private final NashornScriptEngineFactory factory = new NashornScriptEngineFactory();
     private CompiledScript script;
     private ScriptEngine engine;
     // 存储所有提取的函数名
@@ -30,10 +28,13 @@ public class ScriptCompile {
         this.script = initScript(scriptText, initParams);
     }
 
+    private final ScriptEngineManager manager = new ScriptEngineManager();
+
     public CompiledScript initScript(String scriptText, Map<String, Object> initParams) {
         CompiledScript script = null;
-        ScriptEngine engine = factory.getScriptEngine();
-//       engine = manager.getEngineByName("nashorn");
+        ScriptEngine engine = null;
+//        engine = factory.getScriptEngine();
+        engine = manager.getEngineByName("js");
 //        if (engine == null) engine = manager.getEngineByName("JavaScript");
         // 检查JavaScript引擎是否可用
         if (engine == null) {
