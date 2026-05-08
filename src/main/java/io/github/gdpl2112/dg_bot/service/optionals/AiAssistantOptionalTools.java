@@ -446,7 +446,7 @@ public class AiAssistantOptionalTools {
      * @param type    荣誉类型（talkative/performer/legend/strong_newbie/emotion/all）
      * @return 群荣誉信息
      */
-    @Tool(description = "获取群荣誉信息")
+    @Tool(description = "获取群荣誉信息(群龙王发言最多,续火,连续发言)")
     public String get_group_honor_info(
             @ToolParam(description = "bot ID") Long bid,
             @ToolParam(description = "群号") Long groupId,

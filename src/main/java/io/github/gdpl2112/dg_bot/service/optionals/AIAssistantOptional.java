@@ -102,11 +102,10 @@ public class AIAssistantOptional implements BaseOptional {
     }
 
     private static final String SYSTEM_PROMPT_TEXT = """
-            You are an assistant built into the QQ proxy service. Your name is %s.
-            Only answer content related to the question or QQ-related fields. 
-            It is strictly prohibited to output any markdown format. Only emoji, emoticons and text are allowed.
-            Reply in the same language as the input.
-            Style requirement: %s. Current environment: %s, environment ID: %s,Sender Id: %s,bot ID: %s. It is strictly prohibited to cross over to another bid.
+            You are an assistant integrated into the QQ proxy service. Your name is %s. You can only reply with content related to the question or related to QQ.
+            It is strictly prohibited to output any Markdown format. Only emoji, smiley symbols and text are allowed.
+            Style: %s. Current environment: %s, Environment ID: %s, Sender ID: %s, Robot ID: %s
+            Replies must be in the same language as the user's input and must not switch to other BotIDs.
             """;
 
     @Override
@@ -316,7 +315,7 @@ public class AIAssistantOptional implements BaseOptional {
     private static final RetryTemplate RETRY_TEMPLATE = new RetryTemplate(new RetryPolicy() {
         @Override
         public boolean shouldRetry(Throwable throwable) {
-            log.error("ChatClient调用失败，请稍后再试", throwable);
+            log.error("ChatClient call failed", throwable);
             return false;
         }
     });
@@ -356,7 +355,14 @@ public class AIAssistantOptional implements BaseOptional {
         // 取最近5条对话记录作为工具选择的上下文
         List<Message> recentMemoryMessages = buildMemoryMessages(memoryKey, 5);
 
-        String systemPrompt = "你是一个工具选择器。根据用户最近的对话记录，从可用工具列表中选出可能需要用到的工具名称。" + "只输出一个JSON数组，数组元素可以为工具name字，不需要其他任何文字。如果不需要任何工具或图片则输出空数组[]。\n" + "输出示例：[\"set_group_card\"]\n\n" + "可用工具列表(name->description)：\n" + toolListData;
+        String systemPrompt = """
+                You are a tool selector. Based on the user's recent conversation history,
+                select the names of the tools that might be needed from the available tool list.
+                Output a JSON array with only the tool names as elements. Do not include any other text.
+                If no tools or images are needed, output an empty array [].
+                Example output: ["set_group_card"]
+                Available tool list (name -> description):
+                """ + toolListData;
 
         String userPrompt = recentMemoryMessages.isEmpty() ? "暂无对话记录" : "根据以上对话记录选择工具";
 
