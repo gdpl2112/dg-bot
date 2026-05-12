@@ -15,7 +15,9 @@ import net.mamoe.mirai.event.events.GroupAwareMessageEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.MessageChain;
+import net.mamoe.mirai.message.data.MessageChainBuilder;
 import net.mamoe.mirai.message.data.PlainText;
+import net.mamoe.mirai.message.data.QuoteReply;
 import net.mamoe.mirai.message.data.SingleMessage;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -129,6 +131,31 @@ public class AIAssistantOptional implements BaseOptional {
             BID_LAST_IMAGE_MAP.put(bid, images.getLast());
         }
 
+        // 提取引用消息（QuoteReply）中的文本与图片，一同传入AI上下文
+        String quotedText = null;
+        for (SingleMessage singleMessage : event.getMessage()) {
+            if (singleMessage instanceof QuoteReply qr) {
+                try {
+                    MessageChain originalMessage = qr.getSource().getOriginalMessage();
+                    // 收集引用消息中的图片到多模态输入
+                    for (SingleMessage om : originalMessage) {
+                        if (om instanceof Image img) {
+                            images.add(img);
+                        }
+                    }
+                    // 将引用消息序列化为纯文本
+                    String qt = DgSerializer.messageChainSerializeToString(originalMessage);
+                    if (Judge.isEmpty(qt)) {
+                        qt = MessageChain.serializeToJsonString(originalMessage);
+                    }
+                    quotedText = qt == null ? null : qt.trim();
+                } catch (Exception e) {
+                    log.warn("解析引用消息失败", e);
+                }
+                break;
+            }
+        }
+
         // 解析包含特殊字符(如at、表情等)的富文本消息为纯文本格式
         String content = DgSerializer.messageChainSerializeToString(event.getMessage());
         if (Judge.isEmpty(content)) {
@@ -160,6 +187,11 @@ public class AIAssistantOptional implements BaseOptional {
             return;
         }
 
+        // 若存在引用消息，则将被引用内容作为上下文追加到实际对话内容前
+        if (quotedText != null && !quotedText.isEmpty()) {
+            actualContent = actualContent + "\n\n[引用]" + quotedText;
+        }
+
         if ("清除记忆".equalsIgnoreCase(actualContent) || "clear".equalsIgnoreCase(actualContent)) {
             MESSAGE_MEMORY_CACHE.remove(buildMemoryKey(bid, event.getSubject().getId()));
             //images
@@ -176,8 +208,9 @@ public class AIAssistantOptional implements BaseOptional {
         List<Message> memoryMessages = buildMemoryMessages(memoryKey, resolveMaxMessage(aiConf.getMaxMessage()));
 
         ChatClient chatClient = getChatClient(aiConf);
+        String finalActualContent = actualContent;
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt().system(systemPrompt).messages(memoryMessages).user(userSpec -> {
-            userSpec.text(actualContent);
+            userSpec.text(finalActualContent);
             // 将消息中的图片作为多模态内容填入AI消息
             for (Image img : images) {
                 try {
@@ -199,7 +232,11 @@ public class AIAssistantOptional implements BaseOptional {
             }
             String responseContent = String.join("", responseChunks);
             String reply = "['" + aiConf.getName() + "'回答]\n\n" + responseContent;
-            event.getSubject().sendMessage(new PlainText(reply));
+            // 回复时携带原消息引用
+            MessageChainBuilder mcb = new MessageChainBuilder();
+            mcb.append(new QuoteReply(event.getMessage()));
+            mcb.append(new PlainText(reply));
+            event.getSubject().sendMessage(mcb.build());
             appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
         } catch (Exception e) {
             log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
