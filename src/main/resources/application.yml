@@ -19,6 +19,7 @@ super:
 #  api: http://119.45.132.231:8080
 
 top.kloping.ai.mcp:
+  concurrent-init: false  # 默认为 true，设置为 false 则串行初始
   servers:
     WebSearch:
       server: https://dashscope.aliyuncs.com
