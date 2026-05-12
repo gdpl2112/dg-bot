@@ -172,7 +172,7 @@ public class AIAssistantOptional implements BaseOptional {
         String aiPrefix = aiConf.getPrefix() != null ? aiConf.getPrefix() : "AI";
 
         // 提取和判断是否属于AI助手指令前缀，如果是则进行处理
-        if (!content.toLowerCase().contains(aiPrefix.toLowerCase())) {
+        if (!content.toLowerCase().startsWith(aiPrefix.toLowerCase())) {
             return;
         }
 
