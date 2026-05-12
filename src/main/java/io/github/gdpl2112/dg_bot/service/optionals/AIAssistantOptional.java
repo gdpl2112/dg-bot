@@ -13,12 +13,7 @@ import io.github.kloping.judge.Judge;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.event.events.GroupAwareMessageEvent;
 import net.mamoe.mirai.event.events.MessageEvent;
-import net.mamoe.mirai.message.data.Image;
-import net.mamoe.mirai.message.data.MessageChain;
-import net.mamoe.mirai.message.data.MessageChainBuilder;
-import net.mamoe.mirai.message.data.PlainText;
-import net.mamoe.mirai.message.data.QuoteReply;
-import net.mamoe.mirai.message.data.SingleMessage;
+import net.mamoe.mirai.message.data.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -177,12 +172,12 @@ public class AIAssistantOptional implements BaseOptional {
         String aiPrefix = aiConf.getPrefix() != null ? aiConf.getPrefix() : "AI";
 
         // 提取和判断是否属于AI助手指令前缀，如果是则进行处理
-        if (!content.toLowerCase().startsWith(aiPrefix.toLowerCase())) {
+        if (!content.toLowerCase().contains(aiPrefix.toLowerCase())) {
             return;
         }
 
         // 提取去除前缀后的实际对话内容
-        String actualContent = content.substring(aiPrefix.length()).trim();
+        String actualContent = content.replace(aiPrefix, "").trim();
         if (actualContent.isEmpty()) {
             return;
         }
@@ -386,20 +381,14 @@ public class AIAssistantOptional implements BaseOptional {
      * @return
      */
     private List<ToolCallback> getToolCallbacks(AiConf conf, String memoryKey) {
-        initToolCache();
-        String toolListData = cachedToolListData;
-
         // 取最近5条对话记录作为工具选择的上下文
         List<Message> recentMemoryMessages = buildMemoryMessages(memoryKey, 5);
 
-        String systemPrompt = """
-                You are a tool selector. Based on the user's recent conversation history,
-                select the names of the tools that might be needed from the available tool list.
-                Output a JSON array with only the tool names as elements. Do not include any other text.
-                If no tools or images are needed, output an empty array [].
-                Example output: ["set_group_card"]
-                Available tool list (name -> description):
-                """ + toolListData;
+        String systemPrompt = initToolCache();
+        if (systemPrompt == null) {
+            log.error("工具列表缓存初始化失败");
+            return new ArrayList<>(cachedToolName2tool.values());
+        }
 
         String userPrompt = recentMemoryMessages.isEmpty() ? "暂无对话记录" : "根据以上对话记录选择工具";
 
@@ -464,23 +453,31 @@ public class AIAssistantOptional implements BaseOptional {
      * 工具名称->ToolCallback 缓存，由 @Tool 方法固定生成，无需每次重建
      */
     private Map<String, ToolCallback> cachedToolName2tool;
-    /**
-     * 工具列表JSON缓存，由 cachedToolName2Desc 序列化生成
-     */
-    private String cachedToolListData;
+
+    private String toolListPrompt;
 
     /**
      * 懒加载初始化工具缓存，首次调用时从 @Tool 方法提取并缓存
      */
-    private synchronized void initToolCache() {
-        if (cachedToolName2Desc != null) return;
+    private synchronized String initToolCache() {
+        if (cachedToolName2Desc != null) return null;
+        if (toolListPrompt != null) return toolListPrompt;
         cachedToolName2Desc = new HashMap<>();
         cachedToolName2tool = new HashMap<>();
         for (ToolCallback toolCallback : getToolCallbacks()) {
             cachedToolName2Desc.put(toolCallback.getToolDefinition().name(), toolCallback.getToolDefinition().description());
             cachedToolName2tool.put(toolCallback.getToolDefinition().name(), toolCallback);
         }
-        cachedToolListData = JSON.toJSONString(cachedToolName2Desc);
+        String cachedToolListData = JSON.toJSONString(cachedToolName2Desc);
+        toolListPrompt = """
+                You are a tool selector. Based on the user's recent conversation history,
+                select the names of the tools that might be needed from the available tool list.
+                Output a JSON array with only the tool names as elements. Do not include any other text.
+                If no tools or images are needed, output an empty array [].
+                Example output: ["set_group_card"]
+                Available tool list (name -> description):
+                """ + cachedToolListData;
+        return toolListPrompt;
     }
 
 }
