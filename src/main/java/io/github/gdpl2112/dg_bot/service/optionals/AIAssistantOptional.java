@@ -460,10 +460,11 @@ public class AIAssistantOptional implements BaseOptional {
      * 懒加载初始化工具缓存，首次调用时从 @Tool 方法提取并缓存
      */
     private synchronized String initToolCache() {
-        if (cachedToolName2Desc != null) return null;
+        if (cachedToolName2Desc == null || cachedToolName2tool == null) {
+            cachedToolName2Desc = new HashMap<>();
+            cachedToolName2tool = new HashMap<>();
+        }
         if (toolListPrompt != null) return toolListPrompt;
-        cachedToolName2Desc = new HashMap<>();
-        cachedToolName2tool = new HashMap<>();
         for (ToolCallback toolCallback : getToolCallbacks()) {
             cachedToolName2Desc.put(toolCallback.getToolDefinition().name(), toolCallback.getToolDefinition().description());
             cachedToolName2tool.put(toolCallback.getToolDefinition().name(), toolCallback);
