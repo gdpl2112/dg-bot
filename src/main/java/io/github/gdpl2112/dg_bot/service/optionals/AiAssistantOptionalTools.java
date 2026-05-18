@@ -16,6 +16,7 @@ import net.mamoe.mirai.contact.Friend;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.utils.ExternalResource;
 import net.mamoe.mirai.message.data.Image;
+import net.mamoe.mirai.message.data.Message;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import top.mrxiaom.overflow.contact.RemoteBot;
@@ -602,6 +603,85 @@ public class AiAssistantOptionalTools {
         } catch (Exception e) {
             log.error("发送图片失败", e);
             return "发送图片失败: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 搜索并发送音乐点歌卡片(MusicShare)到群聊/私聊
+     *
+     * @param bid      机器人ID
+     * @param targetId 发送目标，g群号=群聊，u用户号=私聊，例如 g123456 或 u123456
+     * @param songName 歌曲名称（建议附带歌手名以提高匹配准确度）
+     * @param platform 音乐平台：wy=网易云(默认), qq=QQ音乐, kg=酷狗, dy=抖音
+     * @param index    选择搜索结果中的第几首，从 1 开始，默认 1
+     * @return 发送结果
+     */
+    @Tool(description = "搜索并发送音乐点歌卡片(MusicShare)到群聊/私聊。targetId格式：g群号=群聊 u用户号=私信；platform可选 wy=网易云(默认)/qq=QQ音乐/kg=酷狗/dy=抖音；index默认1表示第一首")
+    public String send_music_card(
+            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "发送目标，g群号=发到群聊，u用户号=发到私信，例如 g123456 或 u123456") String targetId,
+            @ToolParam(description = "歌曲名称（建议附带歌手名以提高匹配准确度）") String songName,
+            @ToolParam(description = "音乐平台：wy=网易云(默认), qq=QQ音乐, kg=酷狗, dy=抖音") String platform,
+            @ToolParam(description = "选择搜索结果中的第几首，从1开始，默认为1") Integer index) {
+        log.info("send_music_card: bid={}, targetId={}, songName={}, platform={}, index={}",
+                bid, targetId, songName, platform, index);
+        if (bid == null || targetId == null || songName == null || songName.trim().isEmpty()) {
+            return "参数不能为空";
+        }
+
+        Bot bot = Bot.getInstanceOrNull(bid);
+        if (bot == null) return "机器人未找到";
+        if (!bot.isOnline()) return "机器人不在线";
+
+        // 解析发送目标为具体联系人（群或好友）
+        Contact contact;
+        String prefix = targetId.substring(0, 1).toLowerCase();
+        String idPart = targetId.substring(1);
+        if ("g".equals(prefix)) {
+            long groupId;
+            try {
+                groupId = Long.parseLong(idPart);
+            } catch (NumberFormatException e) {
+                return "targetId格式错误，群聊格式：g群号";
+            }
+            Group group = bot.getGroup(groupId);
+            if (group == null) return "群未找到：" + groupId;
+            contact = group;
+        } else if ("u".equals(prefix)) {
+            long userId;
+            try {
+                userId = Long.parseLong(idPart);
+            } catch (NumberFormatException e) {
+                return "targetId格式错误，私信格式：u用户号";
+            }
+            Friend friend = bot.getFriend(userId);
+            if (friend == null) return "好友未找到：" + userId;
+            contact = friend;
+        } else {
+            return "targetId格式错误，请使用 g群号 或 u用户号";
+        }
+
+        // 平台兜底为网易云，并校验合法值
+        String type = (platform == null || platform.trim().isEmpty())
+                ? SongPoint.TYPE_WY
+                : platform.trim().toLowerCase();
+        if (!SongPoint.TYPE_WY.equals(type)
+                && !SongPoint.TYPE_QQ.equals(type)
+                && !SongPoint.TYPE_KUGOU.equals(type)
+                && !SongPoint.TYPE_DY.equals(type)) {
+            return "platform参数错误，支持：wy, qq, kg, dy";
+        }
+
+        try {
+            Message message = SongPoint.pickAsCard(type, songName.trim(), index);
+            if (message == null) {
+                return "音乐卡片生成失败";
+            }
+            contact.sendMessage(message);
+            return "已发送音乐卡片到 " + targetId;
+        } catch (Exception e) {
+            log.error("发送音乐卡片失败", e);
+            return "发送音乐卡片失败: " + e.getMessage();
         }
     }
 

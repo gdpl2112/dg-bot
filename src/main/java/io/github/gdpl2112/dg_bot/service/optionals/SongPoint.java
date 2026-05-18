@@ -241,6 +241,45 @@ public class SongPoint implements BaseOptional {
     }
 
     /**
+     * 程序化搜索并直接获取指定排名歌曲的音乐卡片消息
+     * <p>
+     * 不污染用户级 QID2DATA 缓存，调用结束后会清理临时数据
+     *
+     * @param type 平台类型: wy/qq/kg/dy
+     * @param name 歌曲名称
+     * @param n    选择第几首（从 1 开始，非法值会被回退为 1）
+     * @return 音乐卡片消息，异常或无结果时返回带提示的 PlainText
+     */
+    public static Message pickAsCard(String type, String name, Integer n) {
+        if (type == null || name == null || name.trim().isEmpty()) {
+            return new PlainText("点歌参数不能为空");
+        }
+        PointInterface pi = POINT_INTERFACES.get(type);
+        if (pi == null) {
+            return new PlainText("不支持的点歌类型: " + type);
+        }
+        int index = (n == null || n <= 0) ? 1 : n;
+        // 使用唯一负数 qid 作为临时键，避免与真实 QQ 号冲突
+        Long tempQid = -System.nanoTime();
+        try {
+            String listResult = pi.list0(tempQid, name.trim(), 1);
+            if (listResult == null) {
+                return new PlainText("音乐搜索失败");
+            }
+            SongData data = QID2DATA.get(tempQid);
+            if (data == null) {
+                return new PlainText("音乐搜索结果为空");
+            }
+            return pi.point(tempQid, data, index);
+        } catch (Exception e) {
+            log.error("pickAsCard error type={}, name={}", type, name, e);
+            return new PlainText("点歌失败: " + e.getMessage());
+        } finally {
+            QID2DATA.remove(tempQid);
+        }
+    }
+
+    /**
      * 获取酷狗音乐列表页面
      *
      * @param url 目标URL
