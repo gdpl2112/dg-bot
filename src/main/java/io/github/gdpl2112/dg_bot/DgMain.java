@@ -35,8 +35,10 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.getCompileTime;
 public class DgMain implements CommandLineRunner {
 
     public static ConfigurableApplicationContext applicationContext;
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
     // 该包下所有类，会自动创建表
     private Class<?>[] DbClasses = {
             io.github.gdpl2112.dg_bot.dao.Administrator.class,

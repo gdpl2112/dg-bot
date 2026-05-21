@@ -135,7 +135,8 @@ public class V11QzoneService {
         V11Conf v11Conf = likeService.getV11Conf(String.valueOf(id));
         List<Long> zoneWalksIds = v11Conf.getZoneWalksIds();
         if (zoneWalksIds.isEmpty()) return;
-        Map<String, String> cookiesMap = getCookiesMap(bot);
+        Map<String, String> cookiesMap = Map.of();
+        // cookiesMap = getCookiesMap(bot);
         log.warn("get cookies：b{},map{}", id, cookiesMap);
         for (Long zoneWalksId : zoneWalksIds) {
             log.info("空间访问：b{} u{}", id, zoneWalksId);
@@ -203,7 +204,8 @@ public class V11QzoneService {
         String comment = v11Conf.getZoneComment();
         Boolean autoZoneLike = v11Conf.getAutoZoneLike();
         if ((comment == null || comment.trim().isEmpty()) && !autoZoneLike) return;
-        Map<String, String> cookiesMap = getCookiesMap(bot);
+        Map<String, String> cookiesMap = Map.of();
+        // cookiesMap = getCookiesMap(bot);
         String uin = String.valueOf(id);
         try {
             log.info("空间评论/点赞：start-b{}", uin);
