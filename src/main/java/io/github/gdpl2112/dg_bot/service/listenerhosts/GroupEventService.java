@@ -32,10 +32,10 @@ public class GroupEventService extends SimpleListenerHost {
 
     public GroupEventService() {
         super();
-        WSGolab.INSTANCE.getMsgReceiveList().add(msg -> {
-            System.out.println("recv11:-->" + msg);
-            return false;
-        });
+//        WSGolab.INSTANCE.getMsgReceiveList().add(msg -> {
+//            System.out.println("recv11:-->" + msg);
+//            return false;
+//        });
     }
 
     /**
