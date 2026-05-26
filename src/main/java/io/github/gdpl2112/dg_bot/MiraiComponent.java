@@ -62,6 +62,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @Autowired
     SettingService settingService;
     @Autowired
+    GroupEventService groupEventService;
+    @Autowired
     ConnConfigMapper connConfigMapper;
     @Autowired
     SaveMapper saveMapper;
@@ -125,6 +127,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(callApiService);
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(settingService);
+        GlobalEventChannel.INSTANCE.registerListenerHost(groupEventService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
         QueryWrapper<ConnConfig> qw = new QueryWrapper<>();
         qw.orderByAsc("qid");

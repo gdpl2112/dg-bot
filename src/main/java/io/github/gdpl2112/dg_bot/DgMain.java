@@ -127,6 +127,17 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("alter table v11_conf add zone_evl INTEGER default 10;");
         }
         k0 = false;
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('group_conf')")) {
+            String name = e0.get("name").toString();
+            if ("k4".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            System.out.println("group_conf添加字段k4");
+            jdbcTemplate.update("alter table group_conf add k4 INTEGER default 0;");
+        }
+        k0 = false;
     }
 
     @Bean
