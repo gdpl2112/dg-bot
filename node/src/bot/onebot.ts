@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import { EventEmitter } from 'events';
 import { logger } from '../utils/logger';
-import type { ConnConfig, OneBotEvent, BotInfo } from '../model/types';
+import type { ConnConfig, OneBotEvent, BotInfo, BotGroupInfo, BotFriendInfo } from '../model/types';
 
 export class OneBotClient extends EventEmitter {
   private ws: WebSocket | null = null;
@@ -128,12 +128,28 @@ export class OneBotClient extends EventEmitter {
       const loginInfo = await this.callApi('get_login_info');
       const friendList = await this.callApi('get_friend_list');
       const groupList = await this.callApi('get_group_list');
+      const groups: BotGroupInfo[] = Array.isArray(groupList?.data)
+        ? groupList.data.map((g: any) => ({
+            id: g.group_id,
+            name: g.group_name ?? '',
+            icon: `https://p.qlogo.cn/gh/${g.group_id}/${g.group_id}/640`,
+          }))
+        : [];
+      const friends: BotFriendInfo[] = Array.isArray(friendList?.data)
+        ? friendList.data.map((f: any) => ({
+            id: f.user_id,
+            nick: f.nickname ?? '',
+            remark: f.remark ?? '',
+          }))
+        : [];
       this._info = {
         id: loginInfo?.data?.user_id ?? parseInt(this.config.qid),
         nick: loginInfo?.data?.nickname ?? '',
         online: true,
-        friendCount: Array.isArray(friendList?.data) ? friendList.data.length : 0,
-        groupCount: Array.isArray(groupList?.data) ? groupList.data.length : 0,
+        friendCount: friends.length,
+        groupCount: groups.length,
+        groups,
+        friends,
       };
       this.emit('info', this._info);
     } catch (e) {

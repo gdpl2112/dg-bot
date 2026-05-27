@@ -7,41 +7,71 @@ import type { AuthM, ConnConfig } from '../../model/types';
 export function registerAdminRoutes(app: FastifyInstance): void {
   const db = getDb();
 
-  // admin: list all users
-  app.get('/api/m/list', { preHandler: [requireRole('admin')] }, async () => {
+  // admin: list all users (Java: ManagerController.list)
+  app.all('/api/m/list', { preHandler: [requireRole('admin')] }, async () => {
     const authList = db.prepare('SELECT * FROM auth_m').all() as AuthM[];
     return authList.map(a => {
       const bot = botManager.getBot(a.qid);
+      const exp = a.exp ?? 0;
+      const expDate = new Date(exp);
       return {
         qid: a.qid,
         auth: a.auth,
         exp: a.exp,
-        t0: bot?.isConnected ? a.t0 : -1,
+        y: expDate.getFullYear().toString(),
+        m: String(expDate.getMonth() + 1).padStart(2, '0'),
+        d: String(expDate.getDate()).padStart(2, '0'),
+        t0: bot?.isConnected ? (a.t0 ?? -1) : -1,
       };
     });
   });
 
-  // admin: modify user
-  app.get('/api/m/modify', { preHandler: [requireRole('admin')] }, async (req) => {
-    const { qid, exp, auth } = req.query as { qid: string; exp: string; auth: string };
-    db.prepare('UPDATE auth_m SET exp = ?, auth = ? WHERE qid = ?')
-      .run(parseInt(exp), auth, qid);
+  // admin: modify user (Java: ManagerController.modify)
+  app.all('/api/m/modify', { preHandler: [requireRole('admin')] }, async (req) => {
+    const q = req.query as any;
+    const b = req.body as any;
+    const qid = q?.qid ?? b?.qid;
+    const exp = q?.exp ?? b?.exp;
+    const auth = q?.auth ?? b?.auth;
+    if (qid && exp && auth) {
+      db.prepare('UPDATE auth_m SET exp = ?, auth = ? WHERE qid = ?')
+        .run(parseInt(exp), auth, qid);
+    }
     const authList = db.prepare('SELECT * FROM auth_m').all() as AuthM[];
     return authList.map(a => {
       const bot = botManager.getBot(a.qid);
-      return { qid: a.qid, auth: a.auth, exp: a.exp, t0: bot?.isConnected ? a.t0 : -1 };
+      const expVal = a.exp ?? 0;
+      const expDate = new Date(expVal);
+      return {
+        qid: a.qid, auth: a.auth, exp: a.exp,
+        y: expDate.getFullYear().toString(),
+        m: String(expDate.getMonth() + 1).padStart(2, '0'),
+        d: String(expDate.getDate()).padStart(2, '0'),
+        t0: bot?.isConnected ? (a.t0 ?? -1) : -1,
+      };
     });
   });
 
-  // admin: get-exp helper
-  app.get('/api/m/get-exp', { preHandler: [requireRole('admin')] }, async (req) => {
-    const { y, m, d } = req.query as { y: string; m: string; d: string };
+  // admin: get-exp helper (Java: ManagerController.getExp)
+  app.all('/api/m/get-exp', { preHandler: [requireRole('admin')] }, async (req) => {
+    const { y, m, d } = (req.query as any) ?? {};
     try {
-      const date = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T12:01:00`);
+      const date = new Date(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T12:01:00`);
       return date.getTime();
     } catch {
       return 0;
     }
+  });
+
+  // admin: exp-ymd (Java: ManagerController.expYmd)
+  app.all('/api/m/exp-ymd', { preHandler: [requireRole('admin')] }, async (req) => {
+    const exp = parseInt((req.query as any)?.exp ?? '0');
+    const d = new Date(exp);
+    return [
+      d.getFullYear().toString(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0'),
+    ];
   });
 
   // ─── Connection config (admin) ───
@@ -88,7 +118,7 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   });
 
   // ─── AI config ───
-  app.get('/api/ai-conf/config', async (req) => {
+  app.all('/api/ai-conf/config', async (req) => {
     const qid = (req as any).user?.qid;
     let conf = db.prepare('SELECT * FROM ai_conf WHERE qid = ?').get(qid);
     if (!conf) {
@@ -122,13 +152,13 @@ export function registerAdminRoutes(app: FastifyInstance): void {
   });
 
   // ─── Optional features ───
-  app.get('/api/opts', async (req) => {
+  app.all('/api/opts', async (req) => {
     const { getOptionalDtos } = await import('../../optional');
     const qid = (req as any).user?.qid;
     return getOptionalDtos(qid);
   });
 
-  app.get('/api/opts/toggle', async (req) => {
+  app.all('/api/opts/toggle', async (req) => {
     const qid = (req as any).user?.qid;
     const opt = (req.query as any)?.opt;
     const existing = db.prepare('SELECT * FROM optional WHERE qid = ? AND opt = ?').get(qid, opt) as any;
