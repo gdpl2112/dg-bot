@@ -134,6 +134,7 @@ public class GroupManageOptional implements BaseOptional {
         }
         try {
             target.kick("", false);
+            event.getSubject().sendMessage("已踢出 " + target.getNameCard() + "(" + target.getId() + ")");
         } catch (Exception e) {
             event.getSubject().sendMessage("踢出失败: " + e.getMessage());
         }
@@ -163,6 +164,10 @@ public class GroupManageOptional implements BaseOptional {
         }
         try {
             target.mute(seconds);
+            String result = seconds == 0
+                    ? "已解除 " + target.getNameCard() + "(" + target.getId() + ") 的禁言"
+                    : "已禁言 " + target.getNameCard() + "(" + target.getId() + ") " + seconds + " 秒";
+            event.getSubject().sendMessage(result);
         } catch (Exception e) {
             event.getSubject().sendMessage("禁言失败: " + e.getMessage());
         }
@@ -181,6 +186,7 @@ public class GroupManageOptional implements BaseOptional {
         }
         try {
             MessageSource.recall(quoteReply.getSource());
+            MessageSource.recall(event.getMessage());
         } catch (Exception e) {
             event.getSubject().sendMessage("撤回失败: " + e.getMessage());
         }
