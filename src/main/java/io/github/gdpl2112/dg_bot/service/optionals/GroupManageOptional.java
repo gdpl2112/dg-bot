@@ -18,10 +18,12 @@ import org.springframework.stereotype.Component;
  * <p>
  * 指令格式：
  * <ul>
- *   <li>{@code 踢 @某人}          —— 将 @成员 踢出群聊</li>
- *   <li>{@code 禁言 @某人 秒数}    —— 禁言 @成员 指定秒数（传 0 可解除禁言）</li>
- *   <li>引用某消息 + {@code 撤回}  —— 撤回被引用的那条消息</li>
+ *   <li>{@code 踢 @某人}                   —— 将 @成员 踢出群聊</li>
+ *   <li>{@code 禁言 @某人 时长}             —— 禁言 @成员 指定时长（传 0 可解除禁言），最长 30 天</li>
+ *   <li>引用某消息 + {@code 撤回}           —— 撤回被引用的那条消息</li>
  * </ul>
+ * <p>
+ * 时长单位支持：秒/s、分钟/min、小时/时/h、天/day/d、月/m，示例：{@code 60s}、{@code 5min}、{@code 2h}、{@code 1天}、{@code 1月}
  *
  * @author github.kloping
  */
@@ -33,7 +35,7 @@ public class GroupManageOptional implements BaseOptional {
 
     @Override
     public String getDesc() {
-        return "群管模式[需BOT是群管/群主]: 管理员可踢人(踢 @xxx)、禁言(禁言 @xxx 秒数)、撤回(引用消息+撤回)";
+        return "群管模式[需BOT是群管/群主]: 管理员可踢人(踢 @xxx)、禁言(禁言 @xxx 时长，支持秒/s/分钟/min/小时/时/h/天/day/d/月/m，最长30天)、撤回(引用消息+撤回)";
     }
 
     @Override
@@ -73,23 +75,19 @@ public class GroupManageOptional implements BaseOptional {
                         command = "踢";
                     } else if (part.startsWith("禁言")) {
                         command = "禁言";
-                        // 尝试从同段文本解析秒数（如 "禁言60"）
+                        // 尝试从同段文本解析时长（如 "禁言60"、"禁言5min"）
                         String numPart = part.substring(2).trim();
                         if (!numPart.isEmpty()) {
-                            try {
-                                muteSeconds = Integer.parseInt(numPart);
-                            } catch (NumberFormatException ignored) {
-                            }
+                            int parsed = parseDuration(numPart);
+                            if (parsed >= 0) muteSeconds = parsed;
                         }
                     } else if (part.equals("撤回")) {
                         command = "撤回";
                     }
                 } else if ("禁言".equals(command) && muteSeconds == 0 && !part.isEmpty()) {
-                    // 秒数跟在 @mention 之后的独立文本段中（如 "禁言 @xxx 60"）
-                    try {
-                        muteSeconds = Integer.parseInt(part);
-                    } catch (NumberFormatException ignored) {
-                    }
+                    // 时长跟在 @mention 之后的独立文本段中（如 "禁言 @xxx 5min"）
+                    int parsed = parseDuration(part);
+                    if (parsed >= 0) muteSeconds = parsed;
                 }
             } else if (msg instanceof At) {
                 At at = (At) msg;
@@ -116,6 +114,42 @@ public class GroupManageOptional implements BaseOptional {
     }
 
     /**
+     * 将时长字符串解析为秒数，支持单位：秒/s、分钟/min、小时/时/h、天/day/d、月/m。
+     * 无单位时默认为秒；结果超过 30 天则截断至 30 天；传入 "0" 返回 0（解禁）。
+     *
+     * @param text 时长字符串，如 "60"、"5min"、"2h"、"1天"、"1月"
+     * @return 对应秒数，解析失败返回 -1
+     */
+    private int parseDuration(String text) {
+        if (text == null || text.isEmpty()) return -1;
+        // 优先匹配较长单位（分钟/min/小时/day）以避免与单字符单位（m/h/d）产生歧义
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile(
+                "^(\\d+)\\s*(分钟|min|小时|时|day|秒|[shmd天月])?$",
+                java.util.regex.Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher matcher = p.matcher(text.trim());
+        if (!matcher.matches()) return -1;
+        long value = Long.parseLong(matcher.group(1));
+        String unit = matcher.group(2);
+        if (unit == null || unit.isEmpty() || unit.equalsIgnoreCase("s") || unit.equals("秒")) {
+            // 默认秒
+        } else if (unit.equalsIgnoreCase("min") || unit.equals("分钟")) {
+            value *= 60;
+        } else if (unit.equalsIgnoreCase("h") || unit.equals("小时") || unit.equals("时")) {
+            value *= 3600;
+        } else if (unit.equalsIgnoreCase("d") || unit.equalsIgnoreCase("day") || unit.equals("天")) {
+            value *= 86400L;
+        } else if (unit.equalsIgnoreCase("m") || unit.equals("月")) {
+            value *= 30L * 86400;
+        } else {
+            return -1;
+        }
+        // 最大禁言 30 天
+        final long maxSeconds = 30L * 24 * 60 * 60;
+        if (value > maxSeconds) value = maxSeconds;
+        return (int) value;
+    }
+
+    /**
      * 将 @目标成员踢出群聊
      *
      * @param group    目标群
@@ -124,19 +158,19 @@ public class GroupManageOptional implements BaseOptional {
      */
     private void handleKick(Group group, At atTarget, MessageEvent event) {
         if (atTarget == null) {
-            event.getSubject().sendMessage("请 @要踢出的成员");
+            event.getSubject().sendMessage("\"请 @要踢出的成员\"");
             return;
         }
         NormalMember target = group.get(atTarget.getTarget());
         if (target == null) {
-            event.getSubject().sendMessage("未找到该成员");
+            event.getSubject().sendMessage("\"未找到该成员\"");
             return;
         }
         try {
             target.kick("", false);
-            event.getSubject().sendMessage("已踢出 " + target.getNameCard() + "(" + target.getId() + ")");
+            event.getSubject().sendMessage("\"已踢出 " + target.getNameCard() + "(" + target.getId() + ")\"");
         } catch (Exception e) {
-            event.getSubject().sendMessage("踢出失败: " + e.getMessage());
+            event.getSubject().sendMessage("\"踢出失败: " + e.getMessage() + "\"");
         }
     }
 
@@ -150,11 +184,11 @@ public class GroupManageOptional implements BaseOptional {
      */
     private void handleMute(Group group, At atTarget, int seconds, MessageEvent event) {
         if (atTarget == null) {
-            event.getSubject().sendMessage("请 @要禁言的成员");
+            event.getSubject().sendMessage("\"请 @要禁言的成员\"");
             return;
         }
         if (seconds < 0) {
-            event.getSubject().sendMessage("禁言时间不能为负数");
+            event.getSubject().sendMessage("\"禁言时间不能为负数\"");
             return;
         }
         NormalMember target = group.get(atTarget.getTarget());
@@ -163,13 +197,14 @@ public class GroupManageOptional implements BaseOptional {
             return;
         }
         try {
-            target.mute(seconds);
+            if (seconds <= 0) target.unmute();
+            else target.mute(seconds);
             String result = seconds == 0
-                    ? "已解除 " + target.getNameCard() + "(" + target.getId() + ") 的禁言"
-                    : "已禁言 " + target.getNameCard() + "(" + target.getId() + ") " + seconds + " 秒";
+                    ? "\"已解除 " + target.getNameCard() + "(" + target.getId() + ") 的禁言\""
+                    : "\"已禁言 " + target.getNameCard() + "(" + target.getId() + ") " + seconds + " 秒\"";
             event.getSubject().sendMessage(result);
         } catch (Exception e) {
-            event.getSubject().sendMessage("禁言失败: " + e.getMessage());
+            event.getSubject().sendMessage("\"禁言失败: " + e.getMessage() + "\"");
         }
     }
 
@@ -181,14 +216,14 @@ public class GroupManageOptional implements BaseOptional {
      */
     private void handleRecall(QuoteReply quoteReply, MessageEvent event) {
         if (quoteReply == null) {
-            event.getSubject().sendMessage("请引用要撤回的消息");
+            event.getSubject().sendMessage("\"请引用要撤回的消息\"");
             return;
         }
         try {
             MessageSource.recall(quoteReply.getSource());
             MessageSource.recall(event.getMessage());
         } catch (Exception e) {
-            event.getSubject().sendMessage("撤回失败: " + e.getMessage());
+            event.getSubject().sendMessage("\"撤回失败: " + e.getMessage() + "\"");
         }
     }
 }
