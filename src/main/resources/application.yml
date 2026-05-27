@@ -18,20 +18,24 @@ super:
 #wzry:
 #  api: http://119.45.132.231:8080
 
-top.kloping.ai.mcp:
-  concurrent-init: false  # 默认为 true，设置为 false 则串行初始
-  servers:
-    WebSearch:
-      server: https://dashscope.aliyuncs.com
-      endpoint: /api/v1/mcps/WebSearch/sse
-      token: sk-token # 从阿里百炼控制台获取 免费的 否则无法启用 ai的联网功能
-      heartbeat: 25
-    WebParser:
-      server: ${top.kloping.ai.mcp.servers.WebSearch.server}
-      endpoint: /api/v1/mcps/WebParser/sse
-      token: ${top.kloping.ai.mcp.servers.WebSearch.token}
-      heartbeat: 180
+#top.kloping.ai.mcp:
+#  concurrent-init: false  # 默认为 true，设置为 false 则串行初始
+#  servers:
+#    WebSearch:
+#      server: https://dashscope.aliyuncs.com
+#      endpoint: /api/v1/mcps/WebSearch/sse
+#      token: sk-token # 从阿里百炼控制台获取 免费的 否则无法启用 ai的联网功能
+#      heartbeat: 25
+#    WebParser:
+#      server: ${top.kloping.ai.mcp.servers.WebSearch.server}
+#      endpoint: /api/v1/mcps/WebParser/sse
+#      token: ${top.kloping.ai.mcp.servers.WebSearch.token}
+#      heartbeat: 180
 
+## 管理预览单独数据
+manage:
+  bid: ${super.qid}
+  key: change-me-manage-secret-key
 
 # 状态上报
 report:

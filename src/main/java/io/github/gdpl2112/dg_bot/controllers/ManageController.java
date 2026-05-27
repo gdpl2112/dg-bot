@@ -30,7 +30,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/manage")
-@PreAuthorize("hasAuthority('user')")
+@PreAuthorize("hasAnyAuthority('user','manage')")
 public class ManageController {
 
     @Autowired

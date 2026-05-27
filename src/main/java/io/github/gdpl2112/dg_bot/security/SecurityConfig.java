@@ -25,6 +25,12 @@ public class SecurityConfig {
     @Value("${super.qid:3474006766}")
     private String superQid;
 
+    @Value("${manage.key}")
+    private String manageKey;
+
+    @Value("${manage.bid}")
+    private String manageBid;
+
     /**
      * 内存令牌存储，单例Bean
      *
@@ -53,6 +59,16 @@ public class SecurityConfig {
     @Bean
     public TokenAuthFilter tokenAuthFilter() {
         return new TokenAuthFilter(tokenStore(), authMapper, superQid);
+    }
+
+    /**
+     * Manage接口静态密钥过滤器，校验 X-Manage-Key 请求头并授予 manage 权限
+     *
+     * @return ManageKeyFilter实例
+     */
+    @Bean
+    public ManageKeyFilter manageKeyFilter() {
+        return new ManageKeyFilter(manageKey, manageBid);
     }
 
     /**
@@ -114,11 +130,12 @@ public class SecurityConfig {
             // 禁用Session管理，不再依赖Spring内置会话控制
             .sessionManagement(session -> session.disable())
             .csrf(csrf -> csrf.disable())
-            // 先执行令牌认证过滤器，再执行登录过滤器
+            // 先执行令牌认证过滤器，再执行登录过滤器；manage密钥过滤器在令牌过滤器之后运行，可覆盖安全上下文
             .addFilterBefore(tokenAuthFilter(),
                     org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(loginFilter(),
-                    org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+                    org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(manageKeyFilter(), TokenAuthFilter.class);
 
         return http.build();
     }
