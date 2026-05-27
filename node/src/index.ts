@@ -1,5 +1,5 @@
 import { loadConfig } from './config';
-import { initDatabase } from './database';
+import { initDatabase, saveToDisk } from './database';
 import { botManager } from './bot/manager';
 import { dispatchEvent } from './handler/event-dispatcher';
 import { loadCronTasks, stopAllCronTasks } from './handler/cron';
@@ -16,7 +16,7 @@ async function main(): Promise<void> {
   logger.info(`Config loaded (port=${config.server.port}, super=${config.super.qid})`);
 
   // init database
-  initDatabase(config.database.path);
+  await initDatabase(config.database.path);
 
   // register event dispatcher
   botManager.onEvent((botId, event) => {
@@ -48,6 +48,7 @@ async function main(): Promise<void> {
     logger.info('Shutting down...');
     stopAllCronTasks();
     botManager.closeAll();
+    saveToDisk();
     process.exit(0);
   };
   process.on('SIGINT', shutdown);
