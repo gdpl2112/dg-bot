@@ -1,6 +1,7 @@
 package io.github.gdpl2112.dg_bot.service.listenerhosts;
 
 import cn.evolvefield.onebot.client.connection.WSGolab;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.dao.GroupConf;
 import io.github.gdpl2112.dg_bot.mapper.GroupConfMapper;
@@ -32,10 +33,30 @@ public class GroupEventService extends SimpleListenerHost {
 
     public GroupEventService() {
         super();
-//        WSGolab.INSTANCE.getMsgReceiveList().add(msg -> {
-//            System.out.println("recv11:-->" + msg);
-//            return false;
-//        });
+        WSGolab.INSTANCE.getMsgReceiveList().add(msg -> {
+            //{"time":1779838826,"self_id":291841860,"post_type":"notice","group_id":1041541077,"user_id":930204019,"notice_type":"group_increase","operator_id":291841860,"sub_type":"approve"}
+            if (msg.contains("group_increase")) {
+                JSONObject msgJson = JSONObject.parseObject(msg);
+                String subType = msgJson.getString("sub_type");
+                if ("approve".equalsIgnoreCase(subType)) {
+                    Long bid = msgJson.getLong("self_id"); //qq机器人所处id
+                    Long gid = msgJson.getLong("group_id"); //群id
+                    Long reqId = msgJson.getLong("user_id"); // 请求入群的成员id
+                    Long operatorId = msgJson.getLong("operator_id"); // 操作者id
+
+                    // 仅处理已配置群
+                    if (!isConfiguredGroup(bid, gid)) return false;
+
+                    long time = System.currentTimeMillis();
+                    manageDbService.insertApprove(bid, gid, reqId, operatorId, time);
+                    log.info("记录批准入群事件 bot={} group={} req={} operator={}", bid, gid, reqId, operatorId);
+                } else {
+                    log.warn("未知的群事件类型：{},raw:{}", subType, msg);
+                    return false;
+                }
+            }
+            return false;
+        });
     }
 
     /**

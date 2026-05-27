@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 管理数据库服务，负责维护每个 QQ 账号下的 {bid}-manage.db SQLite 文件。
- * 提供踢人记录和禁言记录的表初始化与数据写入功能。
+ * 提供踢人记录、禁言记录和批准入群记录的表初始化与数据写入功能。
  */
 @Slf4j
 @Service
@@ -62,6 +62,14 @@ public class ManageDbService {
                     + "target_id   TEXT    NOT NULL, "
                     + "operator_id TEXT    NOT NULL, "
                     + "duration    INTEGER NOT NULL, "
+                    + "time        INTEGER NOT NULL"
+                    + ");");
+            // 初始化批准入群记录表
+            tpl.execute("CREATE TABLE IF NOT EXISTS approve_record ("
+                    + "id          INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + "group_id    TEXT    NOT NULL, "
+                    + "req_id      TEXT    NOT NULL, "
+                    + "operator_id TEXT    NOT NULL, "
                     + "time        INTEGER NOT NULL"
                     + ");");
             log.info("ManageDb 初始化完成: {}-manage.db", id);
@@ -112,6 +120,28 @@ public class ManageDbService {
                     time);
         } catch (Exception e) {
             log.error("写入禁言记录失败 bid={} group={} target={}", bid, groupId, targetId, e);
+        }
+    }
+
+    /**
+     * 写入批准入群事件记录
+     *
+     * @param bid        bot QQ 账号
+     * @param groupId    群号
+     * @param reqId      请求入群的成员 QQ
+     * @param operatorId 批准操作者 QQ
+     * @param time       事件发生时间戳（毫秒）
+     */
+    public void insertApprove(long bid, long groupId, long reqId, long operatorId, long time) {
+        try {
+            getTemplate(bid).update(
+                    "INSERT INTO approve_record (group_id, req_id, operator_id, time) VALUES (?, ?, ?, ?)",
+                    String.valueOf(groupId),
+                    String.valueOf(reqId),
+                    String.valueOf(operatorId),
+                    time);
+        } catch (Exception e) {
+            log.error("写入批准入群记录失败 bid={} group={} req={}", bid, groupId, reqId, e);
         }
     }
 
@@ -220,6 +250,44 @@ public class ManageDbService {
     }
 
     /**
+     * 分页查询批准入群记录
+     *
+     * @param bid       bot QQ 账号
+     * @param groupId   群号，0 表示不过滤
+     * @param startTime 开始时间戳（ms），0 表示不过滤
+     * @param endTime   结束时间戳（ms），0 表示不过滤
+     * @param page      页码，从 1 开始
+     * @param size      每页大小
+     * @return 记录列表，每条为 Map（id/group_id/req_id/operator_id/time）
+     */
+    public List<Map<String, Object>> queryApprove(long bid, long groupId, long startTime, long endTime, int page, int size) {
+        List<Object> params = new ArrayList<>();
+        String where = buildWhere(groupId, startTime, endTime, params);
+        params.add(size);
+        params.add((page - 1) * size);
+        String sql = "SELECT id, group_id, req_id, operator_id, time FROM approve_record"
+                + where + " ORDER BY time DESC LIMIT ? OFFSET ?";
+        return getTemplate(bid).queryForList(sql, params.toArray());
+    }
+
+    /**
+     * 统计批准入群记录总数
+     *
+     * @param bid       bot QQ 账号
+     * @param groupId   群号，0 表示不过滤
+     * @param startTime 开始时间戳（ms），0 表示不过滤
+     * @param endTime   结束时间戳（ms），0 表示不过滤
+     * @return 符合条件的记录总数
+     */
+    public long countApprove(long bid, long groupId, long startTime, long endTime) {
+        List<Object> params = new ArrayList<>();
+        String where = buildWhere(groupId, startTime, endTime, params);
+        String sql = "SELECT COUNT(*) FROM approve_record" + where;
+        Long cnt = getTemplate(bid).queryForObject(sql, Long.class, params.toArray());
+        return cnt == null ? 0L : cnt;
+    }
+
+    /**
      * 查询指定时间范围内踢人次数最多的操作者排行
      *
      * @param bid       bot QQ 账号
@@ -253,6 +321,25 @@ public class ManageDbService {
         String where = buildWhere(groupId, startTime, endTime, params);
         params.add(limit);
         String sql = "SELECT operator_id, COUNT(*) AS cnt FROM mute_record"
+                + where + " GROUP BY operator_id ORDER BY cnt DESC LIMIT ?";
+        return getTemplate(bid).queryForList(sql, params.toArray());
+    }
+
+    /**
+     * 查询指定时间范围内批准入群次数最多的操作者排行
+     *
+     * @param bid       bot QQ 账号
+     * @param groupId   群号，0 表示不过滤
+     * @param startTime 开始时间戳（ms），0 表示不过滤
+     * @param endTime   结束时间戳（ms），0 表示不过滤
+     * @param limit     返回条数上限
+     * @return 列表，每条含 operator_id 和 cnt（操作次数），按 cnt 降序
+     */
+    public List<Map<String, Object>> topApproveOperators(long bid, long groupId, long startTime, long endTime, int limit) {
+        List<Object> params = new ArrayList<>();
+        String where = buildWhere(groupId, startTime, endTime, params);
+        params.add(limit);
+        String sql = "SELECT operator_id, COUNT(*) AS cnt FROM approve_record"
                 + where + " GROUP BY operator_id ORDER BY cnt DESC LIMIT ?";
         return getTemplate(bid).queryForList(sql, params.toArray());
     }
