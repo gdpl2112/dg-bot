@@ -16,5 +16,6 @@
     "sourceMap": true
   },
   "include": ["src/**/*"],
+  "files": ["src/types/sqljs.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
