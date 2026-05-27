@@ -182,3 +182,8 @@ package-lock.json
 package.json
 temp.json
 *.json
+
+# Node.js 项目文件 (排除忽略)
+!node/package.json
+!node/package-lock.json
+!node/tsconfig.json
