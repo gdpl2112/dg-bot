@@ -4,10 +4,10 @@
   "description": "DG-Bot Node.js 低内存版 — 多 Bot 代挂管理系统",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npx tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "lint": "eslint src --ext .ts"
+    "dev": "npx ts-node src/index.ts",
+    "lint": "npx eslint src --ext .ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",
