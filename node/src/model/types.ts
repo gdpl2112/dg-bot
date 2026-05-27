@@ -163,6 +163,18 @@ export interface OneBotEvent {
 
 // ===== Bot info =====
 
+export interface BotGroupInfo {
+  id: number;
+  name: string;
+  icon?: string;
+}
+
+export interface BotFriendInfo {
+  id: number;
+  nick: string;
+  remark?: string;
+}
+
 export interface BotInfo {
   id: number;
   nick: string;
@@ -170,6 +182,8 @@ export interface BotInfo {
   avatarUrl?: string;
   friendCount?: number;
   groupCount?: number;
+  groups?: BotGroupInfo[];
+  friends?: BotFriendInfo[];
 }
 
 export interface OptionalDto {
