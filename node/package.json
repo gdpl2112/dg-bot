@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/index.js",
-    "dev": "npx ts-node src/index.ts",
+    "dev": "node --require ts-node/register src/index.ts",
     "lint": "npx eslint src --ext .ts"
   },
   "dependencies": {
