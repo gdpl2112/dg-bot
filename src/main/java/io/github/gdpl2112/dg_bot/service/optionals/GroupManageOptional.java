@@ -73,6 +73,8 @@ public class GroupManageOptional implements BaseOptional {
                 if (command.isEmpty()) {
                     if (part.startsWith("踢")) {
                         command = "踢";
+                    } else if (part.startsWith("拉黑踢")) {
+                        command = "拉黑踢";
                     } else if (part.startsWith("禁言")) {
                         command = "禁言";
                         // 尝试从同段文本解析时长（如 "禁言60"、"禁言5min"）
