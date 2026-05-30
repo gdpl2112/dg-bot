@@ -35,7 +35,7 @@ public class GroupManageOptional implements BaseOptional {
 
     @Override
     public String getDesc() {
-        return "群管模式[需BOT是群管/群主]: 管理员可踢人(踢 @xxx)、禁言(禁言 @xxx 时长，支持秒/s/分钟/min/小时/时/h/天/day/d/月/m，最长30天)、撤回(引用消息+撤回)";
+        return "群管模式[需BOT是群管/群主]: 管理员可踢人(踢 @xxx,拉黑踢 @xx)、禁言(禁言 @xxx 时长，支持秒/s/分钟/min/小时/时/h/天/day/d/月/m，最长30天)、撤回(引用消息+撤回)";
     }
 
     @Override
@@ -73,6 +73,8 @@ public class GroupManageOptional implements BaseOptional {
                 if (command.isEmpty()) {
                     if (part.startsWith("踢")) {
                         command = "踢";
+                    } else if (part.startsWith("拉黑踢")) {
+                        command = "拉黑踢";
                     } else if (part.startsWith("禁言")) {
                         command = "禁言";
                         // 尝试从同段文本解析时长（如 "禁言60"、"禁言5min"）
@@ -102,7 +104,10 @@ public class GroupManageOptional implements BaseOptional {
 
         switch (command) {
             case "踢":
-                handleKick(group, atTarget, event);
+                handleKick(group, atTarget, event, false);
+                break;
+            case "拉黑踢":
+                handleKick(group, atTarget, event, true);
                 break;
             case "禁言":
                 handleMute(group, atTarget, muteSeconds, event);
@@ -155,8 +160,9 @@ public class GroupManageOptional implements BaseOptional {
      * @param group    目标群
      * @param atTarget 消息中 @的目标成员
      * @param event    原始消息事件
+     * @param b        是否拉黑
      */
-    private void handleKick(Group group, At atTarget, MessageEvent event) {
+    private void handleKick(Group group, At atTarget, MessageEvent event, boolean b) {
         if (atTarget == null) {
             event.getSubject().sendMessage("\"请 @要踢出的成员\"");
             return;
@@ -167,8 +173,9 @@ public class GroupManageOptional implements BaseOptional {
             return;
         }
         try {
-            target.kick("", false);
-            event.getSubject().sendMessage("\"已踢出 " + target.getNameCard() + "(" + target.getId() + ")\"");
+            target.kick("您已被移除群聊.", b);
+            event.getSubject().sendMessage("\"已踢出 " + target.getNameCard()
+                    + "(" + target.getId() + ")\"" + (b ? "并已拉黑" : "未拉黑"));
         } catch (Exception e) {
             event.getSubject().sendMessage("\"踢出失败: " + e.getMessage() + "\"");
         }
