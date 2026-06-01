@@ -3,6 +3,7 @@ package io.github.gdpl2112.dg_bot.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.AbstractDataSource;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -75,6 +76,21 @@ public class ManageDbService {
             log.info("ManageDb 初始化完成: {}-manage.db", id);
             return tpl;
         });
+    }
+
+    /**
+     * 周期性对各账号的 {bid}-manage.db 执行 VACUUM 以释放磁盘空间
+     */
+    @Scheduled(cron = "0 1 */3 * * ?")
+    public void vacuum() {
+        for (Map.Entry<Long, JdbcTemplate> entry : TEMPLATE_MAP.entrySet()) {
+            try {
+                entry.getValue().execute("VACUUM;");
+                log.info("VACUUM 释放完成: {}-manage.db", entry.getKey());
+            } catch (Exception e) {
+                log.error("VACUUM 释放 {}-manage.db 失败", entry.getKey(), e);
+            }
+        }
     }
 
     /**
