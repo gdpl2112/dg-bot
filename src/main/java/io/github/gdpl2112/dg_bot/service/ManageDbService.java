@@ -304,6 +304,38 @@ public class ManageDbService {
     }
 
     /**
+     * 查询所有已记录过数据（踢人 / 禁言 / 批准入群）的群号集合。
+     * <p>用于前端群聊过滤下拉框：原先仅依赖 bot 在线群列表，会遗漏 bot 已退群但仍有历史记录的群，
+     * 导致部分群无法被选择过滤。此处直接从三张记录表汇总去重。</p>
+     *
+     * @param bid bot QQ 账号
+     * @return 去重后的群号列表（升序），元素为字符串
+     */
+    public List<String> listGroupIds(long bid) {
+        String sql = "SELECT DISTINCT group_id FROM ("
+                + "SELECT group_id FROM kick_record "
+                + "UNION SELECT group_id FROM mute_record "
+                + "UNION SELECT group_id FROM approve_record"
+                + ") ORDER BY CAST(group_id AS INTEGER)";
+        return getTemplate(bid).queryForList(sql, String.class);
+    }
+
+    /**
+     * 查询所有已记录过数据（踢人 / 禁言 / 批准入群）的操作者 ID 集合。
+     *
+     * @param bid bot QQ 账号
+     * @return 去重后的操作者 ID 列表（升序），元素为字符串
+     */
+    public List<String> listOperatorIds(long bid) {
+        String sql = "SELECT DISTINCT operator_id FROM ("
+                + "SELECT operator_id FROM kick_record "
+                + "UNION SELECT operator_id FROM mute_record "
+                + "UNION SELECT operator_id FROM approve_record"
+                + ") ORDER BY CAST(operator_id AS INTEGER)";
+        return getTemplate(bid).queryForList(sql, String.class);
+    }
+
+    /**
      * 查询指定时间范围内踢人次数最多的操作者排行
      *
      * @param bid       bot QQ 账号
