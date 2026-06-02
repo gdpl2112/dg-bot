@@ -7,9 +7,8 @@ import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.MemberPermission;
 import net.mamoe.mirai.contact.NormalMember;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,7 +21,8 @@ import java.util.Map;
 
 /**
  * 群管理事件记录查询接口，提供踢人和禁言记录的分页查询及操作者排行功能。
- * 所有接口均通过登录认证，数据来源为当前 bot 账号对应的 {bid}-manage.db。
+ * 页面公开预览（凭 manage.key 访问），数据来源固定为配置 manage.bid（默认 super.qid）
+ * 对应的 {bid}-manage.db，不依赖登录用户身份。
  *
  * <pre>
  * 接口列表：
@@ -44,12 +44,15 @@ public class ManageController {
     @Autowired
     private ManageDbService manageDbService;
 
+    /** 数据来源 bot 账号，取配置 manage.bid（默认 super.qid）。页面公开预览，不随登录态变化。 */
+    @Value("${manage.bid}")
+    private long manageBid;
+
     // ─── 踢人记录 ─────────────────────────────────────────────────────────────
 
     /**
      * 分页查询踢人记录
      *
-     * @param userDetails 当前登录用户（bid 即 QQ 账号）
      * @param gid         群号过滤，不传或传 0 表示全部群
      * @param operator    操作者 ID 过滤，不传或传 0 表示全部操作者
      * @param startTime   开始时间戳（ms），不传或传 0 表示不限制
@@ -60,7 +63,6 @@ public class ManageController {
      */
     @GetMapping("/kick")
     public Object queryKick(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
             @RequestParam(defaultValue = "0") long operator,
             @RequestParam(defaultValue = "0") long startTime,
@@ -68,7 +70,7 @@ public class ManageController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        long bid = Long.parseLong(userDetails.getUsername());
+        long bid = manageBid;
         // 每页上限 100 条，防止过量查询
         size = Math.min(size, 100);
         page = Math.max(page, 1);
@@ -87,7 +89,6 @@ public class ManageController {
     /**
      * 查询指定时间范围内踢人次数最多的操作者排行
      *
-     * @param userDetails 当前登录用户
      * @param gid         群号过滤，0 表示全部群
      * @param startTime   开始时间戳（ms），0 表示不限制
      * @param endTime     结束时间戳（ms），0 表示不限制
@@ -96,13 +97,12 @@ public class ManageController {
      */
     @GetMapping("/kick/top-operators")
     public Object topKickOperators(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
             @RequestParam(defaultValue = "0") long startTime,
             @RequestParam(defaultValue = "0") long endTime,
             @RequestParam(defaultValue = "20") int limit) {
 
-        long bid = Long.parseLong(userDetails.getUsername());
+        long bid = manageBid;
         limit = Math.min(limit, 50);
         return manageDbService.topKickOperators(bid, gid, startTime, endTime, limit);
     }
@@ -112,7 +112,6 @@ public class ManageController {
     /**
      * 分页查询禁言记录
      *
-     * @param userDetails 当前登录用户（bid 即 QQ 账号）
      * @param gid         群号过滤，不传或传 0 表示全部群
      * @param operator    操作者 ID 过滤，不传或传 0 表示全部操作者
      * @param startTime   开始时间戳（ms），不传或传 0 表示不限制
@@ -123,7 +122,6 @@ public class ManageController {
      */
     @GetMapping("/mute")
     public Object queryMute(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
             @RequestParam(defaultValue = "0") long operator,
             @RequestParam(defaultValue = "0") long startTime,
@@ -131,7 +129,7 @@ public class ManageController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        long bid = Long.parseLong(userDetails.getUsername());
+        long bid = manageBid;
         size = Math.min(size, 100);
         page = Math.max(page, 1);
 
@@ -149,7 +147,6 @@ public class ManageController {
     /**
      * 查询指定时间范围内禁言次数最多的操作者排行
      *
-     * @param userDetails 当前登录用户
      * @param gid         群号过滤，0 表示全部群
      * @param startTime   开始时间戳（ms），0 表示不限制
      * @param endTime     结束时间戳（ms），0 表示不限制
@@ -158,13 +155,12 @@ public class ManageController {
      */
     @GetMapping("/mute/top-operators")
     public Object topMuteOperators(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
             @RequestParam(defaultValue = "0") long startTime,
             @RequestParam(defaultValue = "0") long endTime,
             @RequestParam(defaultValue = "20") int limit) {
 
-        long bid = Long.parseLong(userDetails.getUsername());
+        long bid = manageBid;
         limit = Math.min(limit, 50);
         return manageDbService.topMuteOperators(bid, gid, startTime, endTime, limit);
     }
@@ -174,7 +170,6 @@ public class ManageController {
     /**
      * 分页查询批准入群记录
      *
-     * @param userDetails 当前登录用户（bid 即 QQ 账号）
      * @param gid         群号过滤，不传或传 0 表示全部群
      * @param operator    操作者 ID 过滤，不传或传 0 表示全部操作者
      * @param startTime   开始时间戳（ms），不传或传 0 表示不限制
@@ -185,7 +180,6 @@ public class ManageController {
      */
     @GetMapping("/approve")
     public Object queryApprove(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
             @RequestParam(defaultValue = "0") long operator,
             @RequestParam(defaultValue = "0") long startTime,
@@ -193,7 +187,7 @@ public class ManageController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        long bid = Long.parseLong(userDetails.getUsername());
+        long bid = manageBid;
         // 每页上限 100 条，防止过量查询
         size = Math.min(size, 100);
         page = Math.max(page, 1);
@@ -212,7 +206,6 @@ public class ManageController {
     /**
      * 查询指定时间范围内批准入群次数最多的操作者排行
      *
-     * @param userDetails 当前登录用户
      * @param gid         群号过滤，0 表示全部群
      * @param startTime   开始时间戳（ms），0 表示不限制
      * @param endTime     结束时间戳（ms），0 表示不限制
@@ -221,13 +214,12 @@ public class ManageController {
      */
     @GetMapping("/approve/top-operators")
     public Object topApproveOperators(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
             @RequestParam(defaultValue = "0") long startTime,
             @RequestParam(defaultValue = "0") long endTime,
             @RequestParam(defaultValue = "20") int limit) {
 
-        long bid = Long.parseLong(userDetails.getUsername());
+        long bid = manageBid;
         limit = Math.min(limit, 50);
         return manageDbService.topApproveOperators(bid, gid, startTime, endTime, limit);
     }
@@ -239,12 +231,11 @@ public class ManageController {
      * <p>修复点：前端群聊过滤下拉框原先只能依赖 bot 当前在线群列表，bot 已退群但仍有历史记录的群
      * 无法被选中过滤。此接口直接从记录表汇总，保证所有出现过的群都能被选择。</p>
      *
-     * @param userDetails 当前登录用户（bid 即 QQ 账号）
      * @return JSON 数组：["群号", ...]（按群号升序）
      */
     @GetMapping("/groups")
-    public Object listGroups(@AuthenticationPrincipal UserDetails userDetails) {
-        long bid = Long.parseLong(userDetails.getUsername());
+    public Object listGroups() {
+        long bid = manageBid;
         return manageDbService.listGroupIds(bid);
     }
 
@@ -257,16 +248,14 @@ public class ManageController {
      * </ul>
      * 当 gid &gt; 0 时仅扫描该群的管理员，否则扫描全部群。</p>
      *
-     * @param userDetails 当前登录用户（bid 即 QQ 账号）
      * @param gid         群号过滤，0 表示全部群
      * @return JSON 数组：[ {id, recorded(bool), role("owner"/"admin"/"")}, ... ]（按 id 升序）
      */
     @GetMapping("/operators")
     public Object listOperators(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid) {
 
-        long bid = Long.parseLong(userDetails.getUsername());
+        long bid = manageBid;
 
         // 以 id 为 key 聚合，保持插入顺序，最终按数值排序
         Map<String, JSONObject> merged = new LinkedHashMap<>();
