@@ -164,19 +164,24 @@ public class ManageDbService {
     // ─── 查询方法 ─────────────────────────────────────────────────────────────
 
     /**
-     * 构建 WHERE 子句及参数（供 kick_record / mute_record 通用）
+     * 构建 WHERE 子句及参数（供 kick_record / mute_record / approve_record 通用）
      *
-     * @param groupId   群号，0 表示不过滤
-     * @param startTime 开始时间戳（ms），0 表示不过滤
-     * @param endTime   结束时间戳（ms），0 表示不过滤
-     * @param params    出参：绑定参数列表
+     * @param groupId    群号，0 表示不过滤
+     * @param operatorId 操作者 ID，0 表示不过滤
+     * @param startTime  开始时间戳（ms），0 表示不过滤
+     * @param endTime    结束时间戳（ms），0 表示不过滤
+     * @param params     出参：绑定参数列表
      * @return WHERE 子句字符串（含前导空格，若无条件则返回空串）
      */
-    private String buildWhere(long groupId, long startTime, long endTime, List<Object> params) {
+    private String buildWhere(long groupId, long operatorId, long startTime, long endTime, List<Object> params) {
         StringBuilder where = new StringBuilder();
         if (groupId > 0) {
             where.append(where.length() == 0 ? " WHERE " : " AND ").append("group_id = ?");
             params.add(String.valueOf(groupId));
+        }
+        if (operatorId > 0) {
+            where.append(where.length() == 0 ? " WHERE " : " AND ").append("operator_id = ?");
+            params.add(String.valueOf(operatorId));
         }
         if (startTime > 0) {
             where.append(where.length() == 0 ? " WHERE " : " AND ").append("time >= ?");
@@ -192,17 +197,18 @@ public class ManageDbService {
     /**
      * 分页查询踢人记录
      *
-     * @param bid       bot QQ 账号
-     * @param groupId   群号，0 表示不过滤
-     * @param startTime 开始时间戳（ms），0 表示不过滤
-     * @param endTime   结束时间戳（ms），0 表示不过滤
-     * @param page      页码，从 1 开始
-     * @param size      每页大小
+     * @param bid        bot QQ 账号
+     * @param groupId    群号，0 表示不过滤
+     * @param operatorId 操作者 ID，0 表示不过滤
+     * @param startTime  开始时间戳（ms），0 表示不过滤
+     * @param endTime    结束时间戳（ms），0 表示不过滤
+     * @param page       页码，从 1 开始
+     * @param size       每页大小
      * @return 记录列表，每条为 Map（id/group_id/target_id/operator_id/time）
      */
-    public List<Map<String, Object>> queryKick(long bid, long groupId, long startTime, long endTime, int page, int size) {
+    public List<Map<String, Object>> queryKick(long bid, long groupId, long operatorId, long startTime, long endTime, int page, int size) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, operatorId, startTime, endTime, params);
         params.add(size);
         params.add((page - 1) * size);
         String sql = "SELECT id, group_id, target_id, operator_id, time FROM kick_record"
@@ -213,15 +219,16 @@ public class ManageDbService {
     /**
      * 统计踢人记录总数
      *
-     * @param bid       bot QQ 账号
-     * @param groupId   群号，0 表示不过滤
-     * @param startTime 开始时间戳（ms），0 表示不过滤
-     * @param endTime   结束时间戳（ms），0 表示不过滤
+     * @param bid        bot QQ 账号
+     * @param groupId    群号，0 表示不过滤
+     * @param operatorId 操作者 ID，0 表示不过滤
+     * @param startTime  开始时间戳（ms），0 表示不过滤
+     * @param endTime    结束时间戳（ms），0 表示不过滤
      * @return 符合条件的记录总数
      */
-    public long countKick(long bid, long groupId, long startTime, long endTime) {
+    public long countKick(long bid, long groupId, long operatorId, long startTime, long endTime) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, operatorId, startTime, endTime, params);
         String sql = "SELECT COUNT(*) FROM kick_record" + where;
         Long cnt = getTemplate(bid).queryForObject(sql, Long.class, params.toArray());
         return cnt == null ? 0L : cnt;
@@ -230,17 +237,18 @@ public class ManageDbService {
     /**
      * 分页查询禁言记录
      *
-     * @param bid       bot QQ 账号
-     * @param groupId   群号，0 表示不过滤
-     * @param startTime 开始时间戳（ms），0 表示不过滤
-     * @param endTime   结束时间戳（ms），0 表示不过滤
-     * @param page      页码，从 1 开始
-     * @param size      每页大小
+     * @param bid        bot QQ 账号
+     * @param groupId    群号，0 表示不过滤
+     * @param operatorId 操作者 ID，0 表示不过滤
+     * @param startTime  开始时间戳（ms），0 表示不过滤
+     * @param endTime    结束时间戳（ms），0 表示不过滤
+     * @param page       页码，从 1 开始
+     * @param size       每页大小
      * @return 记录列表，每条为 Map（id/group_id/target_id/operator_id/duration/time）
      */
-    public List<Map<String, Object>> queryMute(long bid, long groupId, long startTime, long endTime, int page, int size) {
+    public List<Map<String, Object>> queryMute(long bid, long groupId, long operatorId, long startTime, long endTime, int page, int size) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, operatorId, startTime, endTime, params);
         params.add(size);
         params.add((page - 1) * size);
         String sql = "SELECT id, group_id, target_id, operator_id, duration, time FROM mute_record"
@@ -251,15 +259,16 @@ public class ManageDbService {
     /**
      * 统计禁言记录总数
      *
-     * @param bid       bot QQ 账号
-     * @param groupId   群号，0 表示不过滤
-     * @param startTime 开始时间戳（ms），0 表示不过滤
-     * @param endTime   结束时间戳（ms），0 表示不过滤
+     * @param bid        bot QQ 账号
+     * @param groupId    群号，0 表示不过滤
+     * @param operatorId 操作者 ID，0 表示不过滤
+     * @param startTime  开始时间戳（ms），0 表示不过滤
+     * @param endTime    结束时间戳（ms），0 表示不过滤
      * @return 符合条件的记录总数
      */
-    public long countMute(long bid, long groupId, long startTime, long endTime) {
+    public long countMute(long bid, long groupId, long operatorId, long startTime, long endTime) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, operatorId, startTime, endTime, params);
         String sql = "SELECT COUNT(*) FROM mute_record" + where;
         Long cnt = getTemplate(bid).queryForObject(sql, Long.class, params.toArray());
         return cnt == null ? 0L : cnt;
@@ -268,17 +277,18 @@ public class ManageDbService {
     /**
      * 分页查询批准入群记录
      *
-     * @param bid       bot QQ 账号
-     * @param groupId   群号，0 表示不过滤
-     * @param startTime 开始时间戳（ms），0 表示不过滤
-     * @param endTime   结束时间戳（ms），0 表示不过滤
-     * @param page      页码，从 1 开始
-     * @param size      每页大小
+     * @param bid        bot QQ 账号
+     * @param groupId    群号，0 表示不过滤
+     * @param operatorId 操作者 ID，0 表示不过滤
+     * @param startTime  开始时间戳（ms），0 表示不过滤
+     * @param endTime    结束时间戳（ms），0 表示不过滤
+     * @param page       页码，从 1 开始
+     * @param size       每页大小
      * @return 记录列表，每条为 Map（id/group_id/req_id/operator_id/time）
      */
-    public List<Map<String, Object>> queryApprove(long bid, long groupId, long startTime, long endTime, int page, int size) {
+    public List<Map<String, Object>> queryApprove(long bid, long groupId, long operatorId, long startTime, long endTime, int page, int size) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, operatorId, startTime, endTime, params);
         params.add(size);
         params.add((page - 1) * size);
         String sql = "SELECT id, group_id, req_id, operator_id, time FROM approve_record"
@@ -289,18 +299,51 @@ public class ManageDbService {
     /**
      * 统计批准入群记录总数
      *
-     * @param bid       bot QQ 账号
-     * @param groupId   群号，0 表示不过滤
-     * @param startTime 开始时间戳（ms），0 表示不过滤
-     * @param endTime   结束时间戳（ms），0 表示不过滤
+     * @param bid        bot QQ 账号
+     * @param groupId    群号，0 表示不过滤
+     * @param operatorId 操作者 ID，0 表示不过滤
+     * @param startTime  开始时间戳（ms），0 表示不过滤
+     * @param endTime    结束时间戳（ms），0 表示不过滤
      * @return 符合条件的记录总数
      */
-    public long countApprove(long bid, long groupId, long startTime, long endTime) {
+    public long countApprove(long bid, long groupId, long operatorId, long startTime, long endTime) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, operatorId, startTime, endTime, params);
         String sql = "SELECT COUNT(*) FROM approve_record" + where;
         Long cnt = getTemplate(bid).queryForObject(sql, Long.class, params.toArray());
         return cnt == null ? 0L : cnt;
+    }
+
+    /**
+     * 查询所有已记录过数据（踢人 / 禁言 / 批准入群）的群号集合。
+     * <p>用于前端群聊过滤下拉框：原先仅依赖 bot 在线群列表，会遗漏 bot 已退群但仍有历史记录的群，
+     * 导致部分群无法被选择过滤。此处直接从三张记录表汇总去重。</p>
+     *
+     * @param bid bot QQ 账号
+     * @return 去重后的群号列表（升序），元素为字符串
+     */
+    public List<String> listGroupIds(long bid) {
+        String sql = "SELECT DISTINCT group_id FROM ("
+                + "SELECT group_id FROM kick_record "
+                + "UNION SELECT group_id FROM mute_record "
+                + "UNION SELECT group_id FROM approve_record"
+                + ") ORDER BY CAST(group_id AS INTEGER)";
+        return getTemplate(bid).queryForList(sql, String.class);
+    }
+
+    /**
+     * 查询所有已记录过数据（踢人 / 禁言 / 批准入群）的操作者 ID 集合。
+     *
+     * @param bid bot QQ 账号
+     * @return 去重后的操作者 ID 列表（升序），元素为字符串
+     */
+    public List<String> listOperatorIds(long bid) {
+        String sql = "SELECT DISTINCT operator_id FROM ("
+                + "SELECT operator_id FROM kick_record "
+                + "UNION SELECT operator_id FROM mute_record "
+                + "UNION SELECT operator_id FROM approve_record"
+                + ") ORDER BY CAST(operator_id AS INTEGER)";
+        return getTemplate(bid).queryForList(sql, String.class);
     }
 
     /**
@@ -315,7 +358,7 @@ public class ManageDbService {
      */
     public List<Map<String, Object>> topKickOperators(long bid, long groupId, long startTime, long endTime, int limit) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, 0, startTime, endTime, params);
         params.add(limit);
         String sql = "SELECT operator_id, COUNT(*) AS cnt FROM kick_record"
                 + where + " GROUP BY operator_id ORDER BY cnt DESC LIMIT ?";
@@ -334,7 +377,7 @@ public class ManageDbService {
      */
     public List<Map<String, Object>> topMuteOperators(long bid, long groupId, long startTime, long endTime, int limit) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, 0, startTime, endTime, params);
         params.add(limit);
         String sql = "SELECT operator_id, COUNT(*) AS cnt FROM mute_record"
                 + where + " GROUP BY operator_id ORDER BY cnt DESC LIMIT ?";
@@ -353,7 +396,7 @@ public class ManageDbService {
      */
     public List<Map<String, Object>> topApproveOperators(long bid, long groupId, long startTime, long endTime, int limit) {
         List<Object> params = new ArrayList<>();
-        String where = buildWhere(groupId, startTime, endTime, params);
+        String where = buildWhere(groupId, 0, startTime, endTime, params);
         params.add(limit);
         String sql = "SELECT operator_id, COUNT(*) AS cnt FROM approve_record"
                 + where + " GROUP BY operator_id ORDER BY cnt DESC LIMIT ?";
