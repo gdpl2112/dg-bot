@@ -26,7 +26,7 @@ import java.util.Map;
  *
  * <pre>
  * 接口列表：
- *   GET /api/manage/kick                  分页查询踢人记录
+ *   GET /api/manage/kick                  分页查询踢人记录（支持 gid/operator 过滤）
  *   GET /api/manage/kick/top-operators    踢人操作者排行
  *   GET /api/manage/mute                  分页查询禁言记录
  *   GET /api/manage/mute/top-operators    禁言操作者排行
@@ -51,6 +51,7 @@ public class ManageController {
      *
      * @param userDetails 当前登录用户（bid 即 QQ 账号）
      * @param gid         群号过滤，不传或传 0 表示全部群
+     * @param operator    操作者 ID 过滤，不传或传 0 表示全部操作者
      * @param startTime   开始时间戳（ms），不传或传 0 表示不限制
      * @param endTime     结束时间戳（ms），不传或传 0 表示不限制
      * @param page        页码，从 1 开始，默认 1
@@ -61,6 +62,7 @@ public class ManageController {
     public Object queryKick(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
+            @RequestParam(defaultValue = "0") long operator,
             @RequestParam(defaultValue = "0") long startTime,
             @RequestParam(defaultValue = "0") long endTime,
             @RequestParam(defaultValue = "1") int page,
@@ -71,8 +73,8 @@ public class ManageController {
         size = Math.min(size, 100);
         page = Math.max(page, 1);
 
-        long total = manageDbService.countKick(bid, gid, startTime, endTime);
-        List<Map<String, Object>> list = manageDbService.queryKick(bid, gid, startTime, endTime, page, size);
+        long total = manageDbService.countKick(bid, gid, operator, startTime, endTime);
+        List<Map<String, Object>> list = manageDbService.queryKick(bid, gid, operator, startTime, endTime, page, size);
 
         JSONObject result = new JSONObject();
         result.put("total", total);
@@ -112,6 +114,7 @@ public class ManageController {
      *
      * @param userDetails 当前登录用户（bid 即 QQ 账号）
      * @param gid         群号过滤，不传或传 0 表示全部群
+     * @param operator    操作者 ID 过滤，不传或传 0 表示全部操作者
      * @param startTime   开始时间戳（ms），不传或传 0 表示不限制
      * @param endTime     结束时间戳（ms），不传或传 0 表示不限制
      * @param page        页码，从 1 开始，默认 1
@@ -122,6 +125,7 @@ public class ManageController {
     public Object queryMute(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
+            @RequestParam(defaultValue = "0") long operator,
             @RequestParam(defaultValue = "0") long startTime,
             @RequestParam(defaultValue = "0") long endTime,
             @RequestParam(defaultValue = "1") int page,
@@ -131,8 +135,8 @@ public class ManageController {
         size = Math.min(size, 100);
         page = Math.max(page, 1);
 
-        long total = manageDbService.countMute(bid, gid, startTime, endTime);
-        List<Map<String, Object>> list = manageDbService.queryMute(bid, gid, startTime, endTime, page, size);
+        long total = manageDbService.countMute(bid, gid, operator, startTime, endTime);
+        List<Map<String, Object>> list = manageDbService.queryMute(bid, gid, operator, startTime, endTime, page, size);
 
         JSONObject result = new JSONObject();
         result.put("total", total);
@@ -172,6 +176,7 @@ public class ManageController {
      *
      * @param userDetails 当前登录用户（bid 即 QQ 账号）
      * @param gid         群号过滤，不传或传 0 表示全部群
+     * @param operator    操作者 ID 过滤，不传或传 0 表示全部操作者
      * @param startTime   开始时间戳（ms），不传或传 0 表示不限制
      * @param endTime     结束时间戳（ms），不传或传 0 表示不限制
      * @param page        页码，从 1 开始，默认 1
@@ -182,6 +187,7 @@ public class ManageController {
     public Object queryApprove(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") long gid,
+            @RequestParam(defaultValue = "0") long operator,
             @RequestParam(defaultValue = "0") long startTime,
             @RequestParam(defaultValue = "0") long endTime,
             @RequestParam(defaultValue = "1") int page,
@@ -192,8 +198,8 @@ public class ManageController {
         size = Math.min(size, 100);
         page = Math.max(page, 1);
 
-        long total = manageDbService.countApprove(bid, gid, startTime, endTime);
-        List<Map<String, Object>> list = manageDbService.queryApprove(bid, gid, startTime, endTime, page, size);
+        long total = manageDbService.countApprove(bid, gid, operator, startTime, endTime);
+        List<Map<String, Object>> list = manageDbService.queryApprove(bid, gid, operator, startTime, endTime, page, size);
 
         JSONObject result = new JSONObject();
         result.put("total", total);
