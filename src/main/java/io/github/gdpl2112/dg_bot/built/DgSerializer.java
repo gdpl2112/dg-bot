@@ -323,4 +323,38 @@ public class DgSerializer {
     public static String messageChainSerializeToString(MessageChain chain) {
         return ARR_SERIALIZER.serializer(chain);
     }
+
+    /**
+     * 文本优先排序的序列化方法。
+     * 遍历 MessageChain，将纯文本内容排在前面，非文本元素（图片、表情、@等）标签排在后面。
+     * 保证前缀匹配（如 AI 指令检测）不受非文本元素位置干扰。
+     *
+     * @param chain 消息链
+     * @return 文本优先排序后的序列化字符串
+     */
+    public static String messageChainSerializeWithTextFirst(MessageChain chain) {
+        if (chain == null || chain.isEmpty()) {
+            return "";
+        }
+        StringBuilder textParts = new StringBuilder();
+        StringBuilder nonTextParts = new StringBuilder();
+        for (SingleMessage singleMessage : chain) {
+            if (singleMessage instanceof PlainText) {
+                String touch = ((PlainText) singleMessage).getContent();
+                // 对尖括号标签进行转义，与 ARR_SERIALIZER 的 PlainText 规则一致
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("<.*?>");
+                java.util.regex.Matcher matcher = pattern.matcher(touch);
+                while (matcher.find()) {
+                    touch = touch.replace(matcher.group(), "\\" + matcher.group());
+                }
+                textParts.append(touch);
+            } else {
+                // 非文本元素：包装为单元素 MessageChain，复用 ARR_SERIALIZER 的规则序列化
+                MessageChain singleChain = new MessageChainBuilder().append(singleMessage).build();
+                nonTextParts.append(ARR_SERIALIZER.serializer(singleChain));
+            }
+        }
+        // 文本优先，非文本标签紧跟其后
+        return textParts.toString() + nonTextParts.toString();
+    }
 }

@@ -138,8 +138,8 @@ public class AIAssistantOptional implements BaseOptional {
                             images.add(img);
                         }
                     }
-                    // 将引用消息序列化为纯文本
-                    String qt = DgSerializer.messageChainSerializeToString(originalMessage);
+                    // 将引用消息序列化为纯文本（文本优先排序）
+                    String qt = DgSerializer.messageChainSerializeWithTextFirst(originalMessage);
                     if (Judge.isEmpty(qt)) {
                         qt = MessageChain.serializeToJsonString(originalMessage);
                     }
@@ -151,8 +151,8 @@ public class AIAssistantOptional implements BaseOptional {
             }
         }
 
-        // 解析包含特殊字符(如at、表情等)的富文本消息为纯文本格式
-        String content = DgSerializer.messageChainSerializeToString(event.getMessage());
+        // 解析包含特殊字符(如at、表情等)的富文本消息为纯文本格式（文本优先排序）
+        String content = DgSerializer.messageChainSerializeWithTextFirst(event.getMessage());
         if (Judge.isEmpty(content)) {
             content = MessageChain.serializeToJsonString(event.getMessage());
         }
