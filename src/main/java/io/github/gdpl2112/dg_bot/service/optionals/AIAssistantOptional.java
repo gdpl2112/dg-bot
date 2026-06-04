@@ -4,6 +4,7 @@ import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.AiConf;
 import io.github.gdpl2112.dg_bot.mapper.AiConfMapper;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
+import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.CronService;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.DefaultService;
 import io.github.gdpl2112.dg_bot.utils.HttpsUtils;
@@ -39,6 +40,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -73,6 +75,13 @@ public class AIAssistantOptional implements BaseOptional {
         t.setDaemon(true);
         return t;
     });
+
+    /**
+     * 按bot隔离的单线程执行器，保证同一bot的AI请求严格顺序执行（上次完成再进行下次）。
+     * 执行器随应用生命周期持有，daemon线程随JVM退出自动清理，无需手动关闭。
+     */
+    @SuppressWarnings("resource")
+    private static final Map<Long, ExecutorService> BOT_AI_EXECUTORS = new ConcurrentHashMap<>();
 
     static {
         MEMORY_CLEANER.scheduleWithFixedDelay(() -> {
@@ -123,6 +132,9 @@ public class AIAssistantOptional implements BaseOptional {
 
     @Autowired
     private McpBean mcpBean;
+
+    @Autowired
+    private SaveMapper saveMapper;
 
     /**
      * 获取可选功能的描述信息
@@ -227,7 +239,7 @@ public class AIAssistantOptional implements BaseOptional {
         }
 
         // 提取去除前缀后的实际对话内容
-        String actualContent = content.replace(aiPrefix, "").trim();
+        String actualContent = content.substring(aiPrefix.length()).trim();
         if (actualContent.isEmpty()) {
             return;
         }
@@ -270,23 +282,30 @@ public class AIAssistantOptional implements BaseOptional {
             chatClientRequestSpec.toolCallbacks(mcpBean.getToolCallbacks());
         }
 
-        try {
-            List<String> responseChunks = chatClientRequestSpec.stream().content().collectList().block();
-            if (responseChunks == null || responseChunks.isEmpty()) {
-                return;
+        BOT_AI_EXECUTORS.computeIfAbsent(bid, k ->
+                Executors.newSingleThreadExecutor(r -> {
+                    Thread t = new Thread(r, "ai-call-bot-" + k);
+                    t.setDaemon(true);
+                    return t;
+                })
+        ).submit(() -> {
+            try {
+                String responseContent = chatClientRequestSpec.call().content();
+                if (responseContent == null || responseContent.trim().isEmpty()) {
+                    return;
+                }
+                String reply = "['" + aiConf.getName() + "'回答]\n\n" + responseContent;
+                // 回复时携带原消息引用
+                MessageChainBuilder mcb = new MessageChainBuilder();
+                mcb.append(new QuoteReply(event.getMessage()));
+                mcb.append(new PlainText(reply));
+                event.getSubject().sendMessage(mcb.build());
+                appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
+            } catch (Exception e) {
+                log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
+                event.getSubject().sendMessage(new PlainText("[" + aiConf.getName() + "输出]\n\n[AI调用失败，请稍后再试]"));
             }
-            String responseContent = String.join("", responseChunks);
-            String reply = "['" + aiConf.getName() + "'回答]\n\n" + responseContent;
-            // 回复时携带原消息引用
-            MessageChainBuilder mcb = new MessageChainBuilder();
-            mcb.append(new QuoteReply(event.getMessage()));
-            mcb.append(new PlainText(reply));
-            event.getSubject().sendMessage(mcb.build());
-            appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
-        } catch (Exception e) {
-            log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
-            event.getSubject().sendMessage(new PlainText("[" + aiConf.getName() + "输出]\n\n[AI调用失败，请稍后再试]"));
-        }
+        });
     }
 
     private static String buildMemoryKey(Long bid, Long subjectId) {
@@ -435,7 +454,7 @@ public class AIAssistantOptional implements BaseOptional {
             synchronized (this) {
                 if (cachedToolCallbacks == null) {
                     if (aiAssistantOptional == null) {
-                        aiAssistantOptional = new AiAssistantOptionalTools(cronMapper, cronService);
+                        aiAssistantOptional = new AiAssistantOptionalTools(cronMapper, cronService, saveMapper);
                     }
                     cachedToolCallbacks = ToolCallbacks.from(aiAssistantOptional);
                 }

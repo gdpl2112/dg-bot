@@ -28,7 +28,8 @@ public class AiConfController {
     private AiConfMapper aiConfMapper;
 
     /**
-     * 获取当前登录用户的AI配置；首次查询时自动创建默认配置
+     * 获取当前登录用户的AI配置；首次查询时自动创建默认配置。
+     * 出于安全考虑，apiKey仅返回脱敏预览（首4位+末4位），前端不可获取完整密钥。
      */
     @GetMapping("/config")
     public AiConf getConfig(@AuthenticationPrincipal UserDetails userDetails) {
@@ -39,7 +40,25 @@ public class AiConfController {
             config.setQid(qid);
             aiConfMapper.insert(config);
         }
+        // 对apiKey进行脱敏处理，防止明文泄露
+        maskApiKey(config);
         return config;
+    }
+
+    /**
+     * 将 apiKey 脱敏：仅保留前后各4位，中间用 *** 替代；
+     * 若长度不足以脱敏则显示 ****
+     */
+    private void maskApiKey(AiConf config) {
+        String key = config.getApiKey();
+        if (key == null || key.isEmpty()) {
+            return;
+        }
+        if (key.length() <= 8) {
+            config.setApiKey("****");
+        } else {
+            config.setApiKey(key.substring(0, 4) + "***" + key.substring(key.length() - 4));
+        }
     }
 
     /**
@@ -61,7 +80,8 @@ public class AiConfController {
         if (aiConf.getPrefix() != null) {
             existing.setPrefix(aiConf.getPrefix());
         }
-        if (aiConf.getApiKey() != null) {
+        // 仅当前端传入完整密钥（非脱敏占位符）时才更新，防止将脱敏值写回数据库
+        if (aiConf.getApiKey() != null && !aiConf.getApiKey().contains("***")) {
             existing.setApiKey(aiConf.getApiKey());
         }
         if (aiConf.getBaseUrl() != null) {
