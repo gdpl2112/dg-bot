@@ -294,11 +294,18 @@ public class AIAssistantOptional implements BaseOptional {
                 if (responseContent == null || responseContent.trim().isEmpty()) {
                     return;
                 }
-                String reply = "['" + aiConf.getName() + "'回答]\n\n" + responseContent;
+                String replyPrefix = "['" + aiConf.getName() + "'回答]\n\n";
+                // 将 AI 响应中的 <at:id> 等格式标签转换为实际的 Mirai 消息对象
+                MessageChain responseChain = DgSerializer.stringDeserializeToMessageChain(responseContent, event.getBot(), event.getSubject());
                 // 回复时携带原消息引用
                 MessageChainBuilder mcb = new MessageChainBuilder();
                 mcb.append(new QuoteReply(event.getMessage()));
-                mcb.append(new PlainText(reply));
+                mcb.append(new PlainText(replyPrefix));
+                if (responseChain != null) {
+                    mcb.append(responseChain);
+                } else {
+                    mcb.append(new PlainText(responseContent));
+                }
                 event.getSubject().sendMessage(mcb.build());
                 appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
             } catch (Exception e) {
