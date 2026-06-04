@@ -91,12 +91,12 @@ public class AiAssistantOptionalTools {
      * @param title
      * @return
      */
-    @Tool(description = "设置群头衔")
+    @Tool(description = "【群管理】给某个群成员设置专属头衔(群主专属能力)；只改头衔，不改群名片。")
     public String set_group_special_title(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "GroupID") Long groupId,
-            @ToolParam(description = "QQID") Long userId,
-            @ToolParam(description = "群头衔内容") String title) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "目标群号") Long groupId,
+            @ToolParam(description = "目标成员的QQ号") Long userId,
+            @ToolParam(description = "头衔文字内容；传空字符串则清除该成员头衔") String title) {
         log.info("set_group_special_title: bid={}, groupId={}, userId={}, title={}", bid, groupId, userId, title);
         if (bid == null || groupId == null || userId == null || title == null) {
             return "参数不能为空";
@@ -128,12 +128,12 @@ public class AiAssistantOptionalTools {
      * @param userId
      * @param card
      */
-    @Tool(description = "设置群名片")
+    @Tool(description = "【群管理】修改某个群成员在本群的群名片(群内昵称)；只改群名片，不改头衔。")
     public String set_group_card(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "GroupID") Long groupId,
-            @ToolParam(description = "QQID") Long userId,
-            @ToolParam(description = "群名片内容") String card) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "目标群号") Long groupId,
+            @ToolParam(description = "目标成员的QQ号") Long userId,
+            @ToolParam(description = "新的群名片(群内昵称)；传空字符串则清除群名片") String card) {
         log.info("set_group_card: bid={}, groupId={}, userId={}, card={}", bid, groupId, userId, card);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
@@ -151,8 +151,8 @@ public class AiAssistantOptionalTools {
     //{
     //  "file": "base64://..."
     //}
-    @Tool(description = "设置QQ头像,为最近发的一个图片")
-    public String set_qq_avatar(@ToolParam(description = "bot ID") Long bid) {
+    @Tool(description = "【账号设置】将机器人最近收到的一张图片设为机器人自己的QQ头像；需用户先发送一张图片。")
+    public String set_qq_avatar(@ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid) {
         log.info("set_qq_avatar: bid={}", bid);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
@@ -183,8 +183,8 @@ public class AiAssistantOptionalTools {
     }
 
 
-    @Tool(description = "查看此账号的定时(主动续火)任务列表")
-    public String list_cron_tasks(@ToolParam(description = "bot ID") Long bid) {
+    @Tool(description = "【定时任务】查询本机器人已配置的全部定时(主动续火/定时发送)任务列表。")
+    public String list_cron_tasks(@ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid) {
         log.info("list_cron_tasks: bid={}", bid);
         QueryWrapper<CronMessage> qw = new QueryWrapper<>();
         qw.eq("qid", String.valueOf(bid));
@@ -200,13 +200,13 @@ public class AiAssistantOptionalTools {
         return sb.toString();
     }
 
-    @Tool(description = "添加定时(主动续火)任务,禁止添加秒分时级的循环任务")
+    @Tool(description = "【定时任务】新增一个按 Cron 周期向指定目标发送消息的定时(主动续火)任务；禁止添加秒/分/小时级的高频循环任务。")
     public String add_cron_task(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "目标ID（如群号加前缀 g123456，私聊加前缀 u123456）") String targetId,
-            @ToolParam(description = "Cron 表达式（如 0 0 12 * * ?）") String cron,
-            @ToolParam(description = "任务中文描述") String desc,
-            @ToolParam(description = "要发送的消息内容") String msg) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "发送目标：群聊用 g+群号(如 g123456)，私聊用 u+QQ号(如 u123456)") String targetId,
+            @ToolParam(description = "标准6位 Cron 表达式，如 0 0 12 * * ? 表示每天12点；禁止秒/分/小时级高频触发") String cron,
+            @ToolParam(description = "任务用途的简短中文描述") String desc,
+            @ToolParam(description = "到点要发送的消息文本") String msg) {
         log.info("add_cron_task: bid={}, targetId={}, cron={}, desc={}, msg={}", bid, targetId, cron, desc, msg);
         CronMessage cronMessage = new CronMessage();
         cronMessage.setQid(String.valueOf(bid));
@@ -234,7 +234,7 @@ public class AiAssistantOptionalTools {
         return "添加失败";
     }
 
-    @Tool(description = "删除定时(主动续火)任务")
+    @Tool(description = "【定时任务】按任务ID删除一个已存在的定时任务；任务ID 可先用 list_cron_tasks 查询。")
     public String delete_cron_task(
             @ToolParam(description = "定时任务ID") String id) {
         log.info("delete_cron_task: id={}", id);
@@ -253,8 +253,8 @@ public class AiAssistantOptionalTools {
     //  "start": 0,
     //  "count": 10
     //}
-    @Tool(description = "获取名片点赞信息")
-    public String get_profile_like(@ToolParam(description = "bot ID") Long bid) {
+    @Tool(description = "【名片点赞】查询本机器人名片收到的点赞(赞我)信息。")
+    public String get_profile_like(@ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid) {
         log.info("get_profile_like: bid={}", bid);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
@@ -280,11 +280,11 @@ public class AiAssistantOptionalTools {
     //    "user_id": "123456,234567",
     //    "times": 10
     //}
-    @Tool(description = "给指定QQ名片点赞")
+    @Tool(description = "【名片点赞】给一个或多个QQ的名片点赞(赞别人)。")
     public String send_like(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "QQID,可多个用英文逗号分隔") String userIds,
-            @ToolParam(description = "点赞次数,一般10次 svip20次") Integer times) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "要点赞的QQ号，可多个用英文逗号分隔，如 123,456") String userIds,
+            @ToolParam(description = "点赞次数：普通用户最多10，SVIP最多20") Integer times) {
         log.info("send_like: bid={}, userIds={}, times={}", bid, userIds, times);
         if (userIds == null || userIds.trim().isEmpty()) {
             return "QQID不能为空";
@@ -334,11 +334,11 @@ public class AiAssistantOptionalTools {
      * @param message  消息内容
      * @return 发送结果
      */
-    @Tool(description = "给指定好友发送消息")
+    @Tool(description = "【发消息·私聊文本】给某个好友发送纯文本消息；只发文字。发图片用 send_image，发音乐用 send_music_card。")
     public String send_friend_message(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "好友QQ号") Long friendId,
-            @ToolParam(description = "消息内容") String message) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "接收消息的好友QQ号") Long friendId,
+            @ToolParam(description = "要发送的纯文本内容") String message) {
         log.info("send_friend_message: bid={}, friendId={}, message={}", bid, friendId, message);
         Bot bot = Bot.getInstanceOrNull(bid);
         if (bot == null) return "机器人未找到";
@@ -357,11 +357,11 @@ public class AiAssistantOptionalTools {
      * @param message 消息内容
      * @return 发送结果
      */
-    @Tool(description = "给指定群发送消息")
+    @Tool(description = "【发消息·群聊文本】向某个群发送纯文本消息；只发文字。发图片用 send_image，发音乐用 send_music_card，发群公告用 send_group_notice。")
     public String send_group_message(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "群号") Long groupId,
-            @ToolParam(description = "消息内容") String message) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "目标群号") Long groupId,
+            @ToolParam(description = "要发送的纯文本内容") String message) {
         log.info("send_group_message: bid={}, groupId={}, message={}", bid, groupId, message);
         Bot bot = Bot.getInstanceOrNull(bid);
         if (bot == null) return "机器人未找到";
@@ -381,12 +381,12 @@ public class AiAssistantOptionalTools {
      * @param duration 禁言时长（秒），0表示解除禁言
      * @return 操作结果
      */
-    @Tool(description = "群禁言，时长为0则解除禁言")
+    @Tool(description = "【群管理】禁言或解除禁言某个群成员；duration>0 为禁言秒数，duration=0 表示解除禁言。")
     public String set_group_ban(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "群号") Long groupId,
-            @ToolParam(description = "成员QQ号") Long userId,
-            @ToolParam(description = "禁言时长（秒），0表示解除禁言") Integer duration) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "目标群号") Long groupId,
+            @ToolParam(description = "被禁言成员的QQ号") Long userId,
+            @ToolParam(description = "禁言时长(秒)，0=解除禁言，最长 2592000(30天)") Integer duration) {
         log.info("set_group_ban: bid={}, groupId={}, userId={}, duration={}", bid, groupId, userId, duration);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
@@ -414,13 +414,13 @@ public class AiAssistantOptionalTools {
      * @param image   图片（base64格式，可选）
      * @return 操作结果
      */
-    @Tool(description = "发布群公告")
-    public String _send_group_notice(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "群号") Long groupId,
-            @ToolParam(description = "公告内容") String content,
-            @ToolParam(description = "图片base64（可选，无图片则不传）") String image) {
-        log.info("_send_group_notice: bid={}, groupId={}, content={}", bid, groupId, content);
+    @Tool(description = "【群管理】在某个群发布群公告(置顶通告)；区别于普通群消息 send_group_message。")
+    public String send_group_notice(
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "目标群号") Long groupId,
+            @ToolParam(description = "公告正文文本") String content,
+            @ToolParam(description = "可选：公告配图的 base64 字符串；无图则不传") String image) {
+        log.info("send_group_notice: bid={}, groupId={}, content={}", bid, groupId, content);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
             return botResult.errorMessage();
@@ -449,11 +449,11 @@ public class AiAssistantOptionalTools {
      * @param type    荣誉类型（talkative/performer/legend/strong_newbie/emotion/all）
      * @return 群荣誉信息
      */
-    @Tool(description = "获取群荣誉信息(群龙王发言最多,续火,连续发言)")
+    @Tool(description = "【群信息】获取某个群的荣誉信息(群龙王/续火榜/连续发言等)。")
     public String get_group_honor_info(
-            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
             @ToolParam(description = "群号") Long groupId,
-            @ToolParam(description = "荣誉类型：talkative/performer/legend/strong_newbie/emotion/all") String type) {
+            @ToolParam(description = "荣誉类型：talkative=龙王 performer=群聊之火 legend=群聊炽焰 strong_newbie=冒尖小新 emotion=快乐源泉 all=全部(默认)") String type) {
         log.info("get_group_honor_info: bid={}, groupId={}, type={}", bid, groupId, type);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
@@ -478,9 +478,9 @@ public class AiAssistantOptionalTools {
      * @param groupId 群号
      * @return 打卡结果
      */
-    @Tool(description = "群打卡签到")
+    @Tool(description = "【群互动】在某个群执行打卡签到。")
     public String set_group_sign(
-            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
             @ToolParam(description = "群号") Long groupId) {
         log.info("set_group_sign: bid={}, groupId={}", bid, groupId);
         BotResolveResult botResult = resolveRemoteBot(bid);
@@ -505,8 +505,8 @@ public class AiAssistantOptionalTools {
      * @param bid 机器人ID
      * @return 群列表信息
      */
-    @Tool(description = "获取加入的群列表")
-    public String get_group_list(@ToolParam(description = "bot ID") Long bid) {
+    @Tool(description = "【群信息】获取本机器人已加入的群列表。")
+    public String get_group_list(@ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid) {
         log.info("get_group_list: bid={}", bid);
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
@@ -530,12 +530,12 @@ public class AiAssistantOptionalTools {
      * @param targetId 发送目标，g群号=群聊，u用户号=私信，例如 g123456 或 u123456
      * @return 发送结果
      */
-    @Tool(description = "发送指定图片或头像到群聊/私聊，type=group时id为群号(群头像)，type=user时id为QQ号(用户头像)，type=url时id为图片直链，targetId格式：g群号=群聊 u用户号=私信")
+    @Tool(description = "【发消息·图片】向群聊或私聊发送一张图片，图片来源可为群头像/用户头像/图片直链。")
     public String send_image(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "图片来源：type=group时为群号，type=user时为QQ号，type=url时为图片直链") String id,
-            @ToolParam(description = "类型：group=群头像, user=用户头像, url=图片直链") String type,
-            @ToolParam(description = "发送目标，g群号=发到群聊，u用户号=发到私信，例如 g123456 或 u123456") String targetId) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "图片来源：type=group填群号(取群头像)，type=user填QQ号(取该用户头像)，type=url填图片直链URL") String id,
+            @ToolParam(description = "图片来源类型，三选一：group=群头像 / user=用户头像 / url=图片直链") String type,
+            @ToolParam(description = "发送目标：g+群号=群聊，u+QQ号=私聊，如 g123456 或 u123456") String targetId) {
         log.info("send_image: bid={}, id={}, type={}, targetId={}", bid, id, type, targetId);
         if (bid == null || id == null || type == null || targetId == null) {
             return "参数不能为空";
@@ -618,13 +618,13 @@ public class AiAssistantOptionalTools {
      * @param index    选择搜索结果中的第几首，从 1 开始，默认 1
      * @return 发送结果
      */
-    @Tool(description = "搜索并发送音乐点歌卡片(MusicShare)到群聊/私聊。targetId格式：g群号=群聊 u用户号=私信；platform可选 wy=网易云(默认)/qq=QQ音乐/kg=酷狗/dy=抖音；index默认1表示第一首")
+    @Tool(description = "【发消息·音乐】搜索歌曲并以可点击播放的音乐卡片形式发送到群聊或私聊。")
     public String send_music_card(
-            @ToolParam(description = "bot ID") Long bid,
-            @ToolParam(description = "发送目标，g群号=发到群聊，u用户号=发到私信，例如 g123456 或 u123456") String targetId,
-            @ToolParam(description = "歌曲名称（建议附带歌手名以提高匹配准确度）") String songName,
-            @ToolParam(description = "音乐平台：wy=网易云(默认), qq=QQ音乐, kg=酷狗, dy=抖音") String platform,
-            @ToolParam(description = "选择搜索结果中的第几首，从1开始，默认为1") Integer index) {
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
+            @ToolParam(description = "发送目标：g+群号=群聊，u+QQ号=私聊，如 g123456 或 u123456") String targetId,
+            @ToolParam(description = "歌曲名称，建议附带歌手名以提高匹配准确度") String songName,
+            @ToolParam(description = "音乐平台，可选：wy=网易云(默认) / qq=QQ音乐 / kg=酷狗 / dy=抖音") String platform,
+            @ToolParam(description = "取搜索结果第几首，从1开始，默认1") Integer index) {
         log.info("send_music_card: bid={}, targetId={}, songName={}, platform={}, index={}",
                 bid, targetId, songName, platform, index);
         if (bid == null || targetId == null || songName == null || songName.trim().isEmpty()) {
@@ -695,9 +695,9 @@ public class AiAssistantOptionalTools {
      * @param userId  成员QQ号
      * @return 成员信息
      */
-    @Tool(description = "获取指定群内指定成员的信息")
+    @Tool(description = "【群信息】获取某个群内指定成员的资料(昵称/群名片/角色/等级等)。")
     public String get_group_member_info(
-            @ToolParam(description = "bot ID") Long bid,
+            @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
             @ToolParam(description = "群号") Long groupId,
             @ToolParam(description = "成员QQ号") Long userId) {
         log.info("get_group_member_info: bid={}, groupId={}, userId={}", bid, groupId, userId);
