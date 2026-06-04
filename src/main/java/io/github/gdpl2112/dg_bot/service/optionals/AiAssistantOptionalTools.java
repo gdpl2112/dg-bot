@@ -108,9 +108,11 @@ public class AiAssistantOptionalTools {
         }
         RemoteBot remoteBot = botResult.remoteBot();
 
-        String payload = "{\"group_id\":\"" + groupId + "\",\"user_id\":\"" + userId
-                + "\",\"special_title\":\"" + title.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
-        return remoteBot.executeAction("set_group_special_title", payload);
+        JSONObject payload = new JSONObject();
+        payload.put("group_id", groupId);
+        payload.put("user_id", userId);
+        payload.put("special_title", title);
+        return remoteBot.executeAction("set_group_special_title", payload.toJSONString());
     }
 
     /**

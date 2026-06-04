@@ -41,6 +41,9 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * AI助手内置功能（作为可选功能存在）
@@ -55,9 +58,58 @@ public class AIAssistantOptional implements BaseOptional {
     private static final Map<String, ChatClient> CHAT_CLIENT_CACHE = new ConcurrentHashMap<>();
 
     /**
-     * 对话记忆缓存，key为bid:subjectId，value为Spring AI Message队列
+     * 对话记忆缓存，key为bid:subjectId，value为带时间戳的Spring AI Message队列
      */
-    private static final Map<String, Deque<Message>> MESSAGE_MEMORY_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, MemoryEntry> MESSAGE_MEMORY_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * 记忆缓存过期时间（毫秒），默认1天无活动自动清理
+     */
+    private static final long MEMORY_TTL_MILLIS = 24 * 60 * 60 * 1000L;
+
+    /**
+     * 定时清理过期记忆的调度器
+     */
+    private static final ScheduledExecutorService MEMORY_CLEANER = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "ai-memory-cleaner");
+        t.setDaemon(true);
+        return t;
+    });
+
+    static {
+        MEMORY_CLEANER.scheduleWithFixedDelay(() -> {
+            long now = System.currentTimeMillis();
+            Iterator<Map.Entry<String, MemoryEntry>> it = MESSAGE_MEMORY_CACHE.entrySet().iterator();
+            int cleaned = 0;
+            while (it.hasNext()) {
+                Map.Entry<String, MemoryEntry> entry = it.next();
+                if (now - entry.getValue().lastAccessTime > MEMORY_TTL_MILLIS) {
+                    it.remove();
+                    cleaned++;
+                }
+            }
+            if (cleaned > 0) {
+                log.debug("清理过期记忆缓存 {} 条", cleaned);
+            }
+        }, 12, 12, TimeUnit.HOURS);
+    }
+
+    /**
+     * 记忆缓存条目，包含消息队列和最后访问时间戳
+     */
+    private static class MemoryEntry {
+        final Deque<Message> messages;
+        volatile long lastAccessTime;
+
+        MemoryEntry() {
+            this.messages = new ArrayDeque<>();
+            this.lastAccessTime = System.currentTimeMillis();
+        }
+
+        void touch() {
+            this.lastAccessTime = System.currentTimeMillis();
+        }
+    }
 
     @Autowired
     private DefaultService defaultService;
@@ -255,16 +307,19 @@ public class AIAssistantOptional implements BaseOptional {
      * @return 消息列表，无记忆时返回空列表
      */
     private static List<Message> buildMemoryMessages(String memoryKey, int maxMessage) {
-        Deque<Message> memory = MESSAGE_MEMORY_CACHE.get(memoryKey);
-        if (memory == null || memory.isEmpty()) {
+        MemoryEntry entry = MESSAGE_MEMORY_CACHE.get(memoryKey);
+        if (entry == null || entry.messages.isEmpty()) {
             return Collections.emptyList();
         }
 
+        // 更新最后访问时间
+        entry.touch();
+
         List<Message> messages = new ArrayList<>();
-        synchronized (memory) {
-            int start = Math.max(0, memory.size() - maxMessage);
+        synchronized (entry.messages) {
+            int start = Math.max(0, entry.messages.size() - maxMessage);
             int index = 0;
-            for (Message msg : memory) {
+            for (Message msg : entry.messages) {
                 if (index++ < start) {
                     continue;
                 }
@@ -282,11 +337,12 @@ public class AIAssistantOptional implements BaseOptional {
      * @param maxMessage 最大记忆条数
      */
     private static void appendMemory(String memoryKey, Message message, int maxMessage) {
-        Deque<Message> memory = MESSAGE_MEMORY_CACHE.computeIfAbsent(memoryKey, k -> new ArrayDeque<>());
-        synchronized (memory) {
-            memory.addLast(message);
-            while (memory.size() > maxMessage) {
-                memory.removeFirst();
+        MemoryEntry entry = MESSAGE_MEMORY_CACHE.computeIfAbsent(memoryKey, k -> new MemoryEntry());
+        entry.touch();
+        synchronized (entry.messages) {
+            entry.messages.addLast(message);
+            while (entry.messages.size() > maxMessage) {
+                entry.messages.removeFirst();
             }
         }
     }
@@ -415,7 +471,6 @@ public class AIAssistantOptional implements BaseOptional {
 
         JSONArray tools = JSON.parseArray(result.substring(arrStart, arrEnd + 1));
         List<ToolCallback> toolCallbacks = new ArrayList<>();
-        List<String> extractedUrls = new ArrayList<>();
         for (int i = tools.size() - 1; i >= 0; i--) {
             String item = tools.getString(i);
             ToolCallback tool = cachedToolName2tool.get(item);
@@ -426,8 +481,7 @@ public class AIAssistantOptional implements BaseOptional {
             }
         }
         // 如果AI没选中任何工具则降级返回全部
-        // return toolCallbacks.isEmpty() ? new ArrayList<>(cachedToolName2tool.values()) : toolCallbacks;
-        return new ArrayList<>(cachedToolName2tool.values());
+        return toolCallbacks.isEmpty() ? new ArrayList<>(cachedToolName2tool.values()) : toolCallbacks;
     }
 
 
