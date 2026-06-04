@@ -9,6 +9,7 @@ import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.ConnConfigMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.*;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.EventHandler;
@@ -203,4 +204,22 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         jdbcTemplate.execute("VACUUM;");
         log.info("释放db存储并删除消息记录: {}", saveMapper.delete(qw));
     }
+
+
+    /**
+     * 应用程序关闭前执行的清理操作
+     */
+    @PreDestroy
+    public void cleanup() {
+        log.info("应用程序正在关闭，执行清理操作...");
+        Bot.getInstances().forEach(e -> {
+            try {
+                e.close();
+            } catch (Exception ex) {
+                log.error("关闭bot {} error", e.getId(), ex);
+            }
+        });
+        log.info("清理操作完成");
+    }
+
 }
