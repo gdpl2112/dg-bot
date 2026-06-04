@@ -27,9 +27,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import top.mrxiaom.overflow.contact.RemoteBot;
 
-import javax.imageio.ImageIO;
-import java.awt.image.RenderedImage;
-import java.io.ByteArrayInputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -354,7 +351,8 @@ public class AiAssistantOptionalTools {
         if (!bot.isOnline()) return "机器人不在线";
         Friend friend = bot.getFriend(friendId);
         if (friend == null) return "好友未找到";
-        friend.sendMessage(message);
+        MessageChain responseChain = DgSerializer.stringDeserializeToMessageChain(message, bot, friend);
+        friend.sendMessage(responseChain);
         return "消息已发送至好友 " + friendId;
     }
 
@@ -377,7 +375,8 @@ public class AiAssistantOptionalTools {
         if (!bot.isOnline()) return "机器人不在线";
         Group group = bot.getGroup(groupId);
         if (group == null) return "群未找到";
-        group.sendMessage(message);
+        MessageChain responseChain = DgSerializer.stringDeserializeToMessageChain(message, bot, group);
+        group.sendMessage(responseChain);
         return "已发送至 " + groupId;
     }
 
