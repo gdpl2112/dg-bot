@@ -1,7 +1,5 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import io.github.gdpl2112.dg_bot.dao.AiConf;
 import io.github.gdpl2112.dg_bot.mapper.AiConfMapper;
@@ -267,7 +265,7 @@ public class AIAssistantOptional implements BaseOptional {
                     log.warn("添加图片到AI消息失败", e);
                 }
             }
-        }).toolCallbacks(getToolCallbacks(aiConf, memoryKey));
+        }).toolCallbacks(getToolCallbacks());
         if (aiConf.getNetwork()) {
             chatClientRequestSpec.toolCallbacks(mcpBean.getToolCallbacks());
         }
@@ -427,112 +425,27 @@ public class AIAssistantOptional implements BaseOptional {
     }
 
     /**
-     * 根据最近的N次消息记录 判断 需要用到哪些tool 需要格式化输出
-     * <p>
-     * 输入 工机具描述和 工具id
-     * 输出 工具id
+     * 提取本助手所有 @Tool 方法对应的 ToolCallback，交由主模型原生 function-calling 自行选择。
+     * 工具集固定，首次构建后缓存复用，避免每次请求重建。
      *
-     * @param conf
-     * @param memoryKey
-     * @return
-     */
-    private List<ToolCallback> getToolCallbacks(AiConf conf, String memoryKey) {
-        // 取最近5条对话记录作为工具选择的上下文
-        List<Message> recentMemoryMessages = buildMemoryMessages(memoryKey, 5);
-
-        String systemPrompt = initToolCache();
-        if (systemPrompt == null) {
-            log.error("工具列表缓存初始化失败");
-            return new ArrayList<>(cachedToolName2tool.values());
-        }
-
-        String userPrompt = recentMemoryMessages.isEmpty() ? "暂无对话记录" : "根据以上对话记录选择工具";
-
-        String result;
-        try {
-            ChatClient chatClient = getChatClient(conf);
-            List<String> resultChunks = chatClient.prompt().system(systemPrompt).messages(recentMemoryMessages).user(userPrompt).stream().content().collectList().block();
-            result = resultChunks == null ? null : String.join("", resultChunks);
-        } catch (Exception e) {
-            // 工具选择AI调用失败时降级返回全部工具
-            log.warn("工具选择AI调用失败，降级返回全部工具", e);
-            return new ArrayList<>(cachedToolName2tool.values());
-        }
-
-        // 提取JSON数组部分（兼容AI可能附带多余文字的情况）
-        if (result == null || result.trim().isEmpty()) {
-            return new ArrayList<>(cachedToolName2tool.values());
-        }
-        int arrStart = result.indexOf('[');
-        int arrEnd = result.lastIndexOf(']');
-        if (arrStart < 0 || arrEnd < 0 || arrEnd <= arrStart) {
-            return new ArrayList<>(cachedToolName2tool.values());
-        }
-
-        JSONArray tools = JSON.parseArray(result.substring(arrStart, arrEnd + 1));
-        List<ToolCallback> toolCallbacks = new ArrayList<>();
-        for (int i = tools.size() - 1; i >= 0; i--) {
-            String item = tools.getString(i);
-            ToolCallback tool = cachedToolName2tool.get(item);
-            if (tool == null) {
-                log.warn("toolName not found: {}. on conf: {}", item, conf.getQid());
-            } else {
-                toolCallbacks.add(tool);
-            }
-        }
-        // 如果AI没选中任何工具则降级返回全部
-        return toolCallbacks.isEmpty() ? new ArrayList<>(cachedToolName2tool.values()) : toolCallbacks;
-    }
-
-
-    /**
-     * 将 AiAssistantOptional 中所有 @Tool 方法逐一提取为独立的 ToolCallback
-     *
-     * @return ToolCallback 数组，每个元素对应一个 @Tool 方法
+     * @return ToolCallback 数组
      */
     public ToolCallback[] getToolCallbacks() {
-        if (aiAssistantOptional == null) {
-            aiAssistantOptional = new AiAssistantOptionalTools(cronMapper, cronService);
+        if (cachedToolCallbacks == null) {
+            synchronized (this) {
+                if (cachedToolCallbacks == null) {
+                    if (aiAssistantOptional == null) {
+                        aiAssistantOptional = new AiAssistantOptionalTools(cronMapper, cronService);
+                    }
+                    cachedToolCallbacks = ToolCallbacks.from(aiAssistantOptional);
+                }
+            }
         }
-        return ToolCallbacks.from(aiAssistantOptional);
+        return cachedToolCallbacks;
     }
 
     private AiAssistantOptionalTools aiAssistantOptional;
 
-    /**
-     * 工具名称->描述 缓存，由 @Tool 方法固定生成，无需每次重建
-     */
-    private Map<String, String> cachedToolName2Desc;
-    /**
-     * 工具名称->ToolCallback 缓存，由 @Tool 方法固定生成，无需每次重建
-     */
-    private Map<String, ToolCallback> cachedToolName2tool;
-
-    private String toolListPrompt;
-
-    /**
-     * 懒加载初始化工具缓存，首次调用时从 @Tool 方法提取并缓存
-     */
-    private synchronized String initToolCache() {
-        if (cachedToolName2Desc == null || cachedToolName2tool == null) {
-            cachedToolName2Desc = new HashMap<>();
-            cachedToolName2tool = new HashMap<>();
-        }
-        if (toolListPrompt != null) return toolListPrompt;
-        for (ToolCallback toolCallback : getToolCallbacks()) {
-            cachedToolName2Desc.put(toolCallback.getToolDefinition().name(), toolCallback.getToolDefinition().description());
-            cachedToolName2tool.put(toolCallback.getToolDefinition().name(), toolCallback);
-        }
-        String cachedToolListData = JSON.toJSONString(cachedToolName2Desc);
-        toolListPrompt = """
-                You are a tool selector. Based on the user's recent conversation history,
-                select the names of the tools that might be needed from the available tool list.
-                Output a JSON array with only the tool names as elements. Do not include any other text.
-                If no tools or images are needed, output an empty array [].
-                Example output: ["set_group_card"]
-                Available tool list (name -> description):
-                """ + cachedToolListData;
-        return toolListPrompt;
-    }
+    private volatile ToolCallback[] cachedToolCallbacks;
 
 }
