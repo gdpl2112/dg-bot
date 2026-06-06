@@ -2,6 +2,7 @@ package io.github.gdpl2112.dg_bot.built;
 
 import com.alibaba.fastjson.JSON;
 import io.github.gdpl2112.dg_bot.dao.AllMessage;
+import io.github.gdpl2112.dg_bot.service.optionals.ShortVideoParse;
 import io.github.kloping.arr.ArrSerializer;
 import io.github.kloping.url.UrlUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +76,17 @@ public class DgSerializer {
                 return touch;
             }
         });
+//        ARR_SERIALIZER.add(new ArrSerializer.Rule<ShortVideo>(ShortVideo.class) {
+//            @Override
+//            public String serializer(ShortVideo o) {
+//                if (o instanceof OnlineShortVideo onlineShortVideo) {
+//                    return String.format("<video:%s>", onlineShortVideo.getUrlForDownload());
+//                } else {
+//                    log.warn("[DgSerializer] short video is not online short video");
+//                    return "";
+//                }
+//            }
+//        });
         ARR_SERIALIZER.add(new ArrSerializer.Rule<Audio>(Audio.class) {
             @Override
             public String serializer(Audio o) {
@@ -142,6 +154,20 @@ public class DgSerializer {
                     case "voice":
                     case "audio":
                         msg = createVoiceMessageInGroup(s2, bot.getId(), bot.getAsFriend());
+                        break;
+                    case "video":
+                        //s2 is download url
+                        //  ShortVideo shortVideo = event.getSubject().uploadShortVideo(
+                        //                            ExternalResource.create(coverBytes),
+                        //                            ExternalResource.create(bytes),
+                        //                            title + ".mp4"
+                        //                    );
+                        try {
+                            byte[] bytes = ShortVideoParse.downloadBytesWithOkHttp(s2, "");
+                            msg = contact.uploadShortVideo(ExternalResource.create(bytes), ExternalResource.create(bytes), "buildfor.mp4");
+                        } catch (IOException e) {
+                            log.error("download bytes error", e);
+                        }
                         break;
                     case "music":
                         msg = createMusic(bot, s2);

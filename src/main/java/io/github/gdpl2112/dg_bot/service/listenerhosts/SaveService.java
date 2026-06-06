@@ -148,11 +148,16 @@ public class SaveService extends SimpleListenerHost {
         if (isListening(event.getBot(), "g", group.getId())) return;
         AllMessage all = getMessage(event);
         if (all != null) {
-            Message m0 = MessageChain.deserializeFromJsonString(all.getContent());
-            MessageChainBuilder builder = new MessageChainBuilder();
-            builder.append("'").append(member.getNameCard()).append("(" + member.getId() + ")").append("'在群聊'")
-                    .append(event.getGroup().getName()).append("(" + group.getId() + ")'撤回消息:").append(m0);
-            Message message = builder.build();
+            MessageChain m0 = MessageChain.deserializeFromJsonString(all.getContent());
+            Message message;
+            if (m0.size() == 2 && m0.get(1) instanceof ShortVideo shortVideo) {
+                message = shortVideo;
+            } else {
+                MessageChainBuilder builder = new MessageChainBuilder();
+                builder.append("'").append(member.getNameCard()).append("(" + member.getId() + ")").append("'在群聊'")
+                        .append(event.getGroup().getName()).append("(" + group.getId() + ")'撤回消息:").append(m0);
+                message = builder.build();
+            }
             Contact contact = all(event.getBot(), event.getBot().getId());
             if (contact != null) {
                 contact.sendMessage(message);

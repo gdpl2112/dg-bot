@@ -432,7 +432,7 @@ public class ShortVideoParse implements BaseOptional {
      * @return          下载的内容字节数组
      * @throws IOException 如果下载失败
      */
-    private byte[] downloadBytesWithOkHttp(String url, String referer) throws IOException {
+    public static byte[] downloadBytesWithOkHttp(String url, String referer) throws IOException {
         Request request = new Request.Builder()
                 .url(url)
                 .addHeader("Referer", referer)

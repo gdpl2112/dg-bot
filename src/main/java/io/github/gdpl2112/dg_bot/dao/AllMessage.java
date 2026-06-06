@@ -1,5 +1,6 @@
 package io.github.gdpl2112.dg_bot.dao;
 
+import io.github.gdpl2112.dg_bot.built.DgSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -137,6 +138,8 @@ public class AllMessage {
 
     private static String getText(MessageChain chain) {
         return MessageChain.serializeToJsonString(chain);
+//        String end = null;
+//        return DgSerializer.messageChainSerializeToString(chain);
     }
 
     public int getIntTime() {

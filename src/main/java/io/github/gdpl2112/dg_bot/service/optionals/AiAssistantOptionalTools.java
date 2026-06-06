@@ -15,10 +15,7 @@ import io.github.kloping.judge.Judge;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
-import net.mamoe.mirai.contact.Contact;
-import net.mamoe.mirai.contact.Friend;
-import net.mamoe.mirai.contact.Group;
-import net.mamoe.mirai.contact.Member;
+import net.mamoe.mirai.contact.*;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChain;
@@ -50,7 +47,7 @@ public class AiAssistantOptionalTools {
      * 机器人校验结果封装
      * 用于统一返回可用的 RemoteBot 或错误信息
      */
-    private record BotResolveResult(RemoteBot remoteBot, String errorMessage) {
+    private record BotResolveResult(RemoteBot remoteBot, String errorMessage, Bot bot) {
         private boolean success() {
             return remoteBot != null;
         }
@@ -64,23 +61,23 @@ public class AiAssistantOptionalTools {
      */
     private static BotResolveResult resolveRemoteBot(Long bid) {
         if (bid == null) {
-            return new BotResolveResult(null, "bot ID不能为空");
+            return new BotResolveResult(null, "bot ID不能为空", null);
         }
 
         Bot bot = Bot.getInstanceOrNull(bid);
         // 机器人不存在时直接返回错误信息
         if (bot == null) {
-            return new BotResolveResult(null, "机器人未找到");
+            return new BotResolveResult(null, "机器人未找到", bot);
         }
         // 机器人离线时不可执行远程操作
         if (!bot.isOnline()) {
-            return new BotResolveResult(null, "机器人未在线");
+            return new BotResolveResult(null, "机器人未在线", bot);
         }
         // 仅支持 RemoteBot 的机器人实例
         if (!(bot instanceof RemoteBot remoteBot)) {
-            return new BotResolveResult(null, "当前机器人不支持该操作");
+            return new BotResolveResult(null, "当前机器人不支持该操作", bot);
         }
-        return new BotResolveResult(remoteBot, null);
+        return new BotResolveResult(remoteBot, null, bot);
     }
 
     /**
@@ -105,20 +102,28 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "头衔文字内容；传空字符串则清除该成员头衔") String title) {
         log.info("set_group_special_title: bid={}, groupId={}, userId={}, title={}", bid, groupId, userId, title);
         if (bid == null || groupId == null || userId == null || title == null) {
-            return "参数不能为空";
+            return "missing params";
         }
 
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
             return botResult.errorMessage();
         }
-        RemoteBot remoteBot = botResult.remoteBot();
-
-        JSONObject payload = new JSONObject();
-        payload.put("group_id", groupId);
-        payload.put("user_id", userId);
-        payload.put("special_title", title);
-        return remoteBot.executeAction("set_group_special_title", payload.toJSONString());
+        Group group = botResult.bot.getGroup(groupId);
+        if (group == null) {
+            return "group not found";
+        }
+        NormalMember member = group.get(userId);
+        if (member == null) {
+            return "member not found";
+        }
+        try {
+            member.setSpecialTitle(title);
+            return "ok";
+        } catch (Exception e) {
+            log.error("set_group_special_title error", e);
+            return "failed:" + e.getMessage();
+        }
     }
 
     /**
@@ -141,16 +146,29 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "目标成员的QQ号") Long userId,
             @ToolParam(description = "新的群名片(群内昵称)；传空字符串则清除群名片") String card) {
         log.info("set_group_card: bid={}, groupId={}, userId={}, card={}", bid, groupId, userId, card);
+        if (bid == null || groupId == null || userId == null || card == null) {
+            return "missing params";
+        }
+
         BotResolveResult botResult = resolveRemoteBot(bid);
         if (!botResult.success()) {
             return botResult.errorMessage();
         }
-        RemoteBot remoteBot = botResult.remoteBot();
-        JSONObject payload = new JSONObject();
-        payload.put("group_id", groupId);
-        payload.put("user_id", userId);
-        payload.put("card", card);
-        return remoteBot.executeAction("set_group_card", payload.toJSONString());
+        Group group = botResult.bot.getGroup(groupId);
+        if (group == null) {
+            return "group not found";
+        }
+        NormalMember member = group.get(userId);
+        if (member == null) {
+            return "member not found";
+        }
+        try {
+            member.setNameCard(card);
+            return "ok";
+        } catch (Exception e) {
+            log.error("set_group_card error", e);
+            return "failed:" + e.getMessage();
+        }
     }
 
     // 设置qq头像
@@ -374,7 +392,7 @@ public class AiAssistantOptionalTools {
         if (bot == null) return "机器人未找到";
         if (!bot.isOnline()) return "机器人不在线";
         Group group = bot.getGroup(groupId);
-        if (group == null) return "群未找到";
+        if (group == null) return "group not found";
         MessageChain responseChain = DgSerializer.stringDeserializeToMessageChain(message, bot, group);
         group.sendMessage(responseChain);
         return "已发送至 " + groupId;
@@ -546,7 +564,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "发送目标：g+群号=群聊，u+QQ号=私聊，如 g123456 或 u123456") String targetId) {
         log.info("send_image: bid={}, id={}, type={}, targetId={}", bid, id, type, targetId);
         if (bid == null || id == null || type == null || targetId == null) {
-            return "参数不能为空";
+            return "missing params";
         }
 
         Bot bot = Bot.getInstanceOrNull(bid);
@@ -565,7 +583,7 @@ public class AiAssistantOptionalTools {
                 return "targetId格式错误，群聊格式：g群号";
             }
             Group group = bot.getGroup(groupId);
-            if (group == null) return "群未找到：" + groupId;
+            if (group == null) return "group not found: " + groupId;
             contact = group;
         } else if ("u".equals(prefix)) {
             long userId;
@@ -636,7 +654,7 @@ public class AiAssistantOptionalTools {
         log.info("send_music_card: bid={}, targetId={}, songName={}, platform={}, index={}",
                 bid, targetId, songName, platform, index);
         if (bid == null || targetId == null || songName == null || songName.trim().isEmpty()) {
-            return "参数不能为空";
+            return "missing params";
         }
 
         Bot bot = Bot.getInstanceOrNull(bid);
@@ -655,7 +673,7 @@ public class AiAssistantOptionalTools {
                 return "targetId格式错误，群聊格式：g群号";
             }
             Group group = bot.getGroup(groupId);
-            if (group == null) return "群未找到：" + groupId;
+            if (group == null) return "group not found: " + groupId;
             contact = group;
         } else if ("u".equals(prefix)) {
             long userId;
@@ -738,7 +756,7 @@ public class AiAssistantOptionalTools {
             @ToolParam(description = "搜索关键词，可以是人名/群名/话题/事件等任意文本") String keyword) {
         log.info("search_bot_info: bid={}, keyword={}", bid, keyword);
         if (bid == null || keyword == null || keyword.trim().isEmpty()) {
-            return "参数不能为空";
+            return "missing params";
         }
         keyword = keyword.trim();
 
