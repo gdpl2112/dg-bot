@@ -138,6 +138,22 @@ public class DgMain implements CommandLineRunner {
             jdbcTemplate.update("alter table group_conf add k4 INTEGER default 0;");
         }
         k0 = false;
+
+        // optional 表添加 tid 字段（内置功能按群配置）
+        k0 = false;
+        for (Map<String, Object> e0 : jdbcTemplate.queryForList("pragma table_info ('optional')")) {
+            String name = e0.get("name").toString();
+            if ("tid".equals(name)) {
+                k0 = true;
+            }
+        }
+        if (!k0) {
+            log.info("optional表添加tid字段");
+            jdbcTemplate.update("alter table optional add tid VARCHAR(255) default '*';");
+            // 将旧数据中 open=1 的记录设置为 tid='*'（全局启用）
+            // 旧数据 open=0 的保持默认 '*' 但标记为不启用
+            log.info("迁移旧optional数据：为已有记录设置tid='*'");
+        }
     }
 
     @Bean

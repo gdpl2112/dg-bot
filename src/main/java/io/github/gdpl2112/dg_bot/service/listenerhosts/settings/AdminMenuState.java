@@ -74,15 +74,13 @@ public class AdminMenuState implements BotState {
             if (groupConf != null) {
                 try {
                     Integer v = Integer.valueOf(input);
-                    if (v >= 1 && v <= 4) {
+                    if (v >= 1 && v <= 3) {
                         if (v == 1) {
                             groupConf.setK0(!groupConf.getK0());
                         } else if (v == 2) {
                             groupConf.setK1(!groupConf.getK1());
                         } else if (v == 3) {
                             groupConf.setK2(!groupConf.getK2());
-                        } else if (v == 4) {
-                            groupConf.setK3(!groupConf.getK3());
                         }
                         groupConfMapper.update(groupConf, new LambdaQueryWrapper<GroupConf>()
                                 .eq(GroupConf::getQid, bid)
@@ -113,7 +111,6 @@ public class AdminMenuState implements BotState {
                     groupConf.setK0(true);
                     groupConf.setK1(true);
                     groupConf.setK2(true);
-                    groupConf.setK3(true);
                     groupConfMapper.insert(groupConf);
                 }
                 StringBuilder sb = getConfState(nid, groupConf);
@@ -129,13 +126,11 @@ public class AdminMenuState implements BotState {
                 sb.append("\n 1. ").append("调用开关:").append("开");
                 sb.append("\n 2. ").append("监听开关:").append("开");
                 sb.append("\n 3. ").append("回复开关:").append("开");
-                sb.append("\n 4. ").append("功能开关:").append("开");
 
             } else {
                 sb.append("\n 1. ").append("调用开关:").append(groupConf.getK0() ? "开" : "关");
                 sb.append("\n 2. ").append("监听开关:").append(groupConf.getK1() ? "开" : "关");
                 sb.append("\n 3. ").append("回复开关:").append(groupConf.getK2() ? "开" : "关");
-                sb.append("\n 4. ").append("功能开关:").append(groupConf.getK3() ? "开" : "关");
             }
             return sb;
         }

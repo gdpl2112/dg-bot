@@ -53,13 +53,11 @@ public class UserController {
             jo.put("k0", f0.getK0());
             jo.put("k1", f0.getK1());
             jo.put("k2", f0.getK2());
-            jo.put("k3", f0.getK3());
             jo.put("k4", f0.getK4());
         } else {
             jo.put("k0", true);
             jo.put("k1", true);
             jo.put("k2", true);
-            jo.put("k3", true);
             jo.put("k4", false);
         }
         jo.put("tid", tid);
@@ -263,30 +261,6 @@ public class UserController {
             return false;
         }
     }
-
-    @RequestMapping("gc3")
-    public Boolean change3(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String tid) {
-        try {
-            LambdaQueryWrapper<GroupConf> qw = new LambdaQueryWrapper<GroupConf>()
-                    .eq(GroupConf::getQid, userDetails.getUsername())
-                    .eq(GroupConf::getTid, tid);
-            GroupConf groupConf = groupConfMapper.selectOne(qw);
-            if (groupConf != null) {
-                groupConf.setK3(!groupConf.getK3());
-                groupConfMapper.update(groupConf, qw);
-            } else {
-                groupConf = new GroupConf();
-                groupConf.setQid(userDetails.getUsername());
-                groupConf.setTid(tid);
-                groupConf.setK3(false);
-                groupConfMapper.insert(groupConf);
-            }
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
 
     @RequestMapping("gc4")
     public Boolean change4(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String tid) {

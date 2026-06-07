@@ -26,10 +26,6 @@ public class GroupConf {
      */
     private Boolean k2 = true;
     /**
-     * 内置功能开关
-     */
-    private Boolean k3 = true;
-    /**
      * 事件记录开关（踢人/禁言记录到 manage.db）
      */
     private Boolean k4 = false;
