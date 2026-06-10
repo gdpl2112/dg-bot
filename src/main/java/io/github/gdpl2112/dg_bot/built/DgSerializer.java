@@ -412,8 +412,7 @@ public class DgSerializer {
             } else if (singleMessage instanceof Image) {
                 nonTextParts.append("[图片]");
             } else if (singleMessage instanceof At at) {
-                String name = resolveAtName(bot, at.getTarget());
-                nonTextParts.append("@").append(name).append(" ");
+                nonTextParts.append(" [@").append(at.getTarget()).append("]");
             } else if (singleMessage instanceof Face face) {
                 nonTextParts.append("[表情:" + face.getName() + "]");
             }
@@ -422,19 +421,4 @@ public class DgSerializer {
         return textParts.toString() + nonTextParts.toString();
     }
 
-    /**
-     * 解析 @用户 的显示名称，优先取昵称，取不到则用ID
-     */
-    private static String resolveAtName(Bot bot, long targetId) {
-        try {
-            if (bot != null) {
-                var friend = bot.getFriend(targetId);
-                if (friend != null) {
-                    return friend.getNick();
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return String.valueOf(targetId);
-    }
 }
