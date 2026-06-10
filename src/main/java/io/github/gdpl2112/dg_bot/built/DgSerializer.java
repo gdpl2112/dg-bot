@@ -383,4 +383,58 @@ public class DgSerializer {
         // 文本优先，非文本标签紧跟其后
         return textParts.toString() + nonTextParts.toString();
     }
+
+    /**
+     * 面向AI的消息链序列化（文本优先）。
+     * 将消息链转为AI易于理解的纯文本：纯文本原样输出，图片替换为"[图片]"、
+     *
+     * @param chain 消息链
+     * @param bot   机器人实例，用于解析 @用户昵称
+     * @return AI友好的纯文本
+     * @替换为"@昵称"、表情替换为"[表情]"，忽略引用/语音/音乐等无意义标签。
+     */
+    public static String messageChainSerializeForAI(MessageChain chain, Bot bot) {
+        if (chain == null || chain.isEmpty()) {
+            return "";
+        }
+        StringBuilder textParts = new StringBuilder();
+        StringBuilder nonTextParts = new StringBuilder();
+        for (SingleMessage singleMessage : chain) {
+            if (singleMessage instanceof PlainText) {
+                String touch = ((PlainText) singleMessage).getContent();
+                // 转义尖括号标签，防止被误解析
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("<.*?>");
+                java.util.regex.Matcher matcher = pattern.matcher(touch);
+                while (matcher.find()) {
+                    touch = touch.replace(matcher.group(), "\\" + matcher.group());
+                }
+                textParts.append(touch);
+            } else if (singleMessage instanceof Image) {
+                nonTextParts.append("[图片]");
+            } else if (singleMessage instanceof At at) {
+                String name = resolveAtName(bot, at.getTarget());
+                nonTextParts.append("@").append(name).append(" ");
+            } else if (singleMessage instanceof Face face) {
+                nonTextParts.append("[表情:" + face.getName() + "]");
+            }
+            // QuoteReply / Audio / MusicShare / MarketFace 等对AI无意义，直接忽略
+        }
+        return textParts.toString() + nonTextParts.toString();
+    }
+
+    /**
+     * 解析 @用户 的显示名称，优先取昵称，取不到则用ID
+     */
+    private static String resolveAtName(Bot bot, long targetId) {
+        try {
+            if (bot != null) {
+                var friend = bot.getFriend(targetId);
+                if (friend != null) {
+                    return friend.getNick();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return String.valueOf(targetId);
+    }
 }

@@ -168,10 +168,10 @@ public class AIAssistantOptional implements BaseOptional {
     }
 
     private static final String SYSTEM_PROMPT_TEXT = """
-            你是一个集成在QQ代挂服务中的助手,你的名字是%s.你的ID:%s.
-            回复与问题或与QQ相关的内容.用户设定:%s.
-            严禁输出任何markdown格式,允许使用表情符号,颜文字和文本.
-            当前接收到的消息变量,环境:%s,ID:%s,发送者ID:%s
+            你是一个集成在QQ代挂服务中的助手,你的名字是%s,你的ID是%s
+            回复与问题或与QQ相关的内容,用户设定:%s
+            严禁输出任何markdown格式 允许使用表情符号,颜文字和文本
+            当前接收到的消息变量,%sId%s中id为%s发送的消息
             回复必须使用与用户输入相同的语言,且不得使用其他BotID,优先使用已有tools后再回答
             """;
 
@@ -337,7 +337,7 @@ public class AIAssistantOptional implements BaseOptional {
                             images.add(img);
                         }
                     }
-                    String qt = DgSerializer.messageChainSerializeWithTextFirst(originalMessage);
+                    String qt = DgSerializer.messageChainSerializeForAI(originalMessage, event.getBot());
                     if (Judge.isEmpty(qt)) {
                         qt = MessageChain.serializeToJsonString(originalMessage);
                     }
@@ -349,8 +349,8 @@ public class AIAssistantOptional implements BaseOptional {
             }
         }
 
-        // 序列化文本内容
-        String content = DgSerializer.messageChainSerializeWithTextFirst(event.getMessage());
+        // 序列化文本内容（AI友好格式：文字/图片占位/@昵称/表情）
+        String content = DgSerializer.messageChainSerializeForAI(event.getMessage(), event.getBot());
         if (Judge.isEmpty(content)) {
             content = MessageChain.serializeToJsonString(event.getMessage());
         }
