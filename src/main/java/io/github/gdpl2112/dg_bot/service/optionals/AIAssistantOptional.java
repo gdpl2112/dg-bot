@@ -63,6 +63,13 @@ public class AIAssistantOptional implements BaseOptional {
     private static final Map<String, MemoryEntry> MESSAGE_MEMORY_CACHE = new ConcurrentHashMap<>();
 
     /**
+     * 追踪AI发送的消息内部ID（按bot隔离），用于判断后续引用回复是否指向AI消息，
+     * 若引用的是AI消息则无需前缀即可触发AI对话。
+     * key: botId, value: 该bot最近发送的AI消息的内部ID集合（上限20000条，超出淘汰最早）
+     */
+    private static final Map<Long, LinkedHashSet<Integer>> AI_SENT_MSG_IDS = new ConcurrentHashMap<>();
+
+    /**
      * 记忆缓存过期时间（毫秒），默认1天无活动自动清理
      */
     private static final long MEMORY_TTL_MILLIS = 24 * 60 * 60 * 1000L;
@@ -190,9 +197,24 @@ public class AIAssistantOptional implements BaseOptional {
 
         // 提取引用消息（QuoteReply）中的文本与图片，一同传入AI上下文
         String quotedText = null;
+        boolean isQuotingAiMessage = false;
         for (SingleMessage singleMessage : event.getMessage()) {
             if (singleMessage instanceof QuoteReply qr) {
                 try {
+                    // 检测被引用消息是否来自AI，若是则后续可免前缀触发
+                    int[] quotedIds = qr.getSource().getInternalIds();
+                    Set<Integer> aiSentIds = AI_SENT_MSG_IDS.get(bid);
+                    if (aiSentIds != null && quotedIds != null) {
+                        synchronized (aiSentIds) {
+                            for (int id : quotedIds) {
+                                if (aiSentIds.contains(id)) {
+                                    isQuotingAiMessage = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     MessageChain originalMessage = qr.getSource().getOriginalMessage();
                     // 收集引用消息中的图片到多模态输入
                     for (SingleMessage om : originalMessage) {
@@ -234,12 +256,20 @@ public class AIAssistantOptional implements BaseOptional {
         String aiPrefix = aiConf.getPrefix() != null ? aiConf.getPrefix() : "AI";
 
         // 提取和判断是否属于AI助手指令前缀，如果是则进行处理
+        // 若引用的是AI此前发送的消息，则无需带前缀也可触发
         if (!content.toLowerCase().startsWith(aiPrefix.toLowerCase())) {
-            return;
+            if (!isQuotingAiMessage) {
+                return;
+            }
         }
 
-        // 提取去除前缀后的实际对话内容
-        String actualContent = content.substring(aiPrefix.length()).trim();
+        // 提取去除前缀后的实际对话内容（引用AI消息免前缀时直接使用完整内容）
+        String actualContent;
+        if (isQuotingAiMessage && !content.toLowerCase().startsWith(aiPrefix.toLowerCase())) {
+            actualContent = content;
+        } else {
+            actualContent = content.substring(aiPrefix.length()).trim();
+        }
         if (actualContent.isEmpty()) {
             return;
         }
@@ -306,7 +336,29 @@ public class AIAssistantOptional implements BaseOptional {
                 } else {
                     mcb.append(new PlainText(responseContent));
                 }
-                event.getSubject().sendMessage(mcb.build());
+                var receipt = event.getSubject().sendMessage(mcb.build());
+                // 记录AI发送的消息ID，后续被引用时可免前缀触发AI
+                try {
+                    if (receipt != null && receipt.getSource() != null) {
+                        int[] ids = receipt.getSource().getInternalIds();
+                        if (ids != null && ids.length > 0) {
+                            Set<Integer> idSet = AI_SENT_MSG_IDS.computeIfAbsent(bid, k -> new LinkedHashSet<>(20000));
+                            synchronized (idSet) {
+                                for (int id : ids) {
+                                    idSet.add(id);
+                                }
+                                // 超出20000条时淘汰最早的消息ID
+                                while (idSet.size() > 10) {
+                                    Iterator<Integer> it = idSet.iterator();
+                                    it.next();
+                                    it.remove();
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("记录AI发送消息ID失败", ex);
+                }
                 appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
             } catch (Exception e) {
                 log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
@@ -320,7 +372,7 @@ public class AIAssistantOptional implements BaseOptional {
     }
 
     private static int resolveMaxMessage(Integer maxMessage) {
-        return maxMessage == null || maxMessage <= 0 ? 10 : maxMessage;
+        return maxMessage == null || maxMessage <= 0 ? 30 : maxMessage;
     }
 
     /**
