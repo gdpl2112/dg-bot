@@ -168,11 +168,17 @@ public class AIAssistantOptional implements BaseOptional {
     }
 
     private static final String SYSTEM_PROMPT_TEXT = """
-            你是一个集成在QQ代挂服务中的助手,你的名字是%s.你只能回复与问题相关或与QQ相关的内容.\s
-            严禁输出任何Markdown格式,仅允许使用表情符号,颜文字和文本,优先使用已有tools后再回答.
-            风格:%s.当前环境:%s,环境ID:%s,发送者ID:%s,机器人ID:%s
-            回复必须使用与用户输入相同的语言,且不得切换到其他BotID
+            你是一个集成在QQ代挂服务中的助手,你的名字是%s.你的ID:%s.
+            回复与问题或与QQ相关的内容.用户设定:%s.
+            严禁输出任何markdown格式,允许使用表情符号,颜文字和文本.
+            当前接收到的消息变量,环境:%s,ID:%s,发送者ID:%s
+            回复必须使用与用户输入相同的语言,且不得使用其他BotID,优先使用已有tools后再回答
             """;
+
+    /**
+     * 解析后的消息结果
+     */
+    private record ParsedMessage(String content, String quotedText, boolean isQuotingAiMessage) {}
 
     @Override
     public void run(MessageEvent event) {
@@ -184,68 +190,14 @@ public class AIAssistantOptional implements BaseOptional {
             return;
         }
 
-        // 提取消息中的所有图片，供AI多模态对话和set_qq_avatar工具使用
         List<Image> images = new ArrayList<>();
-        for (SingleMessage singleMessage : event.getMessage()) {
-            if (singleMessage instanceof Image img) {
-                images.add(img);
-            }
-        }
-        if (!images.isEmpty()) {
-            BID_LAST_IMAGE_MAP.put(bid, images.getLast());
-        }
-
-        // 提取引用消息（QuoteReply）中的文本与图片，一同传入AI上下文
-        String quotedText = null;
-        boolean isQuotingAiMessage = false;
-        for (SingleMessage singleMessage : event.getMessage()) {
-            if (singleMessage instanceof QuoteReply qr) {
-                try {
-                    // 检测被引用消息是否来自AI，若是则后续可免前缀触发
-                    int[] quotedIds = qr.getSource().getInternalIds();
-                    Set<Integer> aiSentIds = AI_SENT_MSG_IDS.get(bid);
-                    if (aiSentIds != null && quotedIds != null) {
-                        synchronized (aiSentIds) {
-                            for (int id : quotedIds) {
-                                if (aiSentIds.contains(id)) {
-                                    isQuotingAiMessage = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    MessageChain originalMessage = qr.getSource().getOriginalMessage();
-                    // 收集引用消息中的图片到多模态输入
-                    for (SingleMessage om : originalMessage) {
-                        if (om instanceof Image img) {
-                            images.add(img);
-                        }
-                    }
-                    // 将引用消息序列化为纯文本（文本优先排序）
-                    String qt = DgSerializer.messageChainSerializeWithTextFirst(originalMessage);
-                    if (Judge.isEmpty(qt)) {
-                        qt = MessageChain.serializeToJsonString(originalMessage);
-                    }
-                    quotedText = qt == null ? null : qt.trim();
-                } catch (Exception e) {
-                    log.warn("解析引用消息失败", e);
-                }
-                break;
-            }
-        }
-
-        // 解析包含特殊字符(如at、表情等)的富文本消息为纯文本格式（文本优先排序）
-        String content = DgSerializer.messageChainSerializeWithTextFirst(event.getMessage());
-        if (Judge.isEmpty(content)) {
-            content = MessageChain.serializeToJsonString(event.getMessage());
-        }
-
-        if (content == null || content.trim().isEmpty()) {
+        ParsedMessage parsed = parseIncomingMessage(event, bid, images);
+        if (parsed == null) {
             return;
-        } else {
-            content = content.trim();
         }
+        String content = parsed.content();
+        String quotedText = parsed.quotedText();
+        boolean isQuotingAiMessage = parsed.isQuotingAiMessage();
 
         // 提取并获取AI全局配置
         AiConf aiConf = aiConfMapper.selectById(String.valueOf(bid));
@@ -257,7 +209,8 @@ public class AIAssistantOptional implements BaseOptional {
 
         // 提取和判断是否属于AI助手指令前缀，如果是则进行处理
         // 若引用的是AI此前发送的消息，则无需带前缀也可触发
-        if (!content.toLowerCase().startsWith(aiPrefix.toLowerCase())) {
+        boolean b = !content.toLowerCase().startsWith(aiPrefix.toLowerCase());
+        if (b) {
             if (!isQuotingAiMessage) {
                 return;
             }
@@ -265,7 +218,7 @@ public class AIAssistantOptional implements BaseOptional {
 
         // 提取去除前缀后的实际对话内容（引用AI消息免前缀时直接使用完整内容）
         String actualContent;
-        if (isQuotingAiMessage && !content.toLowerCase().startsWith(aiPrefix.toLowerCase())) {
+        if (isQuotingAiMessage && b) {
             actualContent = content;
         } else {
             actualContent = content.substring(aiPrefix.length()).trim();
@@ -281,7 +234,6 @@ public class AIAssistantOptional implements BaseOptional {
 
         if ("清除记忆".equalsIgnoreCase(actualContent) || "clear".equalsIgnoreCase(actualContent)) {
             MESSAGE_MEMORY_CACHE.remove(buildMemoryKey(bid, event.getSubject().getId()));
-            //images
             BID_LAST_IMAGE_MAP.remove(bid);
             event.getSubject().sendMessage("[AI功能输出]\n已清除记忆");
             return;
@@ -289,7 +241,8 @@ public class AIAssistantOptional implements BaseOptional {
 
         log.info("AI助手对话 bid:{} sid:{} content:{}", bid, sid, actualContent);
 
-        String systemPrompt = String.format(SYSTEM_PROMPT_TEXT, aiConf.getName(), aiConf.getTrait(), event instanceof GroupAwareMessageEvent ? "Group" : "Friend", event.getSubject().getId(), event.getSender().getId(), event.getBot().getId());
+        String systemPrompt = String.format(SYSTEM_PROMPT_TEXT, aiConf.getName(), event.getBot().getId(), aiConf.getTrait(),
+                event instanceof GroupAwareMessageEvent ? "群聊" : "私信", event.getSubject().getId(), event.getSender().getId());
         String memoryKey = buildMemoryKey(bid, event.getSubject().getId());
         appendMemory(memoryKey, buildUserMessage(actualContent, images), resolveMaxMessage(aiConf.getMaxMessage()));
         List<Message> memoryMessages = buildMemoryMessages(memoryKey, resolveMaxMessage(aiConf.getMaxMessage()));
@@ -298,7 +251,6 @@ public class AIAssistantOptional implements BaseOptional {
         String finalActualContent = actualContent;
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt().system(systemPrompt).messages(memoryMessages).user(userSpec -> {
             userSpec.text(finalActualContent);
-            // 将消息中的图片作为多模态内容填入AI消息
             for (Image img : images) {
                 try {
                     String url = Image.queryUrl(img);
@@ -307,10 +259,7 @@ public class AIAssistantOptional implements BaseOptional {
                     log.warn("添加图片到AI消息失败", e);
                 }
             }
-        }).toolCallbacks(getToolCallbacks());
-        if (aiConf.getNetwork()) {
-            chatClientRequestSpec.toolCallbacks(mcpBean.getToolCallbacks());
-        }
+        }).toolCallbacks(mergeToolCallbacks(aiConf.getNetwork()));
 
         BOT_AI_EXECUTORS.computeIfAbsent(bid, k ->
                 Executors.newSingleThreadExecutor(r -> {
@@ -325,9 +274,7 @@ public class AIAssistantOptional implements BaseOptional {
                     return;
                 }
                 String replyPrefix = "['" + aiConf.getName() + "'回答]\n\n";
-                // 将 AI 响应中的 <at:id> 等格式标签转换为实际的 Mirai 消息对象
                 MessageChain responseChain = DgSerializer.stringDeserializeToMessageChain(responseContent, event.getBot(), event.getSubject());
-                // 回复时携带原消息引用
                 MessageChainBuilder mcb = new MessageChainBuilder();
                 mcb.append(new QuoteReply(event.getMessage()));
                 mcb.append(new PlainText(replyPrefix));
@@ -337,34 +284,110 @@ public class AIAssistantOptional implements BaseOptional {
                     mcb.append(new PlainText(responseContent));
                 }
                 var receipt = event.getSubject().sendMessage(mcb.build());
-                // 记录AI发送的消息ID，后续被引用时可免前缀触发AI
-                try {
-                    if (receipt != null && receipt.getSource() != null) {
-                        int[] ids = receipt.getSource().getInternalIds();
-                        if (ids != null && ids.length > 0) {
-                            Set<Integer> idSet = AI_SENT_MSG_IDS.computeIfAbsent(bid, k -> new LinkedHashSet<>(20000));
-                            synchronized (idSet) {
-                                for (int id : ids) {
-                                    idSet.add(id);
-                                }
-                                // 超出20000条时淘汰最早的消息ID
-                                while (idSet.size() > 10) {
-                                    Iterator<Integer> it = idSet.iterator();
-                                    it.next();
-                                    it.remove();
-                                }
-                            }
-                        }
-                    }
-                } catch (Exception ex) {
-                    log.warn("记录AI发送消息ID失败", ex);
-                }
+                recordAiSentMessageIds(bid, receipt);
                 appendMemory(memoryKey, new AssistantMessage(responseContent.trim()), resolveMaxMessage(aiConf.getMaxMessage()));
             } catch (Exception e) {
                 log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
                 event.getSubject().sendMessage(new PlainText("[" + aiConf.getName() + "输出]\n\n[AI调用失败，请稍后再试]"));
             }
         });
+    }
+
+    /**
+     * 解析入站消息：提取图片、引用消息、序列化文本内容。
+     *
+     * @param event  消息事件
+     * @param bid    机器人ID
+     * @param images 输出参数，收集消息中的图片
+     * @return 解析结果，若内容为空则返回 null
+     */
+    private ParsedMessage parseIncomingMessage(MessageEvent event, Long bid, List<Image> images) {
+        // 提取消息中的所有图片，供AI多模态对话和set_qq_avatar工具使用
+        for (SingleMessage singleMessage : event.getMessage()) {
+            if (singleMessage instanceof Image img) {
+                images.add(img);
+            }
+        }
+        if (!images.isEmpty()) {
+            BID_LAST_IMAGE_MAP.put(bid, images.getLast());
+        }
+
+        // 提取引用消息（QuoteReply）中的文本与图片
+        String quotedText = null;
+        boolean isQuotingAiMessage = false;
+        for (SingleMessage singleMessage : event.getMessage()) {
+            if (singleMessage instanceof QuoteReply qr) {
+                try {
+                    int[] quotedIds = qr.getSource().getInternalIds();
+                    Set<Integer> aiSentIds = AI_SENT_MSG_IDS.get(bid);
+                    if (aiSentIds != null && quotedIds != null) {
+                        synchronized (aiSentIds) {
+                            for (int id : quotedIds) {
+                                if (aiSentIds.contains(id)) {
+                                    isQuotingAiMessage = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    MessageChain originalMessage = qr.getSource().getOriginalMessage();
+                    for (SingleMessage om : originalMessage) {
+                        if (om instanceof Image img) {
+                            images.add(img);
+                        }
+                    }
+                    String qt = DgSerializer.messageChainSerializeWithTextFirst(originalMessage);
+                    if (Judge.isEmpty(qt)) {
+                        qt = MessageChain.serializeToJsonString(originalMessage);
+                    }
+                    quotedText = qt == null ? null : qt.trim();
+                } catch (Exception e) {
+                    log.warn("解析引用消息失败", e);
+                }
+                break;
+            }
+        }
+
+        // 序列化文本内容
+        String content = DgSerializer.messageChainSerializeWithTextFirst(event.getMessage());
+        if (Judge.isEmpty(content)) {
+            content = MessageChain.serializeToJsonString(event.getMessage());
+        }
+        if (content == null || content.trim().isEmpty()) {
+            return null;
+        }
+        return new ParsedMessage(content.trim(), quotedText, isQuotingAiMessage);
+    }
+
+    /**
+     * 记录AI发送的消息ID，后续被引用时可免前缀触发AI
+     */
+    private static void recordAiSentMessageIds(Long bid, Object receipt) {
+        try {
+            if (receipt == null) return;
+            // 通过反射获取 MessageReceipt.getSource().getInternalIds()
+            var sourceMethod = receipt.getClass().getMethod("getSource");
+            var source = sourceMethod.invoke(receipt);
+            if (source == null) return;
+            var idsMethod = source.getClass().getMethod("getInternalIds");
+            int[] ids = (int[]) idsMethod.invoke(source);
+            if (ids == null || ids.length == 0) return;
+
+            Set<Integer> idSet = AI_SENT_MSG_IDS.computeIfAbsent(bid, k -> new LinkedHashSet<>(20000));
+            synchronized (idSet) {
+                for (int id : ids) {
+                    idSet.add(id);
+                }
+                while (idSet.size() > 10) {
+                    Iterator<Integer> it = idSet.iterator();
+                    it.next();
+                    it.remove();
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("记录AI发送消息ID失败", ex);
+        }
     }
 
     private static String buildMemoryKey(Long bid, Long subjectId) {
@@ -430,6 +453,8 @@ public class AIAssistantOptional implements BaseOptional {
      * @param images 图片列表，可为空
      * @return UserMessage实例
      */
+    private static final long MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
     private static UserMessage buildUserMessage(String text, List<Image> images) {
         if (images == null || images.isEmpty()) {
             return new UserMessage(text);
@@ -441,6 +466,10 @@ public class AIAssistantOptional implements BaseOptional {
                 String url = Image.queryUrl(img);
                 byte[] bytes = HttpsUtils.readAsBytesFromImageUrl(url);
                 if (bytes == null) continue;
+                if (bytes.length > MAX_IMAGE_BYTES) {
+                    log.warn("图片过大({} bytes)，已跳过", bytes.length);
+                    continue;
+                }
 
                 String md5 = org.springframework.util.DigestUtils.md5DigestAsHex(bytes);
                 if (md5s.contains(md5)) {
@@ -500,6 +529,26 @@ public class AIAssistantOptional implements BaseOptional {
         OpenAiChatModel chatModel = OpenAiChatModel.builder().openAiApi(openAiApi).defaultOptions(options).retryTemplate(RETRY_TEMPLATE).build();
 
         return ChatClient.builder(chatModel).build();
+    }
+
+    /**
+     * 合并内置工具与可选的MCP联网工具（避免覆盖），若开启联网则两者均注册。
+     *
+     * @param network 是否开启联网
+     * @return 合并后的 ToolCallback 数组
+     */
+    private ToolCallback[] mergeToolCallbacks(boolean network) {
+        ToolCallback[] builtin = getToolCallbacks();
+        if (!network) {
+            return builtin;
+        }
+        ToolCallback[] mcp = mcpBean.getToolCallbacks();
+        if (mcp == null || mcp.length == 0) {
+            return builtin;
+        }
+        ToolCallback[] merged = Arrays.copyOf(builtin, builtin.length + mcp.length);
+        System.arraycopy(mcp, 0, merged, builtin.length, mcp.length);
+        return merged;
     }
 
     /**
