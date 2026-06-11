@@ -53,6 +53,11 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class AIAssistantOptional implements BaseOptional {
 
+    /**
+     * tools call max
+     */
+    public static final Integer MAX_TOOL_CALLS = 5;
+
     private static final Map<Long, Image> BID_LAST_IMAGE_MAP = new ConcurrentHashMap<>();
 
     private static final Map<String, ChatClient> CHAT_CLIENT_CACHE = new ConcurrentHashMap<>();
@@ -89,6 +94,32 @@ public class AIAssistantOptional implements BaseOptional {
      */
     @SuppressWarnings("resource")
     private static final Map<Long, ExecutorService> BOT_AI_EXECUTORS = new ConcurrentHashMap<>();
+
+    /**
+     * 每次AI请求的工具调用计数器（ThreadLocal，因每个bot单线程顺序执行，线程安全）
+     */
+    private static final ThreadLocal<Integer> TOOL_CALL_COUNT = ThreadLocal.withInitial(() -> 0);
+    private static final ThreadLocal<Integer> TOOL_CALL_LIMIT = new ThreadLocal<>();
+
+    /**
+     * 带调用次数限制的 ToolCallback 包装器
+     */
+    private record LimitedToolCallback(ToolCallback delegate) implements ToolCallback {
+        @Override
+        public org.springframework.ai.tool.definition.ToolDefinition getToolDefinition() {
+            return delegate.getToolDefinition();
+        }
+        @Override
+        public String call(String toolInput) {
+            int count = TOOL_CALL_COUNT.get();
+            Integer max = TOOL_CALL_LIMIT.get();
+            if (max != null && count >= max) {
+                return "已达到单次工具调用上限(" + max + "次)，请基于已有信息直接回答用户";
+            }
+            TOOL_CALL_COUNT.set(count + 1);
+            return delegate.call(toolInput);
+        }
+    }
 
     static {
         MEMORY_CLEANER.scheduleWithFixedDelay(() -> {
@@ -172,7 +203,7 @@ public class AIAssistantOptional implements BaseOptional {
             回复与问题或与QQ相关的内容,用户设定:%s
             严禁输出任何markdown格式 允许使用表情符号,颜文字和文本
             当前接收到的消息变量,%sId%s中id为%s发送的消息
-            回复必须使用与用户输入相同的语言,且不得使用其他BotID,优先使用已有tools后再回答
+            回复必须使用与用户输入相同的语言,且不得使用其他BotID,优先获取群历史消息结合回答!
             """;
 
     /**
@@ -259,7 +290,7 @@ public class AIAssistantOptional implements BaseOptional {
                     log.warn("添加图片到AI消息失败", e);
                 }
             }
-        }).toolCallbacks(mergeToolCallbacks(aiConf.getNetwork()));
+        }).toolCallbacks(mergeToolCallbacks(aiConf.getNetwork(), resolveMaxToolCalls(MAX_TOOL_CALLS)));
 
         BOT_AI_EXECUTORS.computeIfAbsent(bid, k ->
                 Executors.newSingleThreadExecutor(r -> {
@@ -269,6 +300,10 @@ public class AIAssistantOptional implements BaseOptional {
                 })
         ).submit(() -> {
             try {
+                // 重置本次请求的工具调用计数器
+                TOOL_CALL_COUNT.set(0);
+                TOOL_CALL_LIMIT.set(resolveMaxToolCalls(MAX_TOOL_CALLS));
+
                 String responseContent = chatClientRequestSpec.call().content();
                 if (responseContent == null || responseContent.trim().isEmpty()) {
                     return;
@@ -289,6 +324,9 @@ public class AIAssistantOptional implements BaseOptional {
             } catch (Exception e) {
                 log.error("AI助手对话调用失败 bid:{} sid:{}", bid, sid, e);
                 event.getSubject().sendMessage(new PlainText("[" + aiConf.getName() + "输出]\n\n[AI调用失败，请稍后再试]"));
+            } finally {
+                TOOL_CALL_COUNT.remove();
+                TOOL_CALL_LIMIT.remove();
             }
         });
     }
@@ -533,22 +571,34 @@ public class AIAssistantOptional implements BaseOptional {
 
     /**
      * 合并内置工具与可选的MCP联网工具（避免覆盖），若开启联网则两者均注册。
+     * 所有工具通过 LimitedToolCallback 包装，限制单次请求的工具调用总次数。
      *
-     * @param network 是否开启联网
+     * @param network     是否开启联网
+     * @param maxToolCalls 单次最大工具调用次数
      * @return 合并后的 ToolCallback 数组
      */
-    private ToolCallback[] mergeToolCallbacks(boolean network) {
+    private ToolCallback[] mergeToolCallbacks(boolean network, int maxToolCalls) {
         ToolCallback[] builtin = getToolCallbacks();
-        if (!network) {
-            return builtin;
+        if (network) {
+            ToolCallback[] mcp = mcpBean.getToolCallbacks();
+            if (mcp != null && mcp.length > 0) {
+                builtin = Arrays.copyOf(builtin, builtin.length + mcp.length);
+                System.arraycopy(mcp, 0, builtin, builtin.length, mcp.length);
+            }
         }
-        ToolCallback[] mcp = mcpBean.getToolCallbacks();
-        if (mcp == null || mcp.length == 0) {
-            return builtin;
+        return wrapWithLimit(builtin, maxToolCalls);
+    }
+
+    private ToolCallback[] wrapWithLimit(ToolCallback[] callbacks, int maxCalls) {
+        ToolCallback[] wrapped = new ToolCallback[callbacks.length];
+        for (int i = 0; i < callbacks.length; i++) {
+            wrapped[i] = new LimitedToolCallback(callbacks[i]);
         }
-        ToolCallback[] merged = Arrays.copyOf(builtin, builtin.length + mcp.length);
-        System.arraycopy(mcp, 0, merged, builtin.length, mcp.length);
-        return merged;
+        return wrapped;
+    }
+
+    private static int resolveMaxToolCalls(Integer maxToolCalls) {
+        return maxToolCalls == null || maxToolCalls <= 0 ? 10 : maxToolCalls;
     }
 
     /**

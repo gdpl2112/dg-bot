@@ -1,10 +1,10 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.github.gdpl2112.dg_bot.built.DgSerializer;
-import io.github.gdpl2112.dg_bot.dao.AllMessage;
 import io.github.gdpl2112.dg_bot.dao.CronMessage;
 import io.github.gdpl2112.dg_bot.dto.VoteResponseDTO;
 import io.github.gdpl2112.dg_bot.mapper.CronMapper;
@@ -15,7 +15,10 @@ import io.github.kloping.judge.Judge;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
-import net.mamoe.mirai.contact.*;
+import net.mamoe.mirai.contact.Contact;
+import net.mamoe.mirai.contact.Friend;
+import net.mamoe.mirai.contact.Group;
+import net.mamoe.mirai.contact.NormalMember;
 import net.mamoe.mirai.message.data.Image;
 import net.mamoe.mirai.message.data.Message;
 import net.mamoe.mirai.message.data.MessageChain;
@@ -26,7 +29,6 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -743,103 +745,68 @@ public class AiAssistantOptionalTools {
         }
     }
 
+    public static final SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm:ss");
+
     /**
-     * 检索本bot相关的信息：聊天记录、群名、群成员昵称等
+     * 获取指定群的历史消息
      *
      * @param bid     机器人ID
-     * @param keyword 搜索关键词
-     * @return 检索结果摘要
+     * @param groupId 群号
+     * @param count   获取历史消息数量
+     * @return 历史消息文本
      */
-    @Tool(description = "【信息检索】在本机器人所能接触到的范围内，搜索与关键词相关的信息：包括近期聊天记录、匹配的群名、群成员昵称等。仅限本bot可见范围。")
-    public String search_bot_info(
+    @Tool(description = "【群信息】获取指定群的最近历史消息记录。")
+    public String get_group_msg_history(
             @ToolParam(description = "机器人自身的QQ号(bot ID)；必须使用系统提示中的 Robot ID，不要填其他人的QQ号") Long bid,
-            @ToolParam(description = "搜索关键词，可以是人名/群名/话题/事件等任意文本") String keyword) {
-        log.info("search_bot_info: bid={}, keyword={}", bid, keyword);
-        if (bid == null || keyword == null || keyword.trim().isEmpty()) {
+            @ToolParam(description = "目标群号") String groupId,
+            @ToolParam(description = "获取历史消息的数量", required = false) Integer count) {
+        log.info("get_group_msg_history: bid={}, groupId={}, count={}", bid, groupId, count);
+        if (bid == null || groupId == null || count == null) {
             return "missing params";
         }
-        keyword = keyword.trim();
+        if (count == null || count <= 0) count = 20;
 
-        Bot bot = Bot.getInstanceOrNull(bid);
+        BotResolveResult botResult = resolveRemoteBot(bid);
+        if (!botResult.success()) {
+            return botResult.errorMessage();
+        }
+        Bot bot = botResult.bot();
+        RemoteBot remoteBot = botResult.remoteBot();
 
-        StringBuilder result = new StringBuilder();
-        result.append("【检索结果】关键词：").append(keyword).append("\n\n");
+        JSONObject payload = new JSONObject();
+        payload.put("group_id", groupId);
+        payload.put("message_seq", 0);
+        payload.put("parse_mult_msg", true); // 是否解析合并
+        payload.put("reverse_order", false); // 是否倒序
+        payload.put("count", count);
 
-        // ========== 1. 搜索聊天记录 ==========
         try {
-            QueryWrapper<AllMessage> qw = new QueryWrapper<>();
-            qw.eq("bot_id", bid)
-                    .like("content", keyword)
-                    .orderByDesc("time")
-                    .last("LIMIT 20");
-            List<AllMessage> messages = saveMapper.selectList(qw);
-
-            if (messages != null && !messages.isEmpty()) {
-                result.append("--- 近期聊天记录（最多20条）---\n");
-                SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm");
-                int count = 0;
-                for (AllMessage msg : messages) {
-                    if (++count > 20) break;
-                    String timeStr = sdf.format(new Date(msg.getTime()));
-                    String typeLabel = msg.getType() != null && msg.getType().contains("group") ? "群聊" : "私聊";
-                    String contentPreview = extractTextPreview(msg.getContent(), 80, bot);
-                    if (Judge.isEmpty(contentPreview)) continue;
-                    result.append(String.format("[%s] %s | 发送者:%s | %s(%s)\n  → %s\n",
-                            timeStr, typeLabel, msg.getSenderId(), msg.getFromId(), msg.getType(), contentPreview));
-                }
-                result.append("\n");
-            } else {
-                result.append("--- 聊天记录 ---\n未找到匹配的聊天记录\n\n");
+            String out = remoteBot.executeAction("get_group_msg_history", payload.toJSONString());
+            JSONObject jsonObject = JSONObject.parseObject(out);
+            JSONObject dataAll = jsonObject.getJSONObject("data");
+            JSONArray messages = dataAll.getJSONArray("messages");
+            if (messages == null || messages.isEmpty()) {
+                return "未获取到群 " + groupId + " 的历史消息";
             }
+            StringBuilder sb = new StringBuilder();
+            for (Object message : messages) {
+                JSONObject msg = (JSONObject) message;
+                String raw = msg.getString("raw_message");
+                MessageChain chain = top.mrxiaom.overflow.internal.Overflow.getInstance().deserializeMessageFromCQCode(bot, raw);
+                JSONObject sender = msg.getJSONObject("sender");
+                String card = sender.getString("card");
+                String nickname = sender.getString("nickname");
+                String userId = sender.getString("user_id");
+                Long time = msg.getLong("time");
+                String timeStr = sdf.format(time * 1000);
+                String line = "[" + timeStr + "] " + (Judge.isEmpty(card) ? nickname : card) + "(" + userId + "): " + DgSerializer.messageChainSerializeForAI(chain, bot);
+                sb.append(line).append("\n");
+            }
+            return sb.toString();
         } catch (Exception e) {
-            log.warn("搜索聊天记录失败", e);
-            result.append("--- 聊天记录 ---\n搜索失败: ").append(e.getMessage()).append("\n\n");
+            log.error("获取群历史消息出错", e);
+            return "获取群历史消息出错: " + e.getMessage();
         }
-
-        // ========== 2. 搜索群名和群成员昵称 ==========
-        if (bot != null && bot.isOnline()) {
-            try {
-                result.append("--- 群名/群成员匹配 ---\n");
-                boolean found = false;
-                for (Group group : bot.getGroups()) {
-                    // 群名匹配
-                    String groupName = group.getName();
-                    if (groupName != null && groupName.contains(keyword)) {
-                        result.append(String.format("【群名匹配】群 %s(%d)\n", groupName, group.getId()));
-                        found = true;
-                    }
-
-                    // 群成员昵称/名片匹配（仅检查前100个成员，避免耗时过长）
-                    int memberChecked = 0;
-                    for (Member member : group.getMembers()) {
-                        if (++memberChecked > 100) break;
-                        String nick = member.getNick();
-                        String nameCard = member.getNameCard();
-                        boolean matchNick = nick != null && nick.contains(keyword);
-                        boolean matchCard = nameCard != null && nameCard.contains(keyword);
-                        if (matchNick || matchCard) {
-                            String displayName = (matchCard && !Judge.isEmpty(nameCard))
-                                    ? nameCard + "(" + nick + ")"
-                                    : nick;
-                            result.append(String.format("【成员匹配】群 %s(%d) | QQ:%d | %s\n",
-                                    groupName, group.getId(), member.getId(), displayName));
-                            found = true;
-                        }
-                    }
-                }
-                if (!found) {
-                    result.append("未找到匹配的群名或群成员\n");
-                }
-                result.append("\n");
-            } catch (Exception e) {
-                log.warn("搜索群信息失败", e);
-                result.append("--- 群名/群成员 ---\n搜索失败: ").append(e.getMessage()).append("\n\n");
-            }
-        } else {
-            result.append("--- 群名/群成员 ---\n机器人不在线，无法检索群信息\n\n");
-        }
-
-        return result.toString();
     }
 
     /**
