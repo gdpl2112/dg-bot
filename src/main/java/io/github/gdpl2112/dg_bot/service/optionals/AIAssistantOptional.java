@@ -582,8 +582,9 @@ public class AIAssistantOptional implements BaseOptional {
         if (network) {
             ToolCallback[] mcp = mcpBean.getToolCallbacks();
             if (mcp != null && mcp.length > 0) {
-                builtin = Arrays.copyOf(builtin, builtin.length + mcp.length);
-                System.arraycopy(mcp, 0, builtin, builtin.length, mcp.length);
+                int origLen = builtin.length;
+                builtin = Arrays.copyOf(builtin, origLen + mcp.length);
+                System.arraycopy(mcp, 0, builtin, origLen, mcp.length);
             }
         }
         return wrapWithLimit(builtin, maxToolCalls);
