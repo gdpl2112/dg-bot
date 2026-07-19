@@ -1,0 +1,61 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:data.db
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 5
+  ai:
+    openai:
+      api-key: placeholder
+
+server:
+  port: 34740
+
+super:
+  qid: 3474006766 # 超级管理
+
+wzry:
+  api: http://119.45.132.231:8080
+
+#top.kloping.ai.mcp:
+#  concurrent-init: false  # 默认为 true，设置为 false 则串行初始
+#  servers:
+#    WebSearch:
+#      server: https://dashscope.aliyuncs.com
+#      endpoint: /api/v1/mcps/WebSearch/sse
+#      token: sk-token # 从阿里百炼控制台获取 免费的 否则无法启用 ai的联网功能
+#      heartbeat: 25
+#    WebParser:
+#      server: ${top.kloping.ai.mcp.servers.WebSearch.server}
+#      endpoint: /api/v1/mcps/WebParser/sse
+#      token: ${top.kloping.ai.mcp.servers.WebSearch.token}
+#      heartbeat: 180
+
+## 管理预览单独数据
+manage:
+  bid: ${super.qid}
+  key: change-me-manage-secret-key
+
+# 状态上报
+report:
+  point-gid: 943648151
+  bid: 291841860
+  gid: 1041541077
+
+logging:
+  pattern:
+    console: "%clr([%thread]){blue} %clr(%-32.32logger{32}){magenta} %clr(%d{yyyy-MM-dd HH:mm:ss}){red} %clr(%-5p): %msg%n"
+    file: "[%thread] %-32.32logger{32} %d{yyyy-MM-dd HH:mm:ss} %-5p: %msg%n"
+  file:
+    name: ./logs/slf4j.log
+    path: logs
+  level:
+    root: info
+    org.quartz.impl.StdSchedulerFactory: error
+    org.quartz.core.QuartzScheduler: error
+    org.quartz.core.SchedulerSignalerImpl: error
+    org.quartz.simpl.RAMJobStore: error
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
