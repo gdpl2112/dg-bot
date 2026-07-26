@@ -16,7 +16,7 @@ import java.util.Properties;
 @Slf4j
 public class CompileRes {
 
-    public static final String VERSION_DATE = "26/0616";
+    public static final String VERSION_DATE = "26/0726";
 
     public static boolean isLinux() {
         String osName = System.getProperty("os.name").toLowerCase();

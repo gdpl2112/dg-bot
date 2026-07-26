@@ -36,6 +36,13 @@ manage:
   bid: ${super.qid}
   key: change-me-manage-secret-key
 
+# 连接看门狗: 解决 NapCat 反向 ws 长时间无消息的静默假死
+watchdog:
+  enabled: true
+  idle-timeout-seconds: 600     # 空闲超时阈值(秒), 超过判定假死
+  check-interval-seconds: 30    # 后台检查间隔(秒)
+  reconnect-timeout-seconds: 180 # 重连保护超时(秒), 超时未成功则释放锁重试
+
 # 状态上报
 report:
   point-gid: 943648151

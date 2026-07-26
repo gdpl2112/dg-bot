@@ -8,6 +8,7 @@ import io.github.gdpl2112.dg_bot.dao.ConnConfig;
 import io.github.gdpl2112.dg_bot.mapper.AuthMapper;
 import io.github.gdpl2112.dg_bot.mapper.ConnConfigMapper;
 import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
+import io.github.gdpl2112.dg_bot.service.BotWatchdogService;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.*;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +65,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     SettingService settingService;
     @Autowired
     GroupEventService groupEventService;
+    @Autowired
+    BotWatchdogService botWatchdogService;
     @Autowired
     ConnConfigMapper connConfigMapper;
     @Autowired
@@ -129,6 +132,7 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         GlobalEventChannel.INSTANCE.registerListenerHost(optionalService);
         GlobalEventChannel.INSTANCE.registerListenerHost(settingService);
         GlobalEventChannel.INSTANCE.registerListenerHost(groupEventService);
+        GlobalEventChannel.INSTANCE.registerListenerHost(botWatchdogService);
         GlobalEventChannel.INSTANCE.registerListenerHost(this);
         QueryWrapper<ConnConfig> qw = new QueryWrapper<>();
         qw.orderByAsc("qid");
