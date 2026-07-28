@@ -144,6 +144,13 @@ public class WebSocketWatchdog {
     }
 
     /**
+     * @return 是否正处于看门狗发起的强制重连流程中
+     */
+    public boolean isReconnecting() {
+        return reconnecting.get();
+    }
+
+    /**
      * 监控任务入口: 任何异常都在此捕获, 不允许打崩调度线程
      */
     private void safeCheck() {

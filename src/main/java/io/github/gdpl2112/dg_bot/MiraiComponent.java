@@ -11,6 +11,8 @@ import io.github.gdpl2112.dg_bot.mapper.SaveMapper;
 import io.github.gdpl2112.dg_bot.service.BotWatchdogService;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.*;
 import jakarta.annotation.PreDestroy;
+import kotlinx.coroutines.CompletableJob;
+import kotlinx.coroutines.JobKt;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.EventHandler;
@@ -29,6 +31,7 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -45,6 +48,15 @@ import static io.github.gdpl2112.dg_bot.compile.CompileRes.VERSION_DATE;
 public class MiraiComponent extends SimpleListenerHost implements CommandLineRunner {
     public static Map<Long, Boolean> VIP_INFO = new java.util.HashMap<>();
     public static ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(20, 20, 10, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+    /**
+     * qid -> 连接父 Job。
+     * <p>
+     * overflow 的 BotWrapper.close() 走的是 channel.close(code, reason) 两参重载,
+     * 不会命中 WSClient 覆写的无参 close(), 导致 scheduleClose 标志未置位,
+     * 旧 WSClient 会在 onClose 中触发内部 retry() 自动重连, 造成"断开不彻底";
+     * 只有取消 parentJob 才会回调 WSClient 的无参 close() 实现彻底断开。
+     */
+    public static final Map<String, CompletableJob> CONN_JOBS = new ConcurrentHashMap<>();
     @Autowired
     AuthMapper authMapper;
     @Autowired
@@ -78,16 +90,88 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
         handleOneBot(connConfig, false);
     }
 
+    /**
+     * 彻底断开指定 qid 的旧连接:
+     * 取消连接父 Job 会同步触发 overflow WSClient 的无参 close(),
+     * 置位 scheduleClose, 使旧连接关闭后不再内部自动重连
+     */
+    public static void cancelConnJob(String qid) {
+        CompletableJob job = CONN_JOBS.remove(qid);
+        if (job != null) {
+            try {
+                job.cancel(null);
+            } catch (Throwable e) {
+                log.warn("cancel bot.{} conn job error:{}", qid, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 反向连接模式下彻底关闭端口监听:
+     * overflow 的 WSServer 不受 parentJob 管控, 取消连接 Job 不会停止端口监听,
+     * 且 start0 会按端口复用缓存在 Overflow.reverseServerConfig 中的旧服务端,
+     * 旧的假死客户端连接也不会被踢掉; 只能反射取出 OneBotProducer 调用 close()
+     * (即 WSServer.stop(), 停止端口监听并断开全部客户端连接)
+     */
+    public static void closeReversedServer(int port) {
+        try {
+            Object producer = reverseServers().remove(port);
+            if (producer == null) return;
+            Class.forName("cn.evolvefield.onebot.client.connection.OneBotProducer")
+                    .getMethod("close").invoke(producer);
+            log.info("已彻底关闭反向 WebSocket 端口 {} 的监听", port);
+        } catch (Throwable e) {
+            log.warn("关闭反向 WebSocket 端口 {} 监听失败:{}", port, e.getMessage());
+        }
+    }
+
+    /**
+     * 关闭全部反向 WebSocket 端口监听(应用关闭前清理用)
+     */
+    public static void closeAllReversedServers() {
+        try {
+            for (Object port : new java.util.ArrayList<>(reverseServers().keySet())) {
+                closeReversedServer((Integer) port);
+            }
+        } catch (Throwable e) {
+            log.warn("关闭全部反向 WebSocket 端口监听失败:{}", e.getMessage());
+        }
+    }
+
+    /**
+     * 反射获取 Overflow 内部按端口缓存的反向 WebSocket 服务端表(port -> OneBotProducer);
+     * Overflow 尚未初始化(首次启动时)返回空表
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<Object, Object> reverseServers() throws Exception {
+        Class<?> clazz = Class.forName("top.mrxiaom.overflow.internal.Overflow");
+        java.lang.reflect.Field instanceField = clazz.getDeclaredField("_instance");
+        instanceField.setAccessible(true);
+        Object overflow = instanceField.get(null);
+        if (overflow == null) return new java.util.HashMap<>();
+        java.lang.reflect.Field field = clazz.getDeclaredField("reverseServerConfig");
+        field.setAccessible(true);
+        return (Map<Object, Object>) field.get(overflow);
+    }
+
     public static void handleOneBot(ConnConfig connConfig, boolean tread) {
         BotBuilder builder = null;
         if (connConfig.getType().equalsIgnoreCase("ws")) {
             builder = BotBuilder.positive(connConfig.getIp()).retryTimes(3).retryWaitMills(7000).retryRestMills(-1);
         } else {
+            // 先彻底关闭旧的端口监听, 踢掉可能残留的假死客户端连接,
+            // 避免 overflow 复用旧 WSServer 后 awaitNewBotConnection 一直等不到新连接
+            closeReversedServer(connConfig.getPort());
             builder = BotBuilder.reversed(connConfig.getPort());
         }
         builder.overrideLogger(log);
         builder.token(connConfig.getToken());
         builder.heartbeatCheckSeconds(connConfig.getHeart());
+        // 建新连接前先取消旧连接 Job, 防止新旧两条连接并存(wrap 会抛"一个账号只允许接入一条连接")
+        cancelConnJob(connConfig.getQid());
+        CompletableJob connJob = JobKt.Job(null);
+        CONN_JOBS.put(connConfig.getQid(), connJob);
+        builder.parentJob(connJob);
 
         if (builder != null) {
             if (tread) {
@@ -110,6 +194,12 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     }
 
     public static void closeOneBot(ConnConfig connConfig) {
+        // 先取消连接 Job 彻底关闭底层 WSClient(不触发其内部自动重连), 再关闭 Bot 实例
+        cancelConnJob(connConfig.getQid());
+        // 反向连接的端口监听不受连接 Job 管控, 需要单独彻底关闭
+        if (!"ws".equalsIgnoreCase(connConfig.getType())) {
+            closeReversedServer(connConfig.getPort());
+        }
         Bot bot = Bot.getInstanceOrNull(Long.valueOf(connConfig.getQid()));
         if (bot != null) {
             try {
@@ -182,6 +272,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             log.info("{}管理秘钥生成完成:{}", bid, auth.getAuth());
         } else {
             if (auth.getExp() < System.currentTimeMillis()) {
+                // 先取消连接 Job, 避免 close 后底层 WSClient 内部自动重连
+                cancelConnJob(bid.toString());
                 event.getBot().close();
                 log.error("{}已到期,强制下线", bid);
             } else {
@@ -216,6 +308,8 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     @PreDestroy
     public void cleanup() {
         log.info("应用程序正在关闭，执行清理操作...");
+        CONN_JOBS.keySet().forEach(MiraiComponent::cancelConnJob);
+        closeAllReversedServers();
         Bot.getInstances().forEach(e -> {
             try {
                 e.close();

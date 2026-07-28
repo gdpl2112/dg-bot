@@ -7,7 +7,6 @@ import io.github.gdpl2112.dg_bot.utils.WebSocketWatchdog;
 import jakarta.annotation.PreDestroy;
 import kotlin.coroutines.CoroutineContext;
 import lombok.extern.slf4j.Slf4j;
-import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.event.EventHandler;
 import net.mamoe.mirai.event.SimpleListenerHost;
 import net.mamoe.mirai.event.events.BotEvent;
@@ -84,12 +83,18 @@ public class BotWatchdogService extends SimpleListenerHost {
 
     /**
      * 主动下线(如到期强制下线)时停止看门狗, 避免误重连;
-     * 被动掉线不停止, 交由看门狗/overflow 重连
+     * 被动掉线不停止, 交由看门狗/overflow 重连;
+     * 看门狗自身发起的强制断开(取消连接 Job)也会广播 Active 下线,
+     * 此时不能移除看门狗, 否则重连失败后无人再守护
      */
     @EventHandler
     public void onBotOffline(BotOfflineEvent.Active event) {
-        WebSocketWatchdog watchdog = watchdogs.remove(event.getBot().getId());
-        if (watchdog != null) watchdog.stop();
+        long qid = event.getBot().getId();
+        WebSocketWatchdog watchdog = watchdogs.get(qid);
+        if (watchdog == null) return;
+        if (watchdog.isReconnecting()) return;
+        watchdogs.remove(qid);
+        watchdog.stop();
     }
 
     /**
@@ -106,8 +111,17 @@ public class BotWatchdogService extends SimpleListenerHost {
                 reconnectTimeoutSeconds, new WebSocketWatchdog.ConnectionHandle() {
             @Override
             public void close() {
-                Bot bot = Bot.getInstanceOrNull(qid);
-                if (bot != null) bot.close();
+                // 不能直接 bot.close(): overflow 内部走 channel.close(code, reason) 两参重载,
+                // 不会置位 WSClient.scheduleClose, 旧连接会在 onClose 后内部自动重连, 断开不彻底;
+                // 取消连接父 Job 才会回调 WSClient 无参 close(), 彻底断开且不触发内部重连,
+                // 旧 BotWrapper 实例保留, 重连时由 overflow wrap() 复用并替换底层连接
+                MiraiComponent.cancelConnJob(String.valueOf(qid));
+                // 反向连接的端口监听不受连接 Job 管控, 需单独彻底关闭,
+                // 否则旧假死客户端连接仍占用服务端, 重连时等不到新连接
+                ConnConfig connConfig = connConfigMapper.selectById(String.valueOf(qid));
+                if (connConfig != null && !"ws".equalsIgnoreCase(connConfig.getType())) {
+                    MiraiComponent.closeReversedServer(connConfig.getPort());
+                }
             }
 
             @Override
