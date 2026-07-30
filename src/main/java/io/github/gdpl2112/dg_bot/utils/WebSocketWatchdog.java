@@ -8,6 +8,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 
 /**
  * 业务层 WebSocket 看门狗
@@ -52,6 +53,8 @@ public class WebSocketWatchdog {
     private final ConnectionHandle handle;
     private final ScheduledExecutorService scheduler;
     private final boolean ownScheduler;
+    /** 暂停条件, 返回 true 时跳过假死判定(如夜间时段); 允许为 null 表示永不暂停 */
+    private final BooleanSupplier pauseCondition;
 
     /** 最后活跃时间, 收到任意事件时更新 */
     private final AtomicLong lastActiveTime = new AtomicLong(System.currentTimeMillis());
@@ -63,7 +66,13 @@ public class WebSocketWatchdog {
 
     public WebSocketWatchdog(String name, long idleTimeoutSeconds, long checkIntervalSeconds,
                              long reconnectTimeoutSeconds, ConnectionHandle handle) {
-        this(name, idleTimeoutSeconds, checkIntervalSeconds, reconnectTimeoutSeconds, handle, null);
+        this(name, idleTimeoutSeconds, checkIntervalSeconds, reconnectTimeoutSeconds, handle, null, null);
+    }
+
+    public WebSocketWatchdog(String name, long idleTimeoutSeconds, long checkIntervalSeconds,
+                             long reconnectTimeoutSeconds, ConnectionHandle handle,
+                             ScheduledExecutorService sharedScheduler) {
+        this(name, idleTimeoutSeconds, checkIntervalSeconds, reconnectTimeoutSeconds, handle, sharedScheduler, null);
     }
 
     /**
@@ -73,15 +82,17 @@ public class WebSocketWatchdog {
      * @param reconnectTimeoutSeconds 重连锁保护超时(秒), 重连超过该时长仍未成功则强制释放锁等待下轮重试
      * @param handle                  连接控制扩展点
      * @param sharedScheduler         可共享的调度器; 传 null 则内部自建单线程调度器
+     * @param pauseCondition          暂停条件, 返回 true 时跳过假死判定; 传 null 表示永不暂停
      */
     public WebSocketWatchdog(String name, long idleTimeoutSeconds, long checkIntervalSeconds,
                              long reconnectTimeoutSeconds, ConnectionHandle handle,
-                             ScheduledExecutorService sharedScheduler) {
+                             ScheduledExecutorService sharedScheduler, BooleanSupplier pauseCondition) {
         this.name = name;
         this.idleTimeoutMillis = TimeUnit.SECONDS.toMillis(idleTimeoutSeconds);
         this.checkIntervalMillis = TimeUnit.SECONDS.toMillis(checkIntervalSeconds);
         this.reconnectTimeoutMillis = TimeUnit.SECONDS.toMillis(reconnectTimeoutSeconds);
         this.handle = handle;
+        this.pauseCondition = pauseCondition;
         if (sharedScheduler == null) {
             this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "watchdog-" + name);
@@ -172,6 +183,8 @@ public class WebSocketWatchdog {
             }
             return;
         }
+        // 暂停时段(如夜间)不做假死判定, 计时不清零, 暂停结束后若确已假死会在下一轮触发重连
+        if (pauseCondition != null && pauseCondition.getAsBoolean()) return;
         long idleMillis = now - lastActiveTime.get();
         if (idleMillis < idleTimeoutMillis) return;
         // CAS 抢锁, 防止并发重复重连

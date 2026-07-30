@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -42,8 +43,8 @@ public class BotWatchdogService extends SimpleListenerHost {
     /** 是否启用看门狗 */
     @Value("${watchdog.enabled:true}")
     Boolean enabled;
-    /** 空闲超时阈值(秒), 超过判定假死, 默认 600 秒(10分钟) */
-    @Value("${watchdog.idle-timeout-seconds:600}")
+    /** 空闲超时阈值(秒), 超过判定假死, 默认 7200 秒(2小时) */
+    @Value("${watchdog.idle-timeout-seconds:7200}")
     Long idleTimeoutSeconds;
     /** 后台检查间隔(秒), 默认 30 秒 */
     @Value("${watchdog.check-interval-seconds:30}")
@@ -51,6 +52,12 @@ public class BotWatchdogService extends SimpleListenerHost {
     /** 重连保护超时(秒), 重连超过该时长未成功则释放锁重试, 默认 180 秒 */
     @Value("${watchdog.reconnect-timeout-seconds:180}")
     Long reconnectTimeoutSeconds;
+    /** 夜间暂停起始小时(含), 默认 23 点 */
+    @Value("${watchdog.night-pause-start-hour:23}")
+    Integer nightPauseStartHour;
+    /** 夜间暂停结束小时(不含), 默认 7 点 */
+    @Value("${watchdog.night-pause-end-hour:7}")
+    Integer nightPauseEndHour;
 
     @Autowired
     ConnConfigMapper connConfigMapper;
@@ -137,7 +144,17 @@ public class BotWatchdogService extends SimpleListenerHost {
                 // 异步重连, 成功后由 onBotOnline -> notifyReconnected 释放重连锁
                 MiraiComponent.handleOneBot(connConfig, true);
             }
-        }, scheduler);
+        }, scheduler, this::isInNightPause);
+    }
+
+    /**
+     * 夜间时段(默认 23:00-7:00)不做假死判定, 避免夜间无消息误判重连
+     */
+    private boolean isInNightPause() {
+        int hour = LocalTime.now().getHour();
+        if (nightPauseStartHour <= nightPauseEndHour) return hour >= nightPauseStartHour && hour < nightPauseEndHour;
+        // 跨午夜: 如 23-7 表示 [23:00, 24:00) 和 [0:00, 7:00)
+        return hour >= nightPauseStartHour || hour < nightPauseEndHour;
     }
 
     @PreDestroy

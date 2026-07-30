@@ -39,9 +39,11 @@ manage:
 # 连接看门狗: 解决 NapCat 反向 ws 长时间无消息的静默假死
 watchdog:
   enabled: true
-  idle-timeout-seconds: 600     # 空闲超时阈值(秒), 超过判定假死
+  idle-timeout-seconds: 7200    # 空闲超时阈值(秒), 超过判定假死, 默认 2 小时
   check-interval-seconds: 30    # 后台检查间隔(秒)
   reconnect-timeout-seconds: 180 # 重连保护超时(秒), 超时未成功则释放锁重试
+  night-pause-start-hour: 23    # 夜间暂停起始小时(含), 该时段内不做假死判定
+  night-pause-end-hour: 7       # 夜间暂停结束小时(不含)
 
 # 状态上报
 report:
