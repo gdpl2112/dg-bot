@@ -9,32 +9,32 @@ import io.github.gdpl2112.dg_bot.mapper.CronMapper;
 import io.github.gdpl2112.dg_bot.service.listenerhosts.ScriptService;
 import io.github.gdpl2112.dg_bot.service.script.ScriptManager;
 import io.github.kloping.common.Public;
-import io.github.kloping.date.CronUtils;
 import io.github.kloping.judge.Judge;
 import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.CronTask;
+import org.springframework.scheduling.config.ScheduledTask;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author github.kloping
  */
 @Service
 @Slf4j
-public class CronService implements CommandLineRunner {
+public class CronService implements CommandLineRunner, SchedulingConfigurer {
     public final CronMapper mapper;
     final BotService service;
-    private final Map<Integer, Integer> cmid2cronid = new HashMap<>();
+    private final Map<Integer, ScheduledTask> tasks = new ConcurrentHashMap<>();
+    private ScheduledTaskRegistrar taskRegistrar;
     @Autowired
     RestTemplate template;
     @Autowired
@@ -50,10 +50,14 @@ public class CronService implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        this.taskRegistrar = taskRegistrar;
+    }
+
+    @Override
+    public void run(String... args) {
         log.info("正在加载cron任务");
-        List<CronMessage> msgs = mapper.selectList(new QueryWrapper<>());
-        for (CronMessage msg : msgs) {
+        for (CronMessage msg : mapper.selectList(new QueryWrapper<>())) {
             appendTask(msg);
         }
         log.info("cron任务加载完成");
@@ -65,50 +69,46 @@ public class CronService implements CommandLineRunner {
 
     private String getScriptCode(long bid) {
         Conf conf = confMapper.selectById(bid);
-        if (conf == null) return null;
-        if (Judge.isEmpty(conf.getCode())) return null;
+        if (conf == null || Judge.isEmpty(conf.getCode())) return null;
         return conf.getCode();
     }
 
     public int appendTask(CronMessage msg) {
-        Integer id = CronUtils.INSTANCE.addCronJob(msg.getCron(), new Job() {
-            @Override
-            public void execute(JobExecutionContext context) throws JobExecutionException {
-                log.info("开始执行{} => {} cron任务", msg.getQid(), msg.getTargetId());
-                if (msg.getTargetId().endsWith("FUNCTION") || msg.getTargetId().endsWith("function")) {
-                    long bid = Long.parseLong(msg.getQid());
-                    Bot bot = Bot.getInstanceOrNull(bid);
-                    if (bot == null || !bot.isOnline()) {
-                        log.warn("{} 用户实例获取失败! 可能掉线或未登录", bid);
-                        reportService.report(String.valueOf(bid), "cron任务执行失败! 用户实例获取失败! 可能掉线或未登录");
-                    } else {
-                        ScriptCompile scriptCompile = scriptService.getJsEngine(bid);
-                        if (scriptCompile != null) Public.EXECUTOR_SERVICE.submit(() -> {
-                            try {
-                                scriptCompile.executeFuc(msg.getMsg());
-                            } catch (Throwable e) {
-                                ScriptManager.onException(bid, e);
-                            }
-                        });
-                    }
+        ScheduledTask task = taskRegistrar.scheduleCronTask(new CronTask(() -> {
+            log.info("开始执行{} => {} cron任务", msg.getQid(), msg.getTargetId());
+            if (msg.getTargetId().endsWith("FUNCTION") || msg.getTargetId().endsWith("function")) {
+                long bid = Long.parseLong(msg.getQid());
+                Bot bot = Bot.getInstanceOrNull(bid);
+                if (bot == null || !bot.isOnline()) {
+                    log.warn("{} 用户实例获取失败! 可能掉线或未登录", bid);
+                    reportService.report(String.valueOf(bid), "cron任务执行失败! 用户实例获取失败! 可能掉线或未登录");
                 } else {
-                    service.send(msg.getQid(), msg.getTargetId(), msg.getMsg());
+                    ScriptCompile scriptCompile = scriptService.getJsEngine(bid);
+                    if (scriptCompile != null) Public.EXECUTOR_SERVICE.submit(() -> {
+                        try {
+                            scriptCompile.executeFuc(msg.getMsg());
+                        } catch (Throwable e) {
+                            ScriptManager.onException(bid, e);
+                        }
+                    });
                 }
-                log.info("执行{} => {} cron任务结束", msg.getQid(), msg.getTargetId());
+            } else {
+                service.send(msg.getQid(), msg.getTargetId(), msg.getMsg());
             }
-        });
-        cmid2cronid.put(msg.getId(), id);
-        log.info("(id.{})添加{} => {} cron任务 ({})", id, msg.getQid(), msg.getTargetId(), msg.getCron());
-        return id;
+            log.info("执行{} => {} cron任务结束", msg.getQid(), msg.getTargetId());
+        }, msg.getCron()));
+        tasks.put(msg.getId(), task);
+        log.info("(id.{})添加{} => {} cron任务 ({})", msg.getId(), msg.getQid(), msg.getTargetId(), msg.getCron());
+        return msg.getId();
     }
 
     public void del(String id) {
         try {
             mapper.deleteById(id);
-            Integer aid = Integer.parseInt(id);
-            int cid = cmid2cronid.remove(aid);
-            CronUtils.INSTANCE.stop(cid);
-            log.warn("删除并停止cron任务(id.{})", cid);
+            Integer taskId = Integer.parseInt(id);
+            ScheduledTask task = tasks.remove(taskId);
+            if (task != null) task.cancel(false);
+            log.warn("删除并停止cron任务(id.{})", taskId);
         } catch (Exception e) {
             log.error("删除cron任务时出错", e);
         }
