@@ -33,10 +33,14 @@ public class CronService implements CommandLineRunner, SchedulingConfigurer {
     private final Map<Integer, ScheduledTask> tasks = new ConcurrentHashMap<>();
     private final Map<String, ReentrantLock> accountLocks = new ConcurrentHashMap<>();
     private ScheduledTaskRegistrar taskRegistrar;
-    @Autowired RestTemplate template;
-    @Autowired ScriptService scriptService;
-    @Autowired ConfMapper confMapper;
-    @Autowired ReportService reportService;
+    @Autowired
+    RestTemplate template;
+    @Autowired
+    ScriptService scriptService;
+    @Autowired
+    ConfMapper confMapper;
+    @Autowired
+    ReportService reportService;
 
     public CronService(CronMapper mapper, BotService service) {
         this.mapper = mapper;
@@ -65,6 +69,10 @@ public class CronService implements CommandLineRunner, SchedulingConfigurer {
     }
 
     public int appendTask(CronMessage msg) {
+        String cron = msg.getCron();
+        if (cron.split(" ").length == 7) {
+            cron = cron.substring(0, cron.length() - 2);
+        }
         ScheduledTask task = taskRegistrar.scheduleCronTask(new CronTask(() -> {
             ReentrantLock lock = accountLocks.computeIfAbsent(msg.getQid(), key -> new ReentrantLock());
             lock.lock();
@@ -93,7 +101,8 @@ public class CronService implements CommandLineRunner, SchedulingConfigurer {
             } finally {
                 lock.unlock();
             }
-        }, msg.getCron()));
+        }, cron));
+
         tasks.put(msg.getId(), task);
         log.info("(id.{})添加{} => {} cron任务 ({})", msg.getId(), msg.getQid(), msg.getTargetId(), msg.getCron());
         return msg.getId();

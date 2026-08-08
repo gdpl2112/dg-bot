@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import top.mrxiaom.overflow.BotBuilder;
 import top.mrxiaom.overflow.contact.RemoteBot;
@@ -59,8 +58,6 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
     public static final Map<String, CompletableJob> CONN_JOBS = new ConcurrentHashMap<>();
     @Autowired
     AuthMapper authMapper;
-    @Autowired
-    ThreadPoolTaskExecutor executor;
     @Autowired
     PassiveService passiveService;
     @Autowired
