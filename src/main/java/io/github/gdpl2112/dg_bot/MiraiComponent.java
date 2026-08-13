@@ -315,6 +315,15 @@ public class MiraiComponent extends SimpleListenerHost implements CommandLineRun
             }
         });
         log.info("清理操作完成");
+        EXECUTOR_SERVICE.shutdownNow();
+        try {
+            if (!EXECUTOR_SERVICE.awaitTermination(5, TimeUnit.SECONDS)) {
+                log.warn("executor did not terminate within timeout");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("interrupted while waiting for executor shutdown", e);
+        }
     }
 
 }
