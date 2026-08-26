@@ -3,6 +3,7 @@ package io.github.gdpl2112.dg_bot.service.v11s;
 import cn.evolvefield.onebot.client.connection.WSGolab;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import jakarta.annotation.PreDestroy;
 import io.github.gdpl2112.dg_bot.MiraiComponent;
 import io.github.gdpl2112.dg_bot.controllers.RecController;
 import io.github.gdpl2112.dg_bot.dao.V11Conf;
@@ -25,6 +26,13 @@ import top.mrxiaom.overflow.contact.RemoteBot;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author github.kloping
@@ -41,6 +49,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
     ReportService reportService;
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+    private final ConcurrentMap<Long, ExecutorService> likeQueues = new ConcurrentHashMap<>();
     //最后的处理
 
     public V11AutoLikeService(RecController controller) {
@@ -88,15 +97,19 @@ public class V11AutoLikeService extends SimpleListenerHost {
     public void autoLike() {
         log.info("最后点赞处理启动");
         for (Bot bot : Bot.getInstances()) {
-            if (bot != null && bot.isOnline()) {
-                if (bot instanceof RemoteBot) {
-                    log.info(likeNow(String.valueOf(bot.getId())));
+                if (bot != null && bot.isOnline()) {
+                    if (bot instanceof RemoteBot) {
+                    enqueueLikeTask(bot.getId(), () -> likeNowInternal(String.valueOf(bot.getId())));
                 }
             }
         }
     }
 
     public String likeNow(String id) {
+        return waitForLikeTask(Long.valueOf(id), () -> likeNowInternal(id));
+    }
+
+    private String likeNowInternal(String id) {
         StringBuilder sb = null;
         Bot bot = Bot.getInstance(Long.valueOf(id));
         if (bot instanceof RemoteBot) {
@@ -109,6 +122,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
             try {
                 int st = 0;
                 final int count = 10;
+                boolean hasSentLikeRequest = false;
                 all:
                 while (true) {
                     JSONObject jsonData = ProfileLike.getProfileLikePage(id, remoteBot, st, count);
@@ -138,6 +152,8 @@ public class V11AutoLikeService extends SimpleListenerHost {
                                 continue e0;
                             } else {
                                 Long vid = pl.getVid();
+                                waitBeforeNextLike(hasSentLikeRequest);
+                                hasSentLikeRequest = true;
                                 if (ProfileLike.sendProfileLike(remoteBot, vid, max)) {
                                     applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), vid, max, true));
                                     if (sb == null) sb = new StringBuilder();
@@ -151,6 +167,8 @@ public class V11AutoLikeService extends SimpleListenerHost {
 
                 List<Long> likeWhiteIds = conf.getLikeWhiteIds();
                 for (Long vid : likeWhiteIds) {
+                    waitBeforeNextLike(hasSentLikeRequest);
+                    hasSentLikeRequest = true;
                     if (ProfileLike.sendProfileLike(remoteBot, vid, max)) {
                         applicationEventPublisher.publishEvent(new SendLikedEvent(bot.getId(), vid, max, true));
                         if (sb == null) sb = new StringBuilder();
@@ -175,7 +193,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
                 if (bot != null && bot.isOnline()) {
                     if (bot instanceof RemoteBot) {
                         RemoteBot remoteBot = (RemoteBot) bot;
-                        MiraiComponent.EXECUTOR_SERVICE.submit(() -> yesterdayLikeNow(bot.getId(), remoteBot));
+                        enqueueLikeTask(bot.getId(), () -> yesterdayLikeNowInternal(bot.getId(), remoteBot));
                     }
                 }
             }
@@ -191,12 +209,16 @@ public class V11AutoLikeService extends SimpleListenerHost {
         Bot bot = Bot.getInstance(id);
         if (bot instanceof RemoteBot) {
             RemoteBot remoteBot = (RemoteBot) bot;
-            return yesterdayLikeNow(bot.getId(), remoteBot);
+            return waitForLikeTask(bot.getId(), () -> yesterdayLikeNowInternal(bot.getId(), remoteBot));
         }
         return null;
     }
 
     public String yesterdayLikeNow(Long bid, RemoteBot remoteBot) {
+        return waitForLikeTask(bid, () -> yesterdayLikeNowInternal(bid, remoteBot));
+    }
+
+    private String yesterdayLikeNowInternal(Long bid, RemoteBot remoteBot) {
         StringBuilder sb = null;
         int yday = Integer.valueOf(ProfileLike.SF_DD.format(new Date(System.currentTimeMillis() - 1000 * 24 * 60 * 60L)));
         int dayN = DateUtils.getDay();
@@ -209,6 +231,7 @@ public class V11AutoLikeService extends SimpleListenerHost {
 
         int st = 0;
         final int count = 10;
+        boolean hasSentLikeRequest = false;
         all:
         while (true) {
             try {
@@ -225,6 +248,8 @@ public class V11AutoLikeService extends SimpleListenerHost {
                         }
                         if (pl.getBTodayVotedCnt() >= max) continue e;
                         try {
+                            waitBeforeNextLike(hasSentLikeRequest);
+                            hasSentLikeRequest = true;
                             if (ProfileLike.sendProfileLike(remoteBot, pl.getVid(), max)) {
                                 applicationEventPublisher.publishEvent(new SendLikedEvent(bid, pl.getVid(), max, true));
                                 if (sb == null) sb = new StringBuilder();
@@ -244,6 +269,53 @@ public class V11AutoLikeService extends SimpleListenerHost {
             st += count;
         }
         return sb != null ? sb.toString() : null;
+    }
+
+    /**
+     * 避免连续向不同用户发起点赞请求造成接口卡顿。
+     */
+    private void waitBeforeNextLike(boolean hasSentLikeRequest) throws InterruptedException {
+        if (hasSentLikeRequest) {
+            Thread.sleep(ThreadLocalRandom.current().nextLong(1_000L, 2_001L));
+        }
+    }
+
+    private void enqueueLikeTask(long botId, Callable<String> task) {
+        getLikeQueue(botId).submit(() -> {
+            try {
+                String result = task.call();
+                if (result != null) {
+                    log.info("Bot {} 点赞任务完成:{}", botId, result);
+                }
+            } catch (Exception e) {
+                log.error("Bot {} 点赞任务执行失败", botId, e);
+            }
+        });
+    }
+
+    private String waitForLikeTask(long botId, Callable<String> task) {
+        try {
+            return getLikeQueue(botId).submit(task).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("等待 Bot {} 点赞任务时被中断", botId, e);
+        } catch (ExecutionException e) {
+            log.error("Bot {} 点赞任务执行失败", botId, e.getCause());
+        }
+        return null;
+    }
+
+    private ExecutorService getLikeQueue(long botId) {
+        return likeQueues.computeIfAbsent(botId, id -> Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "profile-like-" + id);
+            thread.setDaemon(true);
+            return thread;
+        }));
+    }
+
+    @PreDestroy
+    public void shutdownLikeQueues() {
+        likeQueues.values().forEach(ExecutorService::shutdownNow);
     }
 
     public Boolean getIsVip(long bid, RemoteBot remoteBot) {
