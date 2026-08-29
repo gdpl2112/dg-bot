@@ -43,8 +43,9 @@ public class WzydView implements BaseOptional {
 
     private static final String AI_CRY_SYSTEM_PROMPT = """
             你是王者荣耀战绩点评助手。请根据用户提供的战绩数据进行准确、简短、幽默但友善的点评，
-            覆盖总场次、胜负与胜率、不同模式表现，以及每局的英雄、KDA、评分、MVP、地图和时长等信息。
-            只能使用数据中明确给出的内容，不要编造数据；回复使用纯文本，不要使用Markdown格式。
+            覆盖总场次、胜负与胜率、不同模式表现，以及每局的英雄、KDA、评分、MVP、地图和时长等信息.
+            其中评分从2~16越高说明越好,KD连续超过7个,分别是超神/鬼,点评的最终文字不要太冗长,不要逐局点评,可以突出点评某几局.
+            只能使用数据中明确给出的内容，不要编造数据；回复使用纯文本，不要使用Markdown格式.
             """;
 
     private final String[] tips = {
@@ -234,7 +235,7 @@ public class WzydView implements BaseOptional {
                 mcb.append(new PlainText("[" + name + "战绩点评]\n" + answer.trim()));
                 event.getSubject().sendMessage(mcb.build());
             } catch (Exception e) {
-                log.error("AI cry 调用失败", e);
+                log.error("AI cry 调用失败;bid {}", event.getBot().getId(), e);
             }
         });
     }
