@@ -1,6 +1,8 @@
 package io.github.gdpl2112.dg_bot.service.optionals;
 
 import com.alibaba.fastjson.JSONArray;
+import io.github.gdpl2112.dg_bot.dao.AiConf;
+import io.github.gdpl2112.dg_bot.mapper.AiConfMapper;
 import io.github.kloping.judge.Judge;
 import io.github.kloping.number.NumberUtils;
 import io.github.kloping.rand.RandomUtils;
@@ -10,15 +12,20 @@ import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.*;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author github kloping
@@ -27,6 +34,18 @@ import java.util.Map;
 @Slf4j
 @Component
 public class WzydView implements BaseOptional {
+
+    private static final ExecutorService AI_CRY_EXECUTOR = Executors.newCachedThreadPool(r -> {
+        Thread thread = new Thread(r, "wzyd-ai-cry");
+        thread.setDaemon(true);
+        return thread;
+    });
+
+    private static final String AI_CRY_SYSTEM_PROMPT = """
+            你是王者荣耀战绩点评助手。请根据用户提供的战绩数据进行准确、简短、幽默但友善的点评，
+            覆盖总场次、胜负与胜率、不同模式表现，以及每局的英雄、KDA、评分、MVP、地图和时长等信息。
+            只能使用数据中明确给出的内容，不要编造数据；回复使用纯文本，不要使用Markdown格式。
+            """;
 
     private final String[] tips = {
             "数据正在努力绘制中，请稍等片刻哦~",
@@ -40,6 +59,9 @@ public class WzydView implements BaseOptional {
     public Map<String, OneApi> apis = new HashMap<>();
     @Value("${wzry.api:null}")
     private String api;
+
+    @Autowired
+    private AiConfMapper aiConfMapper;
 
     {
         OneApi CRY = (content, event) -> {
@@ -67,7 +89,18 @@ public class WzydView implements BaseOptional {
                         mcb.append(new PlainText(response.body().string()));
                         mcb.append(new PlainText("\n" + getRandomCryTips()));
                         event.getSubject().sendMessage(mcb.build());
-                        return doRequest("/battle/history", Map.of("uid", uid, "sid", sid, "opt", content));
+                        Object history = doRequest("/battle/history", Map.of("uid", uid, "sid", sid, "opt", content));
+                        AiConf aiConf = getAiConf(event);
+                        if (isAiCryEnabled(aiConf)) {
+                            Object historyText = doRequest("/battle/history/text",
+                                    Map.of("uid", uid, "sid", sid, "opt", content));
+                            if (historyText instanceof String && isUsableHistoryText((String) historyText)) {
+                                submitAiCry(event, aiConf, (String) historyText, content);
+                            } else {
+                                log.warn("wzry history text unavailable: {}", historyText);
+                            }
+                        }
+                        return history;
                     } else return "请求失败: " + response.body().string();
                 } catch (IOException e) {
                     return "请求异常: " + e.getMessage();
@@ -122,7 +155,7 @@ public class WzydView implements BaseOptional {
         apis.put("查询UID", ((content, event) -> {
             String name = content.substring(5);
             if (Judge.isEmpty(name)) return "使用方式: 查询UID\"游戏昵称\" ";
-            java.lang.Object data = doRequest("/query/show", Map.of("name", URLEncoder.encode(name)));
+            java.lang.Object data = doRequest("/query/show", Map.of("name", name));
             if (data != null) {
                 if (data instanceof String) {
                     try {
@@ -155,6 +188,55 @@ public class WzydView implements BaseOptional {
      */
     private String getRandomCryTips() {
         return tips[RandomUtils.RANDOM.nextInt(tips.length)];
+    }
+
+    private AiConf getAiConf(MessageEvent event) {
+        if (aiConfMapper == null || event == null || event.getBot() == null) return null;
+        try {
+            // AI配置按机器人账号保存，不能使用战绩接口中的目标 sid 查询。
+            return aiConfMapper.selectById(String.valueOf(event.getBot().getId()));
+        } catch (Exception e) {
+            log.warn("读取AI配置失败", e);
+            return null;
+        }
+    }
+
+    private boolean isAiCryEnabled(AiConf aiConf) {
+        return aiConf != null
+                && Boolean.TRUE.equals(aiConf.getOpen())
+                && Judge.isNotEmpty(aiConf.getApiKey());
+    }
+
+    private boolean isUsableHistoryText(String historyText) {
+        if (Judge.isEmpty(historyText)) return false;
+        return !historyText.startsWith("请求失败:")
+                && !historyText.startsWith("请求异常:")
+                && !"未配置api".equals(historyText);
+    }
+
+    private void submitAiCry(MessageEvent event, AiConf aiConf, String historyText, String opt) {
+        String prompt = "请点评以下王者荣耀战绩" + (Judge.isNotEmpty(opt) ? "（查询模式：" + opt + "）" : "")
+                + "：\n\n" + historyText;
+        AI_CRY_EXECUTOR.submit(() -> {
+            try {
+                ChatClient chatClient = AIAssistantOptional.getChatClient(aiConf);
+                String answer = chatClient.prompt()
+                        .system(AI_CRY_SYSTEM_PROMPT + "\n你的名字是" + aiConf.getName()
+                                + "，性格设定是" + aiConf.getTrait() + "。")
+                        .user(prompt)
+                        .call()
+                        .content();
+                if (Judge.isEmpty(answer)) return;
+
+                MessageChainBuilder mcb = new MessageChainBuilder();
+                mcb.append(new QuoteReply(event.getMessage()));
+                String name = Judge.isNotEmpty(aiConf.getName()) ? aiConf.getName() : "AI";
+                mcb.append(new PlainText("[" + name + "战绩点评]\n" + answer.trim()));
+                event.getSubject().sendMessage(mcb.build());
+            } catch (Exception e) {
+                log.error("AI cry 调用失败", e);
+            }
+        });
     }
 
     @Override
@@ -206,7 +288,10 @@ public class WzydView implements BaseOptional {
                 Object value = entry.getValue();
                 String valueStr = value != null ? value.toString() : null;
                 if (Judge.isNotEmpty(valueStr)) {
-                    urlBuilder.append(entry.getKey()).append("=").append(valueStr).append("&");
+                    urlBuilder.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8))
+                            .append("=")
+                            .append(URLEncoder.encode(valueStr, StandardCharsets.UTF_8))
+                            .append("&");
                 }
             }
             String finalUrl = urlBuilder.toString();
