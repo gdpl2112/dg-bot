@@ -4,7 +4,7 @@
 
 > 在线体验：[https://dg.kloping.top](https://dg.kloping.top)  
 > 前端仓库：[dg-bot-front](https://github.com/gdpl2112/dg-bot-front)
-
+> 部署指南: [docs/slef-deploy](./docs/self-deploy.md)
 ---
 
 ## 功能特性
