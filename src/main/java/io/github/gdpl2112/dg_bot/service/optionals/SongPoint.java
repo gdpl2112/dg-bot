@@ -16,9 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import static io.github.gdpl2112.dg_bot.Utils.getRedirectUrl;
@@ -35,9 +34,26 @@ public class SongPoint implements BaseOptional {
     public static final String TYPE_QQ = "qq";
     public static final String TYPE_WY = "wy";
     public static final String TYPE_DY = "dy";
-    // id <type,data>
-    public static final Map<Long, SongData> QID2DATA = new HashMap<>();
-    public static final long MAX_CD = 1000 * 60 * 30;
+    /**
+     * 待选择歌曲的临时缓存：QQ号 -> 本次列表快照。
+     * 使用 {@link ConcurrentHashMap} 是因为写入发生在消息处理线程，
+     * 读取/清理同时发生在定时任务线程，普通 HashMap 会有并发安全问题。
+     */
+    public static final Map<Long, SongData> QID2DATA = new ConcurrentHashMap<>();
+    /**
+     * 选择窗口时长：点歌列表下发后，30 分钟内未选择则自动取消。
+     */
+    public static final long SELECT_WINDOW_MILLIS = 30L * 60L * 1000L;
+    /**
+     * @deprecated 语义等同于 {@link #SELECT_WINDOW_MILLIS}，保留仅为兼容旧引用。
+     */
+    @Deprecated
+    public static final long MAX_CD = SELECT_WINDOW_MILLIS;
+    /**
+     * 列表消息尾部的统一提示语，避免四处硬编码提示文案与有效期不一致。
+     */
+    public static final String SELECT_TIP = "\n使用'取消点歌'/'取消选择'来取消选择"
+            + "\n选择有效期30分钟，超时自动取消";
     public static final RestTemplate TEMPLATE = new RestTemplate();
     public static final String SERVER_HOST = "https://kloping.top/";
     private static final Map<String, PointInterface> POINT_INTERFACES = Map.of(
@@ -54,7 +70,7 @@ public class SongPoint implements BaseOptional {
                     }
                     sb.append("选择歌曲前数字.选择0时进入下一页");
                     QID2DATA.put(qid, new SongData(p, name, TYPE_QQ, content, qid, System.currentTimeMillis()));
-                    return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                    return sb.toString() + SELECT_TIP;
                 }
 
                 @Override
@@ -101,7 +117,7 @@ public class SongPoint implements BaseOptional {
                         sb.append(n++ + ".").append(o1.getString("songname")).append("--").append(o1.getString("singername")).append("\n");
                     }
                     sb.append("选择歌曲前数字.选择0时进入下一页");
-                    return sb.toString() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                    return sb.toString() + SELECT_TIP;
                 }
             }
             , TYPE_WY, new PointInterface(TYPE_WY) {
@@ -131,7 +147,7 @@ public class SongPoint implements BaseOptional {
                         sb.append(index++).append(".").append(e0.getString("name")).append("--").append(e0.getString("artist")).append("\n");
                     }
                     QID2DATA.put(qid, new SongData(p, name, type, content, qid, System.currentTimeMillis()));
-                    return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                    return sb.toString().trim() + SELECT_TIP;
                 }
             }
             , TYPE_DY, new PointInterface(TYPE_DY) {
@@ -165,23 +181,67 @@ public class SongPoint implements BaseOptional {
                     }
                     QID2DATA.put(qid, new SongData(p, name, type, content, qid, System.currentTimeMillis()));
                     sb.append("选择歌曲前数字.选择0时进入下一页");
-                    return sb.toString().trim() + "\n使用'取消点歌'/'取消选择'来取消选择";
+                    return sb.toString().trim() + SELECT_TIP;
 
                 }
             }
     );
 
+    /**
+     * 过期记录清理任务。
+     * <p>
+     * 职责：周期性扫描 {@link #QID2DATA}，移除超过 {@link #SELECT_WINDOW_MILLIS} 的选择记录，
+     * 防止长期驻留造成内存泄漏。<b>此清理过程完全静默</b>，不向群聊或私聊发送任何提示，
+     * 用户侧只表现为"再发数字不再有响应"。
+     * <p>
+     * 扫描周期取 30 秒：由于选择动作在 {@link #getValidSelection(Long)} 中会再做一次时效校验，
+     * 这里的周期只影响内存回收的及时性，不影响业务上的超时判定精度。
+     */
     static {
         FrameUtils.SERVICE.scheduleWithFixedDelay(() -> {
-            Iterator<Long> iterator = QID2DATA.keySet().iterator();
-            while (iterator.hasNext()) {
-                Long qid = iterator.next();
-                SongData data = QID2DATA.get(qid);
-                if ((System.currentTimeMillis() - data.time) > MAX_CD) {
-                    QID2DATA.remove(qid);
-                }
+            try {
+                long now = System.currentTimeMillis();
+                // ConcurrentHashMap 的 entrySet().removeIf 是并发安全的，不会像 HashMap 迭代器那样抛 ConcurrentModificationException
+                QID2DATA.entrySet().removeIf(entry -> isExpired(entry.getValue(), now));
+            } catch (Exception e) {
+                log.error("song selection expire scan error: {}", e.getMessage(), e);
             }
-        }, 20, 30, TimeUnit.MINUTES);
+        }, 1, 30, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 判断某条选择记录是否已超出 30 分钟选择窗口。
+     *
+     * @param data 选择记录，允许为 null
+     * @param now  当前时间戳（毫秒）
+     * @return true 表示已过期（或记录为空）
+     */
+    public static boolean isExpired(SongData data, long now) {
+        return data == null || data.time == null || (now - data.time) > SELECT_WINDOW_MILLIS;
+    }
+
+    /**
+     * 取出该 QQ 号当前有效的选择记录。
+     * <p>
+     * 超时记录会在此处被<b>静默移除</b>并返回 null：不做任何消息回复，
+     * 以此保证"超时自动取消点歌、无通知"的用户体验。
+     *
+     * @param qid QQ号
+     * @return 有效记录；未点歌或已超时返回 null
+     */
+    public static SongData getValidSelection(Long qid) {
+        if (qid == null) {
+            return null;
+        }
+        SongData data = QID2DATA.get(qid);
+        if (data == null) {
+            return null;
+        }
+        if (isExpired(data, System.currentTimeMillis())) {
+            QID2DATA.remove(qid, data);
+            return null;
+        }
+        return data;
     }
 
     /**
@@ -368,16 +428,29 @@ public class SongPoint implements BaseOptional {
             name = out.substring(4);
             type = TYPE_DY;
         } else if (out.startsWith("取消点歌") || out.startsWith("取消选择")) {
+            // 主动取消属于显式指令，需要回执；与"超时自动取消"的静默行为区分开
             SongData o = QID2DATA.remove(event.getSender().getId());
-            event.getSubject().sendMessage("已取消.\n" + o.name);
+            if (o == null) {
+                event.getSubject().sendMessage("当前没有待选择的点歌");
+            } else {
+                event.getSubject().sendMessage("已取消.\n" + o.name);
+            }
         } else if (out.matches("\\d{1,2}")) {
-            SongData e = QID2DATA.get(event.getSender().getId());
+            // 统一做时效校验：未点歌或已超过 30 分钟选择窗口时返回 null，
+            // 此分支不发送任何消息，实现"超时自动取消点歌、静默无通知"
+            SongData e = getValidSelection(event.getSender().getId());
             if (e != null) {
                 Integer n = Integer.valueOf(out);
                 if (n == 0) {
+                    // 记录原始计时起点：翻页是同一轮点歌的延续，不重新计算 30 分钟，避免无限翻页续期
+                    long startedAt = e.time;
                     String r = listSongs(event.getSender().getId(), e.type, e.p + 1, e.name);
                     if (r == null) event.getSubject().sendMessage("翻页时异常!");
-                    else event.getSubject().sendMessage(r);
+                    else {
+                        SongData renewed = QID2DATA.get(event.getSender().getId());
+                        if (renewed != null) renewed.time = startedAt;
+                        event.getSubject().sendMessage(r);
+                    }
                 } else {
                     Message msg = null;
                     try {
@@ -398,7 +471,7 @@ public class SongPoint implements BaseOptional {
                     + "\n- 酷狗点歌[歌名] #酷狗音乐点歌"
                     + "\n- 抖音点歌[歌名] #抖音音乐点歌"
                     + "\n- 取消点歌   #点歌后取消选择"
-                    + "\n\ntips: 点歌后选择对应数字即可!"
+                    + "\n\ntips: 点歌后选择对应数字即可! 选择有效期30分钟，超时自动取消。"
             );
         } else if (type != null) {
             String r = listSongs(event.getSender().getId(), type, 1, name);
@@ -434,7 +507,12 @@ public class SongPoint implements BaseOptional {
         public String type;
         public Object data;
         public Long qid;
-        public Long time;
+        /**
+         * 本轮点歌的计时起点（毫秒时间戳）。
+         * 声明为 volatile：翻页时会在消息线程回写该值以保持计时起点不变，
+         * 定时清理线程需要立即读到最新值。
+         */
+        public volatile Long time;
         public SongData(String type, String name, Long qid, Long time) {
             this.type = type;
             this.name = name;
